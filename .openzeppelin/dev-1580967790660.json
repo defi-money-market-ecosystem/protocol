@@ -1,0 +1,37 @@
+{
+  "contracts": {
+    "InterestRateInterfaceImplV1": {
+      "address": "0xe78A0F7E598Cc8b0Bb87894B0F60dD2a88d6a8Ab",
+      "constructorCode": "6080604052348015600f57600080fd5b5060a98061001e6000396000f3fe",
+      "bodyBytecodeHash": "17f2f5169a891e228e55c0a35fa4d095e7e4c366f433e2f2f76552f55d7fd0dc",
+      "localBytecodeHash": "3ef276d57b2212671f4b0fa700525b183ae26d8bcd35681ba64ea8d1ba512397",
+      "deployedBytecodeHash": "3ef276d57b2212671f4b0fa700525b183ae26d8bcd35681ba64ea8d1ba512397",
+      "types": {},
+      "storage": [],
+      "warnings": {
+        "hasConstructor": false,
+        "hasSelfDestruct": false,
+        "hasDelegateCall": false,
+        "hasInitialValuesInDeclarations": false,
+        "uninitializedBaseContracts": []
+      }
+    }
+  },
+  "solidityLibs": {},
+  "proxies": {
+    "dmm-protocol/InterestRateInterfaceImplV1": [
+      {
+        "address": "0xCfEB869F69431e42cdB54A4F4f105C19C080A601",
+        "version": "1.0.0",
+        "implementation": "0xe78A0F7E598Cc8b0Bb87894B0F60dD2a88d6a8Ab",
+        "admin": "0x5b1869D9A4C187F2EAa108f3062412ecf0526b24",
+        "kind": "Upgradeable"
+      }
+    ]
+  },
+  "manifestVersion": "2.2",
+  "version": "1.0.0",
+  "proxyAdmin": {
+    "address": "0x5b1869D9A4C187F2EAa108f3062412ecf0526b24"
+  }
+}

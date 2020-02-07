@@ -1,0 +1,61 @@
+{
+  "contracts": {
+    "Counter": {
+      "address": "0x254dffcd3277C0b1660F6d42EFbB754edaBAbC2B",
+      "constructorCode": "608060405234801561001057600080fd5b5060c58061001f6000396000f3fe",
+      "bodyBytecodeHash": "ce743eb648a1fdbb42f19b66f57554533d9aa40abeff86abeff430f8eff8a08f",
+      "localBytecodeHash": "a448366b32655baf47ec69b919b29117ab5a6d30ebe9bba4cc65c546bd6cb317",
+      "deployedBytecodeHash": "a448366b32655baf47ec69b919b29117ab5a6d30ebe9bba4cc65c546bd6cb317",
+      "types": {
+        "t_uint256": {
+          "id": "t_uint256",
+          "kind": "elementary",
+          "label": "uint256"
+        }
+      },
+      "storage": [
+        {
+          "contract": "Counter",
+          "path": "contracts/Counter.sol",
+          "label": "value",
+          "astId": 3,
+          "type": "t_uint256",
+          "src": "48:20:0"
+        }
+      ],
+      "warnings": {
+        "hasConstructor": false,
+        "hasSelfDestruct": false,
+        "hasDelegateCall": false,
+        "hasInitialValuesInDeclarations": false,
+        "uninitializedBaseContracts": [],
+        "storageUncheckedVars": [],
+        "storageDiff": []
+      }
+    }
+  },
+  "solidityLibs": {},
+  "proxies": {
+    "dmm-protocol/Counter": [
+      {
+        "address": "0xCfEB869F69431e42cdB54A4F4f105C19C080A601",
+        "version": "1.0.0",
+        "implementation": "0xe78A0F7E598Cc8b0Bb87894B0F60dD2a88d6a8Ab",
+        "admin": "0x5b1869D9A4C187F2EAa108f3062412ecf0526b24",
+        "kind": "Upgradeable"
+      },
+      {
+        "address": "0xC89Ce4735882C9F0f0FE26686c53074E09B0D550",
+        "version": "1.0.0",
+        "implementation": "0x254dffcd3277C0b1660F6d42EFbB754edaBAbC2B",
+        "admin": "0x5b1869D9A4C187F2EAa108f3062412ecf0526b24",
+        "kind": "Upgradeable"
+      }
+    ]
+  },
+  "manifestVersion": "2.2",
+  "version": "1.0.0",
+  "proxyAdmin": {
+    "address": "0x5b1869D9A4C187F2EAa108f3062412ecf0526b24"
+  }
+}

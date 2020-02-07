@@ -1,0 +1,21 @@
+{
+  "manifestVersion": "2.2",
+  "contracts": {
+    "InterestRateInterfaceImplV1": "InterestRateInterfaceImplV1"
+  },
+  "dependencies": {},
+  "name": "dmm-protocol",
+  "version": "1.0.0",
+  "telemetryOptIn": true,
+  "compiler": {
+    "manager": "openzeppelin",
+    "solcVersion": "0.5.13",
+    "compilerSettings": {
+      "evmVersion": "istanbul",
+      "optimizer": {
+        "enabled": true,
+        "runs": "200"
+      }
+    }
+  }
+}
