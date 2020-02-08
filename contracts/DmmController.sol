@@ -3,6 +3,7 @@ pragma solidity ^0.5.0;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
+import "./libs/Blacklistable.sol";
 import "./libs/DmmErrorCodes.sol";
 import "./libs/ICollateralValuator.sol";
 import "./libs/IDmmController.sol";
@@ -10,6 +11,7 @@ import "./libs/IDmmToken.sol";
 import "./libs/InterestRateInterface.sol";
 import "./libs/IUnderlyingTokenValuator.sol";
 import "./DmmToken.sol";
+import "./DmmBlacklistable.sol";
 
 contract DmmController is IDmmController, DmmErrorCodes, Ownable {
 
@@ -28,6 +30,7 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
      * Controller Fields
      */
 
+    DmmBlacklistable public dmmBlacklistable;
     InterestRateInterface public interestRateInterface;
     ICollateralValuator public collateralValuator;
     IUnderlyingTokenValuator public underlyingTokenValuator;
@@ -60,11 +63,13 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
         address _collateralValuator,
         address _underlyingTokenValuator,
         uint256 _minReserveRatio,
-        uint256 _minCollateralization
+        uint256 _minCollateralization,
+        address _dmmBlacklistable
     ) public {
         interestRateInterface = InterestRateInterface(_interestRateInterface);
         collateralValuator = ICollateralValuator(_collateralValuator);
         underlyingTokenValuator = IUnderlyingTokenValuator(_underlyingTokenValuator);
+        dmmBlacklistable = DmmBlacklistable(_dmmBlacklistable);
         minReserveRatio = _minReserveRatio;
         minCollateralization = _minCollateralization;
 
@@ -89,6 +94,10 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
      * Public Functions
      */
 
+    function blacklistable() public view returns (address) {
+        return address(dmmBlacklistable);
+    }
+
     function addMarket(
         address underlyingToken,
         string memory symbol,
@@ -96,7 +105,7 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
         uint8 decimals,
         uint minMintAmount,
         uint minRedeemAmount,
-        uint maxSupply
+        uint totalSupply
     ) public {
         // Start the IDs at 1. Zero is reserved for the empty case when it doesn't exist.
         uint dmmTokenId = dmmTokenIds.length + 1;
@@ -106,7 +115,7 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
             decimals,
             minMintAmount,
             minRedeemAmount,
-            maxSupply,
+            totalSupply,
         /* controller */ address(this)
         );
         address dmmTokenAddress = address(dmmToken);

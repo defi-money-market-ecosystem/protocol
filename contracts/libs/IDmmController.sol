@@ -7,6 +7,8 @@ contract IDmmController {
 
     uint public constant INTEREST_RATE_BASE = 1e18;
 
+    function blacklistable() public view returns (address);
+
     /**
      * @dev Disables the corresponding DMMA from minting new tokens. This allows the market to close over time, since
      *      users are only able to redeem tokens.
@@ -19,10 +21,10 @@ contract IDmmController {
         address underlyingToken,
         string calldata symbol,
         string calldata name,
-        uint decimals,
+        uint8 decimals,
         uint minMintAmount,
         uint minRedeemAmount,
-        uint maxSupply
+        uint totalSupply
     ) external;
 
     /**

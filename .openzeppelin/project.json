@@ -1,7 +1,8 @@
 {
   "manifestVersion": "2.2",
   "contracts": {
-    "InterestRateInterfaceImplV1": "InterestRateInterfaceImplV1"
+    "InterestRateInterfaceImplV1": "InterestRateInterfaceImplV1",
+    "DmmToken": "DmmToken"
   },
   "dependencies": {},
   "name": "dmm-protocol",

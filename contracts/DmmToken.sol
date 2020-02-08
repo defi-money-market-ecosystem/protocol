@@ -43,25 +43,25 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
         uint _totalSupply,
         address _controller
     ) public {
-        symbol = _symbol;
-        name = _name;
-        decimals = _decimals;
-        minMintAmount = _minMintAmount;
-        minRedeemAmount = _minRedeemAmount;
-        controller = IDmmController(_controller);
-
-        domainSeparator = keccak256(abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes(name)),
-                keccak256(bytes(/* version */ "1")),
-                chainId(),
-                address(this)
-            ));
-
-        _exchangeRate = EXCHANGE_RATE_BASE_RATE;
-        _exchangeRateLastUpdatedTimestamp = block.timestamp;
-
-        mintToThisContract(_totalSupply);
+//        symbol = _symbol;
+//        name = _name;
+//        decimals = _decimals;
+//        minMintAmount = _minMintAmount;
+//        minRedeemAmount = _minRedeemAmount;
+//        controller = IDmmController(_controller);
+//
+//        domainSeparator = keccak256(abi.encode(
+//                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+//                keccak256(bytes(name)),
+//                keccak256(bytes(/* version */ "1")),
+//                chainId(),
+//                address(this)
+//            ));
+//
+//        _exchangeRate = EXCHANGE_RATE_BASE_RATE;
+//        _exchangeRateLastUpdatedTimestamp = block.timestamp;
+//
+//         mintToThisContract(_totalSupply);
     }
 
     /********************
@@ -86,7 +86,7 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
     }
 
     function blacklistable() public view returns (address) {
-        return address(controller);
+        return address(controller.blacklistable());
     }
 
     function activeSupply() public view returns (uint) {

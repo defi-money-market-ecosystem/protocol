@@ -4,6 +4,8 @@ module.exports = {
     ether: 100, // Initial balance of unlocked accounts (in ether)
   },
 
+  blockGasLimit: 10e6, // Maximum gas per block; 10m
+
   contracts: {
     type: 'truffle', // Contract abstraction to use: 'truffle' for @truffle/contract or 'web3' for web3-eth-contract
     defaultGas: 6e6, // Maximum gas for contract calls (when unspecified)
@@ -13,5 +15,6 @@ module.exports = {
     artifactsDir: 'build/contracts', // Directory where contract artifacts are stored
   },
 
-  blockGasLimit: 8e6, // Maximum gas per block; 8m
+  provider: 'http://localhost:8545',
+
 };

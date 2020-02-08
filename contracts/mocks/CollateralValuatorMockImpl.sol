@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-import "./libs/ICollateralValuator.sol";
+import "../libs/ICollateralValuator.sol";
 
 contract CollateralValuatorMockImpl is ICollateralValuator {
 
