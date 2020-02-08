@@ -1,7 +1,7 @@
 pragma solidity ^0.5.0;
 
-import "../libs/Blacklistable.sol";
-import "../libs/ERC20.sol";
+import "../utils/Blacklistable.sol";
+import "../utils/ERC20.sol";
 
 contract ERC20Mock is ERC20, Pausable, Blacklistable {
 
@@ -9,8 +9,8 @@ contract ERC20Mock is ERC20, Pausable, Blacklistable {
         return address(this);
     }
 
-    function blacklistable() public view returns (address) {
-        return address(this);
+    function blacklistable() public view returns (Blacklistable) {
+        return Blacklistable(address(this));
     }
 
 }

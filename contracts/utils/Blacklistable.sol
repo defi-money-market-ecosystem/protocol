@@ -1,7 +1,7 @@
 pragma solidity ^0.5.0;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "./DmmErrorCodes.sol";
+import "../constants/DmmErrorCodes.sol";
 
 /**
  * @dev Allows accounts to be blacklisted by the owner of the contract.
@@ -33,6 +33,13 @@ contract Blacklistable is Ownable, DmmErrorCodes {
     modifier notBlacklisted(address account) {
         require(blacklisted[account] == false, BLACKLISTED);
         _;
+    }
+
+    /**
+     * @dev Checks if `account` is blacklisted. Reverts with `BLACKLISTED` if blacklisted.
+    */
+    function checkNotBlacklisted(address account) public view {
+        require(!blacklisted[account], BLACKLISTED);
     }
 
     /**

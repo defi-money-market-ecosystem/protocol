@@ -5,35 +5,30 @@ pragma solidity ^0.5.0;
  *
  * This contract contains the signatures and documentation for all publicly-implemented functions in the DMM token.
  */
-contract IDmmToken {
+interface IDmmToken {
 
-    event AdminDeposit(uint amount);
-    event AdminWithdraw(uint amount);
+    /*****************
+     * Events
+     */
 
     event Mint(address indexed minter, address indexed recipient, uint amount);
     event Redeem(address indexed redeemer, address indexed recipient, uint amount);
-
     event FeeTransfer(address indexed owner, address indexed recipient, uint amount);
 
-    uint constant public SECONDS_IN_YEAR = 31536000; // 60 * 60 * 24 * 365
+    /*****************
+     * Structs
+     */
 
-    uint constant public EXCHANGE_RATE_BASE_RATE = 1e18;
+    struct Storage {
+        uint exchangeRate;
+        uint exchangeRateLastUpdatedTimestamp;
+        mapping(address => uint) nonces;
+    }
 
-    // bytes32 public constant PERMIT_TYPE_HASH = keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed,uint256 feeAmount,address feeRecipient)");
-    bytes32 public permitTypeHash = keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant PERMIT_TYPE_HASH = 0x0000000000000000000000000000000000000000000000000000000000000000;
 
-    // bytes32 public constant TRANSFER_TYPE_HASH = keccak256("Transfer(address owner,address recipient,uint256 nonce,uint256 expiry,uint amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public transferTypeHash = keccak256("Transfer(address owner,address recipient,uint256 nonce,uint256 expiry,uint amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant TRANSFER_TYPE_HASH = 0x0000000000000000000000000000000000000000000000000000000000000000;
-
-    // bytes32 public constant MINT_TYPE_HASH = keccak256("Mint(address owner,address recipient,uint256 nonce,uint256 expiry,uint256 amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public mintTypeHash = keccak256("Mint(address owner,address recipient,uint256 nonce,uint256 expiry,uint256 amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant MINT_TYPE_HASH = 0x0000000000000000000000000000000000000000000000000000000000000000;
-
-    // bytes32 public constant REDEEM_TYPE_HASH = keccak256("Redeem(address owner,address recipient,uint256 nonce,uint256 expiry,uint256 amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public redeemTypeHash = keccak256("Redeem(address owner,address recipient,uint256 nonce,uint256 expiry,uint256 amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant REDEEM_TYPE_HASH = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    /*****************
+     * Functions
+     */
 
     /**
      * @dev The controller that deployed this parent
@@ -111,13 +106,13 @@ contract IDmmToken {
     /**
       * @dev The timestamp at which the exchange rate was last updated.
       */
-    function exchangeRateLastUpdatedTimestamp() public view returns (uint);
+    function exchangeRateLastUpdatedTimestamp() external view returns (uint);
 
     /**
      * @dev The exchange rate from underlying to DMM. Invert this number to go from DMM to underlying. This number
      *      has 18 decimals.
      */
-    function exchangeRate() external view returns (uint);
+    function currentExchangeRate() external view returns (uint);
 
     /**
      * @dev The current nonce of the provided `owner`. This `owner` should be the signer for any gasless transactions.
@@ -131,29 +126,7 @@ contract IDmmToken {
      *
      * @return The amount of DMM minted.
      */
-    function mintFromUnderlying(uint underlyingAmount) external returns (uint);
-
-    /**
-     * @dev Transfers the token around which this DMMA wraps from msg.sender to the DMMA contract. Then, sends the
-     *      corresponding amount of DMM to the msg.sender. Note, this call reverts with INSUFFICIENT_DMM_LIQUIDITY if
-     *      there is not enough DMM available to be minted.
-     *
-     * @return The amount of DMM minted.
-     */
     function mint(uint amount) external returns (uint);
-
-    /**
-     * @dev Transfers the token around which this DMMA wraps from sender to the DMMA contract. Then, sends the
-     *      corresponding amount of DMM to recipient. Note, an allowance must be set for sender for the underlying
-     *      token that is at least of size `underlyingAmount`. This call reverts with INSUFFICIENT_DMM_LIQUIDITY if
-     *      there is not enough DMM available to be minted.
-     *
-     * @param underlyingAmount  The amount of the underlying token to be pulled and minted into DMM.
-     * @param sender            The address that is sending the `underlyingAmount` underlying token.
-     * @param recipient         The address the will receive the newly minted DMM.
-     * @return The amount of DMM minted.
-     */
-    function mintFromUnderlyingFrom(uint underlyingAmount, address sender, address recipient) external returns (uint);
 
     /**
      * @dev Transfers the token around which this DMMA wraps from sender to the DMMA contract. Then, sends the
@@ -208,35 +181,12 @@ contract IDmmToken {
     /**
      * @dev Transfers DMM from msg.sender to this DMMA contract. Then, sends the corresponding amount of token around
      *      which this DMMA wraps to the msg.sender. Note, this call reverts with INSUFFICIENT_UNDERLYING_LIQUIDITY if
-     *      there is not enough underlying available to be redeemed.
-     *
-     * @param underlyingAmount  The amount of underlying that should be redeemed and sent to msg.sender from this DMMA.
-     * @return                  The amount of DMM that was transferred from msg.sender to this DMMA.
-     */
-    function redeemFromUnderlying(uint underlyingAmount) external returns (uint);
-
-    /**
-     * @dev Transfers DMM from msg.sender to this DMMA contract. Then, sends the corresponding amount of token around
-     *      which this DMMA wraps to the msg.sender. Note, this call reverts with INSUFFICIENT_UNDERLYING_LIQUIDITY if
      *      there is not enough DMM available to be redeemed.
      *
      * @param amount    The amount of DMM to be transferred from msg.sender to this DMMA.
      * @return          The amount of underlying redeemed.
      */
     function redeem(uint amount) external returns (uint);
-
-    /**
-     * @dev Transfers DMM from `sender` to this DMMA contract. Then, sends the corresponding amount of token around
-     *      which this DMMA wraps to `recipient`. Note, an allowance must be set for sender for DMM that is at least of
-     *      size `underlyingAmount` * `exchangeRate`. This call reverts with INSUFFICIENT_UNDERLYING_LIQUIDITY if there
-     *      is not enough underlying available to be redeemed.
-     *
-     * @param underlyingAmount  The amount of the underlying token that should be sent to `recipient`.
-     * @param sender            The address that is sending the DMM to this DMMA.
-     * @param recipient         The address the will receive the newly redeemed underlying token.
-     * @return                  The amount of DMM redeemed.
-     */
-    function redeemFromUnderlyingFrom(uint underlyingAmount, address sender, address recipient) external returns (uint);
 
     /**
      * @dev Transfers DMM from `sender` to this DMMA contract. Then, sends the corresponding amount of token around

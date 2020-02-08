@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-import "./libs/IUnderlyingTokenValuator.sol";
+import "./interfaces/IUnderlyingTokenValuator.sol";
 import "./libs/StringHelpers.sol";
 
 contract UnderlyingTokenValuatorImplV1 is IUnderlyingTokenValuator {

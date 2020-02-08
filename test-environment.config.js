@@ -8,7 +8,7 @@ module.exports = {
 
   contracts: {
     type: 'truffle', // Contract abstraction to use: 'truffle' for @truffle/contract or 'web3' for web3-eth-contract
-    defaultGas: 6e6, // Maximum gas for contract calls (when unspecified)
+    defaultGas: 8e6, // Maximum gas for contract calls (when unspecified)
 
     // Options available since v0.1.2
     defaultGasPrice: 20e9, // Gas price for contract calls (when unspecified)

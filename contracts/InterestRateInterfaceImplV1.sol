@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-import "./libs/InterestRateInterface.sol";
+import "./interfaces/InterestRateInterface.sol";
 
 contract InterestRateInterfaceImplV1 is InterestRateInterface {
 

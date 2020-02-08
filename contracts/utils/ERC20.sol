@@ -1,11 +1,13 @@
 pragma solidity ^0.5.0;
 
-import "./Blacklistable.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/lifecycle/Pausable.sol";
 import "@openzeppelin/contracts/access/roles/MinterRole.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+
+import "./Blacklistable.sol";
+import "../constants/DmmErrorCodes.sol";
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -32,7 +34,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
  * allowances. See {IERC20-approve}.
  */
 //contract ERC20 is Context, IERC20, DmmErrorCodes, MinterRole {
-contract ERC20 is Context, IERC20, DmmErrorCodes, MinterRole {
+contract ERC20 is Context, IERC20, MinterRole {
 
     using SafeMath for uint256;
 
@@ -49,7 +51,7 @@ contract ERC20 is Context, IERC20, DmmErrorCodes, MinterRole {
      */
 
     modifier whenNotPaused() {
-        require(!Pausable(pausable()).paused(), ECOSYSTEM_PAUSED);
+        require(!Pausable(pausable()).paused(), "ECOSYSTEM_PAUSED");
         _;
     }
 
@@ -59,7 +61,7 @@ contract ERC20 is Context, IERC20, DmmErrorCodes, MinterRole {
      * @param account The address to check
     */
     modifier notBlacklisted(address account) {
-        require(!Blacklistable(blacklistable()).isBlacklisted(account) == false, BLACKLISTED);
+        require(!Blacklistable(blacklistable()).isBlacklisted(account) == false, "BLACKLISTED");
         _;
     }
 
@@ -69,7 +71,7 @@ contract ERC20 is Context, IERC20, DmmErrorCodes, MinterRole {
 
     function pausable() public view returns (address);
 
-    function blacklistable() public view returns (address);
+    function blacklistable() public view returns (Blacklistable);
 
     /**
      * @dev See {IERC20-totalSupply}.
@@ -154,7 +156,7 @@ contract ERC20 is Context, IERC20, DmmErrorCodes, MinterRole {
     notBlacklisted(recipient)
     public returns (bool) {
         _transfer(sender, recipient, amount);
-        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, TRANSFER_EXCEEDS_ALLOWANCE));
+        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "TRANSFER_EXCEEDS_ALLOWANCE"));
         return true;
     }
 
@@ -204,7 +206,7 @@ contract ERC20 is Context, IERC20, DmmErrorCodes, MinterRole {
     notBlacklisted(_msgSender())
     notBlacklisted(spender)
     public returns (bool) {
-        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, ALLOWANCE_BELOW_ZERO));
+        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, "ALLOWANCE_BELOW_ZERO"));
         return true;
     }
 
@@ -227,10 +229,10 @@ contract ERC20 is Context, IERC20, DmmErrorCodes, MinterRole {
      * - `sender` must have a balance of at least `amount`.
      */
     function _transfer(address sender, address recipient, uint256 amount) internal {
-        require(sender != address(0), CANNOT_TRANSFER_FROM_ZERO_ADDRESS);
-        require(recipient != address(0), CANNOT_TRANSFER_TO_ZERO_ADDRESS);
+        require(sender != address(0), "CANNOT_TRANSFER_FROM_ZERO_ADDRESS");
+        require(recipient != address(0), "CANNOT_TRANSFER_TO_ZERO_ADDRESS");
 
-        _balances[sender] = _balances[sender].sub(amount, TRANSFER_EXCEEDS_BALANCE);
+        _balances[sender] = _balances[sender].sub(amount, "TRANSFER_EXCEEDS_BALANCE");
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
     }
@@ -249,8 +251,8 @@ contract ERC20 is Context, IERC20, DmmErrorCodes, MinterRole {
      * - `spender` cannot be the zero address.
      */
     function _approve(address owner, address spender, uint256 amount) internal {
-        require(owner != address(0), CANNOT_APPROVE_FROM_ZERO_ADDRESS);
-        require(spender != address(0), CANNOT_APPROVE_TO_ZERO_ADDRESS);
+        require(owner != address(0), "CANNOT_APPROVE_FROM_ZERO_ADDRESS");
+        require(spender != address(0), "CANNOT_APPROVE_TO_ZERO_ADDRESS");
 
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
@@ -280,7 +282,7 @@ contract ERC20 is Context, IERC20, DmmErrorCodes, MinterRole {
     */
     function burnFromThisContract(uint256 amount) internal {
         address account = address(this);
-        _balances[account] = _balances[account].sub(amount, BURN_EXCEEDS_BALANCE);
+        _balances[account] = _balances[account].sub(amount, "BURN_EXCEEDS_BALANCE");
         _totalSupply = _totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }

@@ -3,17 +3,20 @@ pragma solidity ^0.5.0;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
-import "./libs/Blacklistable.sol";
-import "./libs/DmmErrorCodes.sol";
-import "./libs/ICollateralValuator.sol";
-import "./libs/IDmmController.sol";
-import "./libs/IDmmToken.sol";
-import "./libs/InterestRateInterface.sol";
-import "./libs/IUnderlyingTokenValuator.sol";
+import "./constants/DmmErrorCodes.sol";
+import "./utils/Blacklistable.sol";
+import "./interfaces/ICollateralValuator.sol";
+import "./interfaces/IDmmController.sol";
+import "./interfaces/IDmmToken.sol";
+import "./interfaces/InterestRateInterface.sol";
+import "./interfaces/IUnderlyingTokenValuator.sol";
 import "./DmmToken.sol";
 import "./DmmBlacklistable.sol";
+import "./interfaces/IDmmController.sol";
+import "./interfaces/IUnderlyingTokenValuator.sol";
+import "./interfaces/ICollateralValuator.sol";
 
-contract DmmController is IDmmController, DmmErrorCodes, Ownable {
+contract DmmController is CommonConstants, IDmmController, Ownable {
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -81,12 +84,12 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
      */
 
     modifier whenNotPaused {
-        require(!isEcosystemPaused, ECOSYSTEM_PAUSED);
+        require(!isEcosystemPaused, "ECOSYSTEM_PAUSED");
         _;
     }
 
     modifier checkTokenExists(uint dmmTokenId) {
-        require(dmmTokenIdToDmmTokenAddressMap[dmmTokenId] != address(0x0), TOKEN_DOES_NOT_EXIST);
+        require(dmmTokenIdToDmmTokenAddressMap[dmmTokenId] != address(0x0), "TOKEN_DOES_NOT_EXIST");
         _;
     }
 
@@ -94,8 +97,8 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
      * Public Functions
      */
 
-    function blacklistable() public view returns (address) {
-        return address(dmmBlacklistable);
+    function blacklistable() public view returns (Blacklistable) {
+        return Blacklistable(address(dmmBlacklistable));
     }
 
     function addMarket(
@@ -132,22 +135,22 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
     }
 
     function enableMarket(uint dmmTokenId) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
-        require(dmmTokenIdToIsDisabledMap[dmmTokenId], MARKET_ALREADY_ENABLED);
+        require(dmmTokenIdToIsDisabledMap[dmmTokenId], "MARKET_ALREADY_ENABLED");
         dmmTokenIdToIsDisabledMap[dmmTokenId] = false;
     }
 
     function disableMarket(uint dmmTokenId) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
-        require(!dmmTokenIdToIsDisabledMap[dmmTokenId], MARKET_ALREADY_DISABLED);
+        require(!dmmTokenIdToIsDisabledMap[dmmTokenId], "MARKET_ALREADY_DISABLED");
         dmmTokenIdToIsDisabledMap[dmmTokenId] = true;
     }
 
     function resumeEcosystem() public onlyOwner {
-        require(isEcosystemPaused, ECOSYSTEM_MUST_BE_PAUSED);
+        require(isEcosystemPaused, "ECOSYSTEM_MUST_BE_PAUSED");
         isEcosystemPaused = false;
     }
 
     function pauseEcosystem() public onlyOwner {
-        require(!isEcosystemPaused, ECOSYSTEM_ALREADY_PAUSED);
+        require(!isEcosystemPaused, "ECOSYSTEM_ALREADY_PAUSED");
         isEcosystemPaused = true;
     }
 
@@ -172,7 +175,7 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
         uint amount
     ) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
         IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenId]).increaseTotalSupply(amount);
-        require(getTotalCollateralization() >= minCollateralization, INSUFFICIENT_COLLATERAL);
+        require(getTotalCollateralization() >= minCollateralization, "INSUFFICIENT_COLLATERAL");
     }
 
     function decreaseMaxSupply(
@@ -193,13 +196,13 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
         underlyingToken.safeTransfer(_msgSender(), underlyingAmount);
 
         // This is the amount owed by the system in terms of underlying
-        uint totalOwedAmount = token.activeSupply().mul(token.exchangeRate()).div(token.EXCHANGE_RATE_BASE_RATE());
+        uint totalOwedAmount = token.activeSupply().mul(token.currentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);
         uint underlyingBalance = IERC20(dmmTokenIdToUnderlyingTokenAddressMap[dmmTokenId]).balanceOf(address(token));
 
         // IE if we owe 100 and have an underlying balance of 10 --> reserve ratio is 0.1
         uint actualReserveRatio = underlyingBalance.mul(MIN_RESERVE_RATIO_BASE_RATE).div(totalOwedAmount);
 
-        require(actualReserveRatio >= minReserveRatio, INSUFFICIENT_LEFTOVER_RESERVES);
+        require(actualReserveRatio >= minReserveRatio, "INSUFFICIENT_LEFTOVER_RESERVES");
     }
 
     function adminDepositFunds(
@@ -238,7 +241,7 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
 
     function getInterestRateForUnderlying(address underlyingToken) public view returns (uint) {
         uint dmmTokenId = underlyingTokenAddressToDmmTokenIdMap[underlyingToken];
-        require(dmmTokenId != 0, TOKEN_DOES_NOT_EXIST);
+        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
 
         return getInterestRate(dmmTokenId);
     }
@@ -252,23 +255,23 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
 
     function getExchangeRateForUnderlying(address underlyingToken) public view returns (uint) {
         address dmmToken = getDmmTokenForUnderlying(underlyingToken);
-        return IDmmToken(dmmToken).exchangeRate();
+        return IDmmToken(dmmToken).currentExchangeRate();
     }
 
     function getExchangeRate(address dmmToken) public view returns (uint) {
-        return IDmmToken(dmmToken).exchangeRate();
+        return IDmmToken(dmmToken).currentExchangeRate();
     }
 
     function getDmmTokenForUnderlying(address underlyingToken) public view returns (address) {
         uint dmmTokenId = underlyingTokenAddressToDmmTokenIdMap[underlyingToken];
-        require(dmmTokenId != 0, TOKEN_DOES_NOT_EXIST);
+        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
 
         return dmmTokenIdToDmmTokenAddressMap[dmmTokenId];
     }
 
     function getUnderlyingTokenForDmm(address dmmToken) public view returns (address) {
         uint dmmTokenId = dmmTokenAddressToDmmTokenIdMap[dmmToken];
-        require(dmmTokenId != 0, TOKEN_DOES_NOT_EXIST);
+        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
 
         return dmmTokenIdToUnderlyingTokenAddressMap[dmmTokenId];
     }
@@ -279,14 +282,14 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
 
     function isMarketEnabled(address underlyingToken) public view returns (bool) {
         uint dmmTokenId = underlyingTokenAddressToDmmTokenIdMap[underlyingToken];
-        require(dmmTokenId != 0, TOKEN_DOES_NOT_EXIST);
+        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
 
         return !dmmTokenIdToIsDisabledMap[dmmTokenId];
     }
 
     function getTokenIdFromDmmTokenAddress(address dmmTokenAddress) public view returns (uint) {
         uint dmmTokenId = dmmTokenAddressToDmmTokenIdMap[dmmTokenAddress];
-        require(dmmTokenId != 0, TOKEN_DOES_NOT_EXIST);
+        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
 
         return dmmTokenId;
     }
@@ -296,7 +299,7 @@ contract DmmController is IDmmController, DmmErrorCodes, Ownable {
      */
 
     function getSupplyValue(IDmmToken token, uint supply) private view returns (uint) {
-        uint underlyingTokenAmount = supply.mul(token.exchangeRate()).div(token.EXCHANGE_RATE_BASE_RATE());
+        uint underlyingTokenAmount = supply.mul(token.currentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);
         address underlyingToken = getUnderlyingTokenForDmm(address(token));
         return underlyingTokenValuator.getTokenValue(underlyingToken, underlyingTokenAmount);
     }

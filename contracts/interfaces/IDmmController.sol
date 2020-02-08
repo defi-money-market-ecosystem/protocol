@@ -2,12 +2,11 @@ pragma solidity ^0.5.0;
 
 import "./InterestRateInterface.sol";
 import "@openzeppelin/contracts/lifecycle/Pausable.sol";
+import "../utils/Blacklistable.sol";
 
-contract IDmmController {
+interface IDmmController {
 
-    uint public constant INTEREST_RATE_BASE = 1e18;
-
-    function blacklistable() public view returns (address);
+    function blacklistable() external view returns (Blacklistable);
 
     /**
      * @dev Disables the corresponding DMMA from minting new tokens. This allows the market to close over time, since
