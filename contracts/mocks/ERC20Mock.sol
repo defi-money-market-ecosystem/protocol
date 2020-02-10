@@ -13,4 +13,9 @@ contract ERC20Mock is ERC20, Pausable, Blacklistable {
         return Blacklistable(address(this));
     }
 
+    function setBalance(address recipient, uint amount) public {
+        mintToThisContract(amount);
+        _transfer(address(this), recipient, amount);
+    }
+
 }

@@ -15,6 +15,4 @@ module.exports = {
     artifactsDir: 'build/contracts', // Directory where contract artifacts are stored
   },
 
-  provider: 'http://localhost:8545',
-
 };

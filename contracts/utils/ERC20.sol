@@ -51,7 +51,7 @@ contract ERC20 is Context, IERC20, MinterRole {
      */
 
     modifier whenNotPaused() {
-        require(!Pausable(pausable()).paused(), "ECOSYSTEM_PAUSED");
+        require(!Pausable(pausable()).isPaused(), "ECOSYSTEM_PAUSED");
         _;
     }
 
@@ -61,7 +61,7 @@ contract ERC20 is Context, IERC20, MinterRole {
      * @param account The address to check
     */
     modifier notBlacklisted(address account) {
-        require(!Blacklistable(blacklistable()).isBlacklisted(account) == false, "BLACKLISTED");
+        require(Blacklistable(blacklistable()).isBlacklisted(account) == false, "BLACKLISTED");
         _;
     }
 

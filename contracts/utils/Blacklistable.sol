@@ -8,7 +8,7 @@ import "../constants/DmmErrorCodes.sol";
  *
  *  Taken from USDC's contract for blacklisting certain addresses from owning the token.
  */
-contract Blacklistable is Ownable, DmmErrorCodes {
+contract Blacklistable is Ownable {
 
     address public blacklister;
     mapping(address => bool) internal blacklisted;
@@ -21,7 +21,7 @@ contract Blacklistable is Ownable, DmmErrorCodes {
      * @dev Throws if called by any account other than the blacklister
     */
     modifier onlyBlacklister() {
-        require(msg.sender == blacklister, MUST_BE_BLACKLISTER);
+        require(msg.sender == blacklister, "MUST_BE_BLACKLISTER");
         _;
     }
 
@@ -31,7 +31,7 @@ contract Blacklistable is Ownable, DmmErrorCodes {
      * @param account The address to check
     */
     modifier notBlacklisted(address account) {
-        require(blacklisted[account] == false, BLACKLISTED);
+        require(blacklisted[account] == false, "BLACKLISTED");
         _;
     }
 
@@ -39,7 +39,7 @@ contract Blacklistable is Ownable, DmmErrorCodes {
      * @dev Checks if `account` is blacklisted. Reverts with `BLACKLISTED` if blacklisted.
     */
     function checkNotBlacklisted(address account) public view {
-        require(!blacklisted[account], BLACKLISTED);
+        require(!blacklisted[account], "BLACKLISTED");
     }
 
     /**
@@ -72,7 +72,7 @@ contract Blacklistable is Ownable, DmmErrorCodes {
     }
 
     function updateBlacklister(address _newBlacklister) public onlyOwner {
-        require(_newBlacklister != address(0), INVALID_BLACKLISTER);
+        require(_newBlacklister != address(0), "INVALID_BLACKLISTER");
         blacklister = _newBlacklister;
         emit BlacklisterChanged(blacklister);
     }

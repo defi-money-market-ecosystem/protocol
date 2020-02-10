@@ -84,7 +84,7 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
      * Public Functions
      */
 
-    function() external {
+    function() payable external {
         revert("NO_DEFAULT_FUNCTION");
     }
 
@@ -101,13 +101,17 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
     }
 
     function increaseTotalSupply(uint amount) public onlyOwner whenNotPaused {
+        uint oldTotalSupply = _totalSupply;
         mintToThisContract(amount);
+        emit TotalSupplyIncreased(oldTotalSupply, _totalSupply);
     }
 
     function decreaseTotalSupply(uint amount) public onlyOwner whenNotPaused {
         // If there's underflow, throw the specified error
         balanceOf(address(this)).sub(amount, "TOO_MUCH_ACTIVE_SUPPLY");
+        uint oldTotalSupply = _totalSupply;
         burnFromThisContract(amount);
+        emit TotalSupplyDecreased(oldTotalSupply, _totalSupply);
     }
 
     function depositUnderlying(uint underlyingAmount) onlyOwner whenNotPaused public returns (bool) {
@@ -164,7 +168,7 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
         return underlyingAmount;
     }
 
-    function mint(
+    function mintFromGaslessRequest(
         address owner,
         address recipient,
         uint nonce,
@@ -228,7 +232,7 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
         return underlyingAmount;
     }
 
-    function redeem(
+    function redeemFromGaslessRequest(
         address owner,
         address recipient,
         uint nonce,
@@ -285,7 +289,7 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
         doFeeTransferForDmmIfNecessary(owner, feeRecipient, feeAmount);
     }
 
-    function transfer(
+    function transferFromGaslessRequest(
         address owner,
         address recipient,
         uint nonce,

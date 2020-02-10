@@ -2,7 +2,7 @@ const {accounts, contract} = require('@openzeppelin/test-environment');
 require('@openzeppelin/test-helpers/configure');
 const {expect} = require('chai');
 require('chai').should();
-const {BN, constants, expectRevert} = require('@openzeppelin/test-helpers');
+const {BN} = require('@openzeppelin/test-helpers');
 
 
 // Use the different accounts, which are unlocked and funded with Ether

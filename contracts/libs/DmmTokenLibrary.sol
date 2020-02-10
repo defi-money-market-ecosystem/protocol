@@ -33,20 +33,16 @@ library DmmTokenLibrary {
     uint public constant SECONDS_IN_YEAR = 31536000; // 60 * 60 * 24 * 365
 
     // bytes32 public constant PERMIT_TYPE_HASH = keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant permitTypeHash = keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant PERMIT_TYPE_HASH = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    bytes32 public constant PERMIT_TYPE_HASH = 0x22fa96956322098f6fd394e06f1b7e0f6930565923f9ad3d20802e9a2eb58fb1;
 
     // bytes32 public constant TRANSFER_TYPE_HASH = keccak256("Transfer(address owner,address recipient,uint256 nonce,uint256 expiry,uint amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant transferTypeHash = keccak256("Transfer(address owner,address recipient,uint256 nonce,uint256 expiry,uint amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant TRANSFER_TYPE_HASH = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    bytes32 public constant TRANSFER_TYPE_HASH = 0x25166116e36b48414096856a22ea40032193e38f65136c76738e306be6abd587;
 
     // bytes32 public constant MINT_TYPE_HASH = keccak256("Mint(address owner,address recipient,uint256 nonce,uint256 expiry,uint256 amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant mintTypeHash = keccak256("Mint(address owner,address recipient,uint256 nonce,uint256 expiry,uint256 amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant MINT_TYPE_HASH = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    bytes32 public constant MINT_TYPE_HASH = 0x82e81310e0eab12a427992778464769ef831d801011489bc90ed3ef82f2cb3d1;
 
     // bytes32 public constant REDEEM_TYPE_HASH = keccak256("Redeem(address owner,address recipient,uint256 nonce,uint256 expiry,uint256 amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant redeemTypeHash = keccak256("Redeem(address owner,address recipient,uint256 nonce,uint256 expiry,uint256 amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant REDEEM_TYPE_HASH = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    bytes32 public constant REDEEM_TYPE_HASH = 0x24e7162538bf7f86bd3180c9ee9f60f06db3bd66eb344ea3b00f69b84af5ddcf;
 
     /********************
      * Modifiers
@@ -240,10 +236,10 @@ library DmmTokenLibrary {
     }
 
     function _mintDmm(DmmToken token, address owner, address recipient, uint amount, uint underlyingAmount) internal {
-        require(token.balanceOf(address(this)) >= amount, "INSUFFICIENT_DMM_LIQUIDITY");
+        require(token.balanceOf(address(token)) >= amount, "INSUFFICIENT_DMM_LIQUIDITY");
 
         // Transfer underlying to this contract
-        IERC20(token.controller().getUnderlyingTokenForDmm(address(this))).safeTransferFrom(owner, address(this), underlyingAmount);
+        IERC20(token.controller().getUnderlyingTokenForDmm(address(token))).safeTransferFrom(owner, address(token), underlyingAmount);
 
         // Transfer DMM to the recipient
         token.transfer(recipient, amount);
@@ -252,14 +248,14 @@ library DmmTokenLibrary {
     }
 
     function _redeemDmm(DmmToken token, address owner, address recipient, uint amount, uint underlyingAmount) internal {
-        IERC20 underlyingToken = IERC20(token.controller().getUnderlyingTokenForDmm(address(this)));
-        require(underlyingToken.balanceOf(address(this)) >= underlyingAmount, "INSUFFICIENT_UNDERLYING_LIQUIDITY");
+        IERC20 underlyingToken = IERC20(token.controller().getUnderlyingTokenForDmm(address(token)));
+        require(underlyingToken.balanceOf(address(token)) >= underlyingAmount, "INSUFFICIENT_UNDERLYING_LIQUIDITY");
 
         // Transfer DMM to this contract from whoever _msgSender() is
-        token.transferFrom(owner, address(this), amount);
+        token.transferFrom(owner, address(token), amount);
 
         // Transfer underlying to the recipient from this contract
-        underlyingToken.safeTransfer(recipient, underlyingAmount);
+        underlyingToken.transfer(recipient, underlyingAmount);
 
         emit Redeem(owner, recipient, amount);
     }
@@ -269,14 +265,14 @@ library DmmTokenLibrary {
      */
 
     function _depositUnderlying(DmmToken token, address sender, uint underlyingAmount) internal returns (bool) {
-        IERC20 underlyingToken = IERC20(token.controller().getUnderlyingTokenForDmm(address(this)));
-        underlyingToken.safeTransferFrom(sender, address(this), underlyingAmount);
+        IERC20 underlyingToken = IERC20(token.controller().getUnderlyingTokenForDmm(address(token)));
+        underlyingToken.safeTransferFrom(sender, address(token), underlyingAmount);
         emit AdminDeposit(underlyingAmount);
         return true;
     }
 
     function _withdrawUnderlying(DmmToken token, address sender, uint underlyingAmount) internal returns (bool) {
-        IERC20 underlyingToken = IERC20(token.controller().getUnderlyingTokenForDmm(address(this)));
+        IERC20 underlyingToken = IERC20(token.controller().getUnderlyingTokenForDmm(address(token)));
         underlyingToken.safeTransfer(sender, underlyingAmount);
         emit AdminWithdraw(underlyingAmount);
         return true;

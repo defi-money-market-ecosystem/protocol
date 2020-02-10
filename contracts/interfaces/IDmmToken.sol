@@ -15,6 +15,9 @@ interface IDmmToken {
     event Redeem(address indexed redeemer, address indexed recipient, uint amount);
     event FeeTransfer(address indexed owner, address indexed recipient, uint amount);
 
+    event TotalSupplyIncreased(uint oldTotalSupply, uint newTotalSupply);
+    event TotalSupplyDecreased(uint oldTotalSupply, uint newTotalSupply);
+
     /*****************
      * Structs
      */
@@ -165,7 +168,7 @@ interface IDmmToken {
      * @param s             The ECDSA S parameter.
      * @return  The amount of DMM minted to recipient.
      */
-    function mint(
+    function mintFromGaslessRequest(
         address owner,
         address recipient,
         uint nonce,
@@ -225,7 +228,7 @@ interface IDmmToken {
      * @param s             The ECDSA S parameter.
      * @return  The amount of underlying received by recipient.
      */
-    function redeem(
+    function redeemFromGaslessRequest(
         address owner,
         address recipient,
         uint nonce,
@@ -293,7 +296,7 @@ interface IDmmToken {
      * @param s             The ECDSA S parameter.
      * @return              True if the transfer was successful or false if it failed.
      */
-    function transfer(
+    function transferFromGaslessRequest(
         address owner,
         address recipient,
         uint nonce,
