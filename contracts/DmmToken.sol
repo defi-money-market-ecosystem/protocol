@@ -108,7 +108,7 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
 
     function decreaseTotalSupply(uint amount) public onlyOwner whenNotPaused {
         // If there's underflow, throw the specified error
-        balanceOf(address(this)).sub(amount, "TOO_MUCH_ACTIVE_SUPPLY");
+        require(balanceOf(address(this)) >= amount, "TOO_MUCH_ACTIVE_SUPPLY");
         uint oldTotalSupply = _totalSupply;
         burnFromThisContract(amount);
         emit TotalSupplyDecreased(oldTotalSupply, _totalSupply);
