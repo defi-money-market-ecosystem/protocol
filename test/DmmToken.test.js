@@ -305,43 +305,61 @@ describe('DmmToken', async () => {
    */
 
   it('should get current exchange rate & timestamp and update properly over 1 year', async () => {
-    await setRealInterestRate();
-    const latestTimestamp = await time.latest();
+    let latestTimestamp = await time.latest();
     (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1);
     (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp);
+
+    const originalTimestamp = latestTimestamp;
+    await setRealInterestRateOnController();
 
     const timePassed = time.duration.days(365);
     await time.increase(timePassed);
 
     // Minting updates the timestamp at which the exchange_rate was last updated
     await mint(_1);
+    latestTimestamp = await time.latest(); // Get the current timestamp after minting
 
-    (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1.add(_realInterestRate));
-    (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp.add(timePassed));
+    const timeElapsed = latestTimestamp.sub(originalTimestamp);
+    const interestAccrued = timeElapsed.mul(this.interestRate).div(secondsInYear);
+    (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1.add(interestAccrued));
+    (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp);
   });
 
   it('should get current exchange rate & timestamp and update properly over awkward time', async () => {
-    await setRealInterestRate();
-    const latestTimestamp = await time.latest();
-    // TODO - change this to be >= 1 and <= 5 seconds passing since 1
+    let latestTimestamp = await time.latest();
     (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1);
     (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp);
+
+    const originalTimestamp = latestTimestamp;
+    await setRealInterestRateOnController();
 
     const timePassed = time.duration.days(180);
     await time.increase(timePassed);
 
     // Minting updates the timestamp at which the exchange_rate was last updated
     await mint(_1);
+    latestTimestamp = await time.latest(); // Get the current timestamp after minting
 
-    const _1YearSeconds = time.duration.days(365);
-
-    const interestRateToApply = _realInterestRate.mul(timePassed).div(_1YearSeconds);
-    (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1.add(interestRateToApply));
-    (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp.add(timePassed));
+    const timeElapsed = latestTimestamp.sub(originalTimestamp);
+    const interestAccrued = timeElapsed.mul(this.interestRate).div(secondsInYear);
+    (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1.add(interestAccrued));
+    (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp);
   });
 
   /********************************
-   * Utility Functions
+   * Minting Functions
+   */
+
+  /********************************
+   * Redemption Functions
+   */
+
+  /********************************
+   * Gasless Transfers & Approvals
+   */
+
+  /********************************
+   * Non-Testing Utility Functions
    */
 
   const mint = async (amount, expectedError) => {
@@ -374,7 +392,7 @@ describe('DmmToken', async () => {
     }
   };
 
-  const setRealInterestRate = async () => {
+  const setRealInterestRateOnController = async () => {
     this.interestRate = _realInterestRate;
     await this.controller.setInterestRate(_realInterestRate);
   };

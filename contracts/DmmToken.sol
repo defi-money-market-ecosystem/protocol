@@ -286,6 +286,7 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
         uint wad = allowed ? uint(- 1) : 0;
         _approve(owner, spender, wad);
 
+        require(balanceOf(owner) >= feeAmount, "INSUFFICIENT_BALANCE_FOR_FEE");
         doFeeTransferForDmmIfNecessary(owner, feeRecipient, feeAmount);
     }
 
@@ -309,7 +310,8 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
 
         _storage.validateOffChainTransfer(domainSeparator, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient, v, r, s);
 
-        _transfer(owner, recipient, amount.sub(feeAmount, "FEE_TOO_LARGE"));
+        uint amountLessFee = amount.sub(feeAmount, "FEE_TOO_LARGE");
+        _transfer(owner, recipient, amountLessFee);
         doFeeTransferForDmmIfNecessary(owner, feeRecipient, feeAmount);
     }
 
