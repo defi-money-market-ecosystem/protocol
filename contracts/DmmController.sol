@@ -109,7 +109,7 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
         uint minMintAmount,
         uint minRedeemAmount,
         uint totalSupply
-    ) public {
+    ) public onlyOwner {
         // Start the IDs at 1. Zero is reserved for the empty case when it doesn't exist.
         uint dmmTokenId = dmmTokenIds.length + 1;
         DmmToken dmmToken = new DmmToken(
@@ -170,7 +170,7 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
         minReserveRatio = newMinReserveRatio;
     }
 
-    function increaseMaxSupply(
+    function increaseTotalSupply(
         uint dmmTokenId,
         uint amount
     ) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
@@ -178,11 +178,11 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
         require(getTotalCollateralization() >= minCollateralization, "INSUFFICIENT_COLLATERAL");
     }
 
-    function decreaseMaxSupply(
+    function decreaseTotalSupply(
         uint dmmTokenId,
         uint amount
     ) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
-        IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenId]).increaseTotalSupply(amount);
+        IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenId]).decreaseTotalSupply(amount);
     }
 
     function adminWithdrawFunds(

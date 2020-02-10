@@ -41,7 +41,7 @@ const secondsInYear = new BN('31536000');
 
 const _realInterestRate = new BN('62500000000000000');
 
-describe('DmmToken', () => {
+describe('DmmToken', async () => {
 
   beforeEach(async () => {
     await ERC20Mock.detectNetwork();
@@ -52,11 +52,11 @@ describe('DmmToken', () => {
     const safeMath = await SafeMath.new();
     const dmmTokenLibrary = await DmmTokenLibrary.new();
 
-    ERC20Mock.link("SafeMath", safeMath.address);
+    await ERC20Mock.link("SafeMath", safeMath.address);
 
-    DmmToken.link("SafeERC20", safeERC20.address);
-    DmmToken.link("SafeMath", safeMath.address);
-    DmmToken.link("DmmTokenLibrary", dmmTokenLibrary.address);
+    await DmmToken.link("SafeERC20", safeERC20.address);
+    await DmmToken.link("SafeMath", safeMath.address);
+    await DmmToken.link("DmmTokenLibrary", dmmTokenLibrary.address);
 
     this.blacklistable = await DmmBlacklistable.new();
     this.didApproveUnderlying = false;
@@ -91,6 +91,10 @@ describe('DmmToken', () => {
       {from: admin}
     );
   });
+
+  /********************************
+   * Misc Getters
+   */
 
   it('should get symbol', async () => {
     expect(await this.contract.symbol()).to.equal(this.symbol);
@@ -133,6 +137,16 @@ describe('DmmToken', () => {
     expect(pausable).to.equal(this.controller.address);
   });
 
+  it('should get the default nonce for any address', async () => {
+    (await this.contract.nonceOf(deployer)).should.be.bignumber.equal(_0);
+    (await this.contract.nonceOf(user)).should.be.bignumber.equal(_0);
+    (await this.contract.nonceOf(admin)).should.be.bignumber.equal(_0);
+  });
+
+  /********************************
+   * Active Supply
+   */
+
   it('should get initial active supply', async () => {
     const activeSupply = await this.contract.activeSupply();
     (activeSupply).should.be.bignumber.equal(new BN('0'));
@@ -150,6 +164,10 @@ describe('DmmToken', () => {
     const activeSupply = await this.contract.activeSupply();
     (activeSupply).should.be.bignumber.equal(_75);
   });
+
+  /********************************
+   * Increase the Total Supply
+   */
 
   it('should increase total supply if sent by admin', async () => {
     const receipt = await this.contract.increaseTotalSupply(_100, {from: admin});
@@ -174,6 +192,10 @@ describe('DmmToken', () => {
       'ECOSYSTEM_PAUSED'
     )
   });
+
+  /********************************
+   * Decrease the Total Supply
+   */
 
   it('should decrease total supply if sent by admin', async () => {
     const receipt = await this.contract.decreaseTotalSupply(_100, {from: admin});
@@ -211,6 +233,10 @@ describe('DmmToken', () => {
     );
   });
 
+  /********************************
+   * Admin Deposits
+   */
+
   it('should deposit underlying from admin', async () => {
     await setBalanceFor(admin, _100);
     await setApprovalFor(admin);
@@ -224,7 +250,7 @@ describe('DmmToken', () => {
   });
 
   it('should fail to deposit underlying from non-admin', async () => {
-    expectRevert(
+    await expectRevert(
       this.contract.depositUnderlying(_100, {from: user}),
       'Ownable: caller is not the owner'
     )
@@ -241,6 +267,10 @@ describe('DmmToken', () => {
     );
   });
 
+  /********************************
+   * Admin Withdrawals
+   */
+
   it('should withdraw underlying from admin', async () => {
     await setBalanceFor(this.contract.address, _100);
     const receipt = await this.contract.withdrawUnderlying(_100, {from: admin});
@@ -253,7 +283,7 @@ describe('DmmToken', () => {
   });
 
   it('should fail to withdraw underlying from non-admin', async () => {
-    expectRevert(
+    await expectRevert(
       this.contract.withdrawUnderlying(_100, {from: user}),
       'Ownable: caller is not the owner'
     )
@@ -270,20 +300,49 @@ describe('DmmToken', () => {
     );
   });
 
-  it('should get current exchange rate & timestamp and update properly over time', async () => {
+  /********************************
+   * Exchange Rate
+   */
+
+  it('should get current exchange rate & timestamp and update properly over 1 year', async () => {
     await setRealInterestRate();
     const latestTimestamp = await time.latest();
     (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1);
     (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp);
 
-    await time.increase(time.duration.days(365));
+    const timePassed = time.duration.days(365);
+    await time.increase(timePassed);
 
     // Minting updates the timestamp at which the exchange_rate was last updated
     await mint(_1);
 
     (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1.add(_realInterestRate));
-    (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp.add(secondsInYear));
+    (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp.add(timePassed));
   });
+
+  it('should get current exchange rate & timestamp and update properly over awkward time', async () => {
+    await setRealInterestRate();
+    const latestTimestamp = await time.latest();
+    // TODO - change this to be >= 1 and <= 5 seconds passing since 1
+    (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1);
+    (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp);
+
+    const timePassed = time.duration.days(180);
+    await time.increase(timePassed);
+
+    // Minting updates the timestamp at which the exchange_rate was last updated
+    await mint(_1);
+
+    const _1YearSeconds = time.duration.days(365);
+
+    const interestRateToApply = _realInterestRate.mul(timePassed).div(_1YearSeconds);
+    (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1.add(interestRateToApply));
+    (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp.add(timePassed));
+  });
+
+  /********************************
+   * Utility Functions
+   */
 
   const mint = async (amount, expectedError) => {
     if (!this.didApproveUnderlying) {

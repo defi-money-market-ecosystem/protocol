@@ -103,12 +103,12 @@ interface IDmmController {
      *      INSUFFICIENT_COLLATERAL if there isn't enough collateral in the Chainlink contract to cover the controller's
      *      requirements for minimum collateral.
      */
-    function increaseMaxSupply(uint dmmTokenId, uint amount) external;
+    function increaseTotalSupply(uint dmmTokenId, uint amount) external;
 
     /**
      * @dev Increases the max supply for the provided `dmmTokenId` by `amount`.
      */
-    function decreaseMaxSupply(uint dmmTokenId, uint amount) external;
+    function decreaseTotalSupply(uint dmmTokenId, uint amount) external;
 
     /**
      * @dev Allows the owners of the DMM Ecosystem to withdraw funds from a DMMA. These withdrawn funds are then

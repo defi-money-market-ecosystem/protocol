@@ -7,7 +7,7 @@
     "compile": "oz compile",
     "format": "solium -d contracts/",
     "start-chain": "ganache-cli --deterministic --port 8545",
-    "test": "oz compile && npx mocha --exit --timeout 5000 --recursive test"
+    "test": "oz compile && npx mocha --exit --async-only --timeout 5000 --recursive test --slow 1000"
   },
   "keywords": [],
   "author": "",
