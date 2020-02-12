@@ -3,9 +3,13 @@ pragma solidity ^0.5.0;
 import "../utils/Blacklistable.sol";
 import "../utils/ERC20.sol";
 
-contract ERC20Mock is ERC20, Pausable, Blacklistable {
+contract ERC20Mock is ERC20, Blacklistable {
 
     function pausable() public view returns (address) {
+        return address(this);
+    }
+
+    function ownable() public view returns (address) {
         return address(this);
     }
 

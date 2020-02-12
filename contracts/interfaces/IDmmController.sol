@@ -43,23 +43,6 @@ interface IDmmController {
     function disableMarket(uint dmmTokenId) external;
 
     /**
-     * @dev Resumes the ecosystem, resuming all minting and redeeming of tokens. Must be in a "PAUSED" state or else
-     *      this function reverts.
-     */
-    function resumeEcosystem() external;
-
-    /**
-     * @dev Pauses the ecosystem, halting all minting and redeeming of tokens. Must be in a "RESUMED" state or else
-     *      this function reverts.
-     */
-    function pauseEcosystem() external;
-
-    /**
-     * @dev Returns `true` if the system is paused or `false` if it is resumed.
-     */
-    function isEcosystemPaused() external returns (bool);
-
-    /**
      * @dev Sets a new contract that implements the `InterestRateInterface` interface.
      *
      * @param newInterestRateInterface  The new contract that implements the `InterestRateInterface` interface.
@@ -154,6 +137,14 @@ interface IDmmController {
      *          0.065.
      */
     function getInterestRateForUnderlying(address underlyingToken) external view returns (uint);
+
+    /**
+     * @dev Gets the interest rate from the DMM token, IE DMM: DAI or DMM: USDC.
+     *
+     * @return  The current interest rate, represented using 18 decimals. Meaning, `65000000000000000` is 6.5% APY or
+     *          0.065.
+     */
+    function getInterestRate(uint dmmTokenId) external view returns (uint);
 
     /**
      * @dev Gets the interest rate from the DMM token, IE DMM: DAI or DMM: USDC.

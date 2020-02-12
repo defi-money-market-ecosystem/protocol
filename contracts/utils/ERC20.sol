@@ -1,14 +1,13 @@
 pragma solidity ^0.5.0;
 
 import "@openzeppelin/contracts/GSN/Context.sol";
-import "@openzeppelin/contracts/lifecycle/Pausable.sol";
-import "@openzeppelin/contracts/access/roles/MinterRole.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./Blacklistable.sol";
-import "../constants/DmmErrorCodes.sol";
+import "../interfaces/IOwnable.sol";
+import "../interfaces/IPausable.sol";
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -34,8 +33,7 @@ import "../constants/DmmErrorCodes.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-//contract ERC20 is Context, IERC20, DmmErrorCodes, MinterRole {
-contract ERC20 is Context, IERC20, MinterRole, ReentrancyGuard {
+contract ERC20 is Context, IERC20, ReentrancyGuard {
 
     using SafeMath for uint256;
 
@@ -52,7 +50,7 @@ contract ERC20 is Context, IERC20, MinterRole, ReentrancyGuard {
      */
 
     modifier whenNotPaused() {
-        require(!Pausable(pausable()).isPaused(), "ECOSYSTEM_PAUSED");
+        require(!IPausable(pausable()).isPaused(), "ECOSYSTEM_PAUSED");
         _;
     }
 
@@ -66,11 +64,18 @@ contract ERC20 is Context, IERC20, MinterRole, ReentrancyGuard {
         _;
     }
 
+
+    modifier onlyOwner() {
+        require(IOwnable(ownable()).owner() == _msgSender(), "Ownable: caller is not the owner");
+        _;
+    }
     /********************
      * Public Functions
      */
 
     function pausable() public view returns (address);
+
+    function ownable() public view returns (address);
 
     function blacklistable() public view returns (Blacklistable);
 
@@ -101,8 +106,6 @@ contract ERC20 is Context, IERC20, MinterRole, ReentrancyGuard {
         uint256 amount
     )
     nonReentrant
-    notBlacklisted(_msgSender())
-    notBlacklisted(recipient)
     public returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
@@ -126,8 +129,6 @@ contract ERC20 is Context, IERC20, MinterRole, ReentrancyGuard {
         address spender,
         uint256 amount
     )
-    notBlacklisted(_msgSender())
-    notBlacklisted(spender)
     public returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
@@ -151,9 +152,6 @@ contract ERC20 is Context, IERC20, MinterRole, ReentrancyGuard {
         uint256 amount
     )
     nonReentrant
-    notBlacklisted(_msgSender())
-    notBlacklisted(sender)
-    notBlacklisted(recipient)
     public returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "TRANSFER_EXCEEDS_ALLOWANCE"));
@@ -230,6 +228,10 @@ contract ERC20 is Context, IERC20, MinterRole, ReentrancyGuard {
         require(sender != address(0), "CANNOT_TRANSFER_FROM_ZERO_ADDRESS");
         require(recipient != address(0), "CANNOT_TRANSFER_TO_ZERO_ADDRESS");
 
+        blacklistable().checkNotBlacklisted(_msgSender());
+        blacklistable().checkNotBlacklisted(sender);
+        blacklistable().checkNotBlacklisted(recipient);
+
         _balances[sender] = _balances[sender].sub(amount, "TRANSFER_EXCEEDS_BALANCE");
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
@@ -251,6 +253,10 @@ contract ERC20 is Context, IERC20, MinterRole, ReentrancyGuard {
     function _approve(address owner, address spender, uint256 amount) internal {
         require(owner != address(0), "CANNOT_APPROVE_FROM_ZERO_ADDRESS");
         require(spender != address(0), "CANNOT_APPROVE_TO_ZERO_ADDRESS");
+
+        blacklistable().checkNotBlacklisted(_msgSender());
+        blacklistable().checkNotBlacklisted(owner);
+        blacklistable().checkNotBlacklisted(spender);
 
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);

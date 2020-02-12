@@ -7,15 +7,15 @@ contract UnderlyingTokenValuatorImplV1 is IUnderlyingTokenValuator {
 
     using StringHelpers for address;
 
-    address public usdc;
     address public dai;
+    address public usdc;
 
     constructor(
-        address _usdc,
-        address _dai
+        address _dai,
+        address _usdc
     ) public {
-        usdc = _usdc;
         dai = _dai;
+        usdc = _usdc;
     }
 
     // For right now, we use stable-coins, which we assume are worth $1.00

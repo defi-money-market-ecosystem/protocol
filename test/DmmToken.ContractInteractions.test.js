@@ -11,7 +11,7 @@ const {
   _0,
   _25,
   _10000,
-  doBeforeEach,
+  doDmmTokenBeforeEach,
   mint,
   blacklistUser,
   disableMarkets,
@@ -26,7 +26,7 @@ describe('DmmToken.ContractInteractions', async () => {
   beforeEach(async () => {
     this.admin = admin;
     this.user = user;
-    await doBeforeEach(this, contract, web3);
+    await doDmmTokenBeforeEach(this, contract, web3);
   });
 
   /********************************

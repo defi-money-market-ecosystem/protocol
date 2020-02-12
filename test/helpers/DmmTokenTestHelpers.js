@@ -5,11 +5,13 @@ const {
   BN,
   constants,
   expectEvent,
-  expectRevert
+  expectRevert,
+  time,
 } = require('@openzeppelin/test-helpers');
 const ethereumJsUtil = require('ethereumjs-util');
 
 const _0 = () => new BN('0');
+const _0_5 = () => new BN('500000000000000000');
 const _1 = () => new BN('1000000000000000000');
 const _24 = () => new BN('24000000000000000000');
 const _24_5 = () => new BN('24500000000000000000');
@@ -19,7 +21,7 @@ const _75 = () => new BN('75000000000000000000');
 const _100 = () => new BN('100000000000000000000');
 const _10000 = () => new BN('10000000000000000000000');
 
-const doBeforeEach = async (thisInstance, contracts, web3) => {
+const doDmmTokenBeforeEach = async (thisInstance, contracts, web3) => {
   web3Config.getWeb3 = () => web3;
 
   const DmmBlacklistable = contracts.fromArtifact('DmmBlacklistable');
@@ -30,19 +32,20 @@ const doBeforeEach = async (thisInstance, contracts, web3) => {
   const SafeERC20 = contracts.fromArtifact('SafeERC20');
   const SafeMath = contracts.fromArtifact('SafeMath');
 
-  await ERC20Mock.detectNetwork();
-  await DmmToken.detectNetwork();
-  await DmmTokenLibrary.detectNetwork();
+  await Promise.all([
+    ERC20Mock.detectNetwork(), DmmToken.detectNetwork(), DmmTokenLibrary.detectNetwork()
+  ]);
 
   const safeERC20 = await SafeERC20.new();
   const safeMath = await SafeMath.new();
   const dmmTokenLibrary = await DmmTokenLibrary.new();
 
-  await ERC20Mock.link("SafeMath", safeMath.address);
-
-  await DmmToken.link("SafeERC20", safeERC20.address);
-  await DmmToken.link("SafeMath", safeMath.address);
-  await DmmToken.link("DmmTokenLibrary", dmmTokenLibrary.address);
+  await Promise.all([
+    ERC20Mock.link("SafeMath", safeMath.address),
+    DmmToken.link("SafeERC20", safeERC20.address),
+    DmmToken.link("SafeMath", safeMath.address),
+    DmmToken.link("DmmTokenLibrary", dmmTokenLibrary.address),
+  ]);
 
   thisInstance.blacklistable = await DmmBlacklistable.new({from: thisInstance.admin});
 
@@ -77,6 +80,89 @@ const doBeforeEach = async (thisInstance, contracts, web3) => {
     thisInstance.totalSupply,
     thisInstance.controller.address,
     {from: thisInstance.admin}
+  );
+};
+
+const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
+  web3Config.getWeb3 = () => web3;
+
+  const DmmBlacklistable = contracts.fromArtifact('DmmBlacklistable');
+  const DmmCollateralValuator = contracts.fromArtifact('DmmCollateralValuator');
+  const DmmController = contracts.fromArtifact('DmmController');
+  const DmmToken = contracts.fromArtifact('DmmToken');
+  const DmmTokenFactory = contracts.fromArtifact('DmmTokenFactory');
+  const DmmTokenLibrary = contracts.fromArtifact('DmmTokenLibrary');
+  const ERC20Mock = contracts.fromArtifact('ERC20Mock');
+  const InterestRateInterfaceImplV1 = contracts.fromArtifact('InterestRateInterfaceImplV1');
+  const SafeERC20 = contracts.fromArtifact('SafeERC20');
+  const SafeMath = contracts.fromArtifact('SafeMath');
+  const StringHelpers = contracts.fromArtifact('StringHelpers');
+  const UnderlyingTokenValuatorImplV1 = contracts.fromArtifact('UnderlyingTokenValuatorImplV1');
+
+  await ERC20Mock.detectNetwork();
+  await DmmController.detectNetwork();
+  await DmmToken.detectNetwork();
+  await DmmTokenFactory.detectNetwork();
+  await DmmTokenLibrary.detectNetwork();
+  await StringHelpers.detectNetwork();
+  await UnderlyingTokenValuatorImplV1.detectNetwork();
+
+  const safeERC20 = await SafeERC20.new();
+  const safeMath = await SafeMath.new();
+  const dmmTokenLibrary = await DmmTokenLibrary.new();
+  const stringHelpers = await StringHelpers.new();
+
+  await ERC20Mock.link('SafeMath', safeMath.address);
+
+  await DmmController.link('DmmTokenLibrary', dmmTokenLibrary.address);
+
+  await DmmTokenFactory.link('SafeERC20', safeERC20.address);
+  await DmmTokenFactory.link('SafeMath', safeMath.address);
+  await DmmTokenFactory.link('DmmTokenLibrary', dmmTokenLibrary.address);
+
+  await DmmToken.link('SafeERC20', safeERC20.address);
+  await DmmToken.link('SafeMath', safeMath.address);
+  await DmmToken.link('DmmTokenLibrary', dmmTokenLibrary.address);
+
+  await UnderlyingTokenValuatorImplV1.link("StringHelpers", stringHelpers.address);
+
+  thisInstance.dai = await ERC20Mock.new({from: thisInstance.admin});
+  thisInstance.usdc = await ERC20Mock.new({from: thisInstance.admin});
+
+  thisInstance.interestRateInterface = await InterestRateInterfaceImplV1.new({from: thisInstance.admin});
+  thisInstance.collateralValuator = await DmmCollateralValuator.new({from: thisInstance.admin});
+  thisInstance.underlyingTokenValuator = await UnderlyingTokenValuatorImplV1.new(
+    thisInstance.dai.address,
+    thisInstance.usdc.address,
+    {from: thisInstance.admin},
+  );
+
+  thisInstance.dmmTokenFactory = await DmmTokenFactory.new({from: thisInstance.admin});
+  thisInstance.blacklistable = await DmmBlacklistable.new({from: thisInstance.admin});
+  thisInstance.minReserveRatio = _0_5();
+  thisInstance.minCollateralization = _1();
+
+  thisInstance.controller = await DmmController.new(
+    thisInstance.interestRateInterface.address,
+    thisInstance.collateralValuator.address,
+    thisInstance.underlyingTokenValuator.address,
+    thisInstance.dmmTokenFactory.address,
+    thisInstance.blacklistable.address,
+    thisInstance.minReserveRatio,
+    thisInstance.minCollateralization,
+    {from: thisInstance.admin}
+  );
+
+  const setDaiBalanceReceipt = await thisInstance.dai.setBalance(thisInstance.user, _10000());
+  expectEvent(
+    setDaiBalanceReceipt,
+    'Transfer'
+  );
+
+  const setUsdcBalanceReceipt = await thisInstance.usdc.setBalance(thisInstance.user, _10000());
+  expectEvent(
+    setUsdcBalanceReceipt,
+    'Transfer'
   );
 };
 
@@ -334,7 +420,8 @@ module.exports = {
   _75,
   _100,
   _10000,
-  doBeforeEach,
+  doDmmControllerBeforeEach,
+  doDmmTokenBeforeEach,
   encodeHashAndSign,
   encodePermitHashAndSign,
   expectApprove,

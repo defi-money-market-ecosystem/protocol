@@ -1,17 +1,21 @@
 pragma solidity ^0.5.0;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-
 import "../DmmToken.sol";
-import "../constants/CommonConstants.sol";
-import "../interfaces/IDmmToken.sol";
 
 library DmmTokenLibrary {
 
     using SafeERC20 for IERC20;
     using SafeMath for uint;
+
+    /*****************
+     * Structs
+     */
+
+    struct Storage {
+        uint exchangeRate;
+        uint exchangeRateLastUpdatedTimestamp;
+        mapping(address => uint) nonces;
+    }
 
     /*****************
      * Events
@@ -46,14 +50,6 @@ library DmmTokenLibrary {
         return EXCHANGE_RATE_BASE_RATE;
     }
 
-    function getInterestRateBase() public pure returns (uint) {
-        return INTEREST_RATE_BASE;
-    }
-
-    function getSecondsInYear() public pure returns (uint) {
-        return SECONDS_IN_YEAR;
-    }
-
     /**********************
      * Public Functions
      */
@@ -72,14 +68,10 @@ library DmmTokenLibrary {
     }
 
     /***************************
-     * Public User Functions
-     */
-
-    /***************************
      * Internal User Functions
      */
 
-    function getCurrentExchangeRate(IDmmToken.Storage storage _storage, uint interestRate) internal view returns (uint) {
+    function getCurrentExchangeRate(Storage storage _storage, uint interestRate) internal view returns (uint) {
         if (_storage.exchangeRateLastUpdatedTimestamp >= block.timestamp) {
             // The exchange rate has not changed yet
             return _storage.exchangeRate;
@@ -89,7 +81,7 @@ library DmmTokenLibrary {
         }
     }
 
-    function updateExchangeRateIfNecessaryAndGet(DmmToken token, IDmmToken.Storage storage _storage) internal returns (uint) {
+    function updateExchangeRateIfNecessaryAndGet(DmmToken token, Storage storage _storage) internal returns (uint) {
         uint previousExchangeRate = _storage.exchangeRate;
         uint currentExchangeRate = getCurrentExchangeRate(_storage, token.controller().getInterestRate(address(token)));
         if (currentExchangeRate != previousExchangeRate) {
@@ -122,7 +114,7 @@ library DmmTokenLibrary {
     }
 
     function validateOffChainMint(
-        IDmmToken.Storage storage _storage,
+        Storage storage _storage,
         bytes32 domainSeparator,
         bytes32 typeHash,
         address owner,
@@ -150,7 +142,7 @@ library DmmTokenLibrary {
     }
 
     function validateOffChainRedeem(
-        IDmmToken.Storage storage _storage,
+        Storage storage _storage,
         bytes32 domainSeparator,
         bytes32 typeHash,
         address owner,
@@ -178,7 +170,7 @@ library DmmTokenLibrary {
     }
 
     function validateOffChainPermit(
-        IDmmToken.Storage storage _storage,
+        Storage storage _storage,
         bytes32 domainSeparator,
         bytes32 typeHash,
         address owner,
@@ -206,7 +198,7 @@ library DmmTokenLibrary {
     }
 
     function validateOffChainTransfer(
-        IDmmToken.Storage storage _storage,
+        Storage storage _storage,
         bytes32 domainSeparator,
         bytes32 typeHash,
         address owner,
@@ -240,6 +232,7 @@ library DmmTokenLibrary {
         IERC20(token.controller().getUnderlyingTokenForDmm(address(token))).safeTransferFrom(owner, address(token), underlyingAmount);
 
         // Transfer DMM to the recipient
+        token.blacklistable().checkNotBlacklisted(owner);
         token.transfer(recipient, amount);
 
         emit Mint(owner, recipient, amount);
@@ -250,6 +243,7 @@ library DmmTokenLibrary {
         require(underlyingToken.balanceOf(address(token)) >= underlyingAmount, "INSUFFICIENT_UNDERLYING_LIQUIDITY");
 
         // Transfer DMM to this contract from whoever _msgSender() is
+        token.blacklistable().checkNotBlacklisted(recipient);
         token.transferFrom(owner, address(token), amount);
 
         // Transfer underlying to the recipient from this contract
@@ -284,7 +278,7 @@ library DmmTokenLibrary {
      * @dev throws if the validation fails
      */
     function validateOffChainRequest(
-        IDmmToken.Storage storage _storage,
+        Storage storage _storage,
         bytes32 digest,
         address owner,
         uint nonce,

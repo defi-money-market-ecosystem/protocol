@@ -21,17 +21,6 @@ interface IDmmToken {
     event OffChainRequestValidated(address indexed owner, address indexed feeRecipient, uint nonce, uint expiry, uint feeAmount);
 
     /*****************
-     * Structs
-     */
-
-    struct Storage {
-        uint exchangeRate;
-        uint exchangeRateLastUpdatedTimestamp;
-        mapping(address => uint) nonces;
-    }
-
-
-    /*****************
      * Functions
      */
 
@@ -117,7 +106,7 @@ interface IDmmToken {
      * @dev The exchange rate from underlying to DMM. Invert this number to go from DMM to underlying. This number
      *      has 18 decimals.
      */
-    function currentExchangeRate() external view returns (uint);
+    function getCurrentExchangeRate() external view returns (uint);
 
     /**
      * @dev The current nonce of the provided `owner`. This `owner` should be the signer for any gasless transactions.

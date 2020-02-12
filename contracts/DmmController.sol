@@ -3,20 +3,19 @@ pragma solidity ^0.5.0;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
-import "./constants/DmmErrorCodes.sol";
-import "./utils/Blacklistable.sol";
+import "./DmmBlacklistable.sol";
+import "./constants/CommonConstants.sol";
 import "./interfaces/ICollateralValuator.sol";
 import "./interfaces/IDmmController.sol";
 import "./interfaces/IDmmToken.sol";
 import "./interfaces/InterestRateInterface.sol";
-import "./interfaces/IUnderlyingTokenValuator.sol";
-import "./DmmToken.sol";
-import "./DmmBlacklistable.sol";
 import "./interfaces/IDmmController.sol";
 import "./interfaces/IUnderlyingTokenValuator.sol";
 import "./interfaces/ICollateralValuator.sol";
+import "./interfaces/IDmmTokenFactory.sol";
+import "./utils/Blacklistable.sol";
 
-contract DmmController is CommonConstants, IDmmController, Ownable {
+contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -25,9 +24,17 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
      * Events
      */
 
-    event InterestRateInterfaceChanged(address newInterestRateInterface);
-    event CollateralValuatorChanged(address newCollateralValuator);
-    event UnderlyingTokenValuatorChanged(address newUnderlyingTokenValuator);
+    event InterestRateInterfaceChanged(address previousInterestRateInterface, address newInterestRateInterface);
+    event CollateralValuatorChanged(address previousCollateralValuator, address newCollateralValuator);
+    event UnderlyingTokenValuatorChanged(address previousUnderlyingTokenValuator, address newUnderlyingTokenValuator);
+
+    event MarketAdded(uint indexed dmmTokenId, address indexed dmmToken, address indexed underlyingToken);
+
+    event MarketDisabled(uint indexed dmmTokenId);
+    event MarketEnabled(uint indexed dmmTokenId);
+
+    event MinCollateralizationChanged(uint previousMinCollateralization, uint newMinCollateralization);
+    event MinReserveRatioChanged(uint previousMinReserveRatio, uint newMinReserveRatio);
 
     /********************************
      * Controller Fields
@@ -37,9 +44,9 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
     InterestRateInterface public interestRateInterface;
     ICollateralValuator public collateralValuator;
     IUnderlyingTokenValuator public underlyingTokenValuator;
+    IDmmTokenFactory public dmmTokenFactory;
     uint public minReserveRatio;
     uint public minCollateralization;
-    bool public isEcosystemPaused;
 
     /********************************
      * DMM Account Management
@@ -65,26 +72,31 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
         address _interestRateInterface,
         address _collateralValuator,
         address _underlyingTokenValuator,
+        address _dmmTokenFactory,
+        address _dmmBlacklistable,
         uint256 _minReserveRatio,
-        uint256 _minCollateralization,
-        address _dmmBlacklistable
+        uint256 _minCollateralization
     ) public {
         interestRateInterface = InterestRateInterface(_interestRateInterface);
         collateralValuator = ICollateralValuator(_collateralValuator);
         underlyingTokenValuator = IUnderlyingTokenValuator(_underlyingTokenValuator);
+        dmmTokenFactory = IDmmTokenFactory(_dmmTokenFactory);
         dmmBlacklistable = DmmBlacklistable(_dmmBlacklistable);
         minReserveRatio = _minReserveRatio;
         minCollateralization = _minCollateralization;
-
-        isEcosystemPaused = false;
     }
 
     /*****************
      * Modifiers
      */
 
-    modifier whenNotPaused {
-        require(!isEcosystemPaused, "ECOSYSTEM_PAUSED");
+    modifier whenNotPaused() {
+        require(!isPaused(), "ECOSYSTEM_PAUSED");
+        _;
+    }
+
+    modifier whenPaused() {
+        require(isPaused(), "ECOSYSTEM_NOT_PAUSED");
         _;
     }
 
@@ -99,14 +111,11 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
 
     function transferOwnership(address newOwner) public onlyOwner {
         super.transferOwnership(newOwner);
-        for (uint i = 0; i < dmmTokenIds.length; i++) {
-            uint dmmTokenId = dmmTokenIds[i];
-            Ownable(dmmTokenIdToDmmTokenAddressMap[dmmTokenId]).transferOwnership(newOwner);
-        }
+        addPauser(newOwner);
     }
 
     function blacklistable() public view returns (Blacklistable) {
-        return Blacklistable(address(dmmBlacklistable));
+        return dmmBlacklistable;
     }
 
     function addMarket(
@@ -120,7 +129,7 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
     ) public onlyOwner {
         // Start the IDs at 1. Zero is reserved for the empty case when it doesn't exist.
         uint dmmTokenId = dmmTokenIds.length + 1;
-        DmmToken dmmToken = new DmmToken(
+        IDmmToken dmmToken = dmmTokenFactory.deployToken(
             symbol,
             name,
             decimals,
@@ -152,30 +161,34 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
         dmmTokenIdToIsDisabledMap[dmmTokenId] = true;
     }
 
-    function resumeEcosystem() public onlyOwner {
-        require(isEcosystemPaused, "ECOSYSTEM_MUST_BE_PAUSED");
-        isEcosystemPaused = false;
-    }
-
-    function pauseEcosystem() public onlyOwner {
-        require(!isEcosystemPaused, "ECOSYSTEM_ALREADY_PAUSED");
-        isEcosystemPaused = true;
-    }
-
     function setInterestRateInterface(address newInterestRateInterface) public whenNotPaused onlyOwner {
+        address oldInterestRateInterface = address(interestRateInterface);
         interestRateInterface = InterestRateInterface(newInterestRateInterface);
+        emit InterestRateInterfaceChanged(oldInterestRateInterface, address(interestRateInterface));
     }
 
     function setCollateralValuator(address newCollateralValuator) public whenNotPaused onlyOwner {
+        address oldCollateralValuator = address(collateralValuator);
         collateralValuator = ICollateralValuator(newCollateralValuator);
+        emit CollateralValuatorChanged(oldCollateralValuator, address(collateralValuator));
     }
 
     function setUnderlyingTokenValuator(address newUnderlyingTokenValuator) public whenNotPaused onlyOwner {
+        address oldUnderlyingTokenValuator = address(underlyingTokenValuator);
         underlyingTokenValuator = IUnderlyingTokenValuator(newUnderlyingTokenValuator);
+        emit UnderlyingTokenValuatorChanged(oldUnderlyingTokenValuator, address(underlyingTokenValuator));
     }
 
     function setMinReserveRatio(uint newMinReserveRatio) public whenNotPaused onlyOwner {
+        uint oldMinReserveRatio = minReserveRatio;
         minReserveRatio = newMinReserveRatio;
+        emit MinReserveRatioChanged(oldMinReserveRatio, minReserveRatio);
+    }
+
+    function setMinCollateralization(uint newMinCollateralization) public whenNotPaused onlyOwner {
+        uint oldMinCollateralization = minCollateralization;
+        minCollateralization = newMinCollateralization;
+        emit MinCollateralizationChanged(oldMinCollateralization, minCollateralization);
     }
 
     function increaseTotalSupply(
@@ -204,7 +217,7 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
         underlyingToken.safeTransfer(_msgSender(), underlyingAmount);
 
         // This is the amount owed by the system in terms of underlying
-        uint totalOwedAmount = token.activeSupply().mul(token.currentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);
+        uint totalOwedAmount = token.activeSupply().mul(token.getCurrentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);
         uint underlyingBalance = IERC20(dmmTokenIdToUnderlyingTokenAddressMap[dmmTokenId]).balanceOf(address(token));
 
         // IE if we owe 100 and have an underlying balance of 10 --> reserve ratio is 0.1
@@ -224,27 +237,27 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
     }
 
     function getTotalCollateralization() public view returns (uint) {
-        uint totalLoanValue = 0;
+        uint totalLiabilities = 0;
         for (uint i = 0; i < dmmTokenIds.length; i++) {
             // IDs start at 1
             IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i + 1]]);
             uint underlyingValue = getSupplyValue(token, IERC20(address(token)).totalSupply());
-            totalLoanValue = totalLoanValue.add(underlyingValue);
+            totalLiabilities = totalLiabilities.add(underlyingValue);
         }
         uint collateralValue = collateralValuator.getCollateralValue();
-        return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLoanValue);
+        return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLiabilities);
     }
 
     function getActiveCollateralization() public view returns (uint) {
-        uint totalLoanValue = 0;
+        uint totalLiabilities = 0;
         for (uint i = 0; i < dmmTokenIds.length; i++) {
             // IDs start at 1
             IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i + 1]]);
             uint underlyingValue = getSupplyValue(token, token.activeSupply());
-            totalLoanValue = totalLoanValue.add(underlyingValue);
+            totalLiabilities = totalLiabilities.add(underlyingValue);
         }
         uint collateralValue = collateralValuator.getCollateralValue();
-        return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLoanValue);
+        return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLiabilities);
     }
 
     function getInterestRateForUnderlying(address underlyingToken) public view returns (uint) {
@@ -261,13 +274,22 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
         return interestRateInterface.getInterestRate(dmmTokenId, totalSupply, activeSupply);
     }
 
+    function getInterestRate(address dmmToken) public view returns (uint) {
+        uint dmmTokenId = dmmTokenAddressToDmmTokenIdMap[dmmToken];
+        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
+
+        uint totalSupply = IERC20(dmmToken).totalSupply();
+        uint activeSupply = IDmmToken(dmmToken).activeSupply();
+        return interestRateInterface.getInterestRate(dmmTokenId, totalSupply, activeSupply);
+    }
+
     function getExchangeRateForUnderlying(address underlyingToken) public view returns (uint) {
         address dmmToken = getDmmTokenForUnderlying(underlyingToken);
-        return IDmmToken(dmmToken).currentExchangeRate();
+        return IDmmToken(dmmToken).getCurrentExchangeRate();
     }
 
     function getExchangeRate(address dmmToken) public view returns (uint) {
-        return IDmmToken(dmmToken).currentExchangeRate();
+        return IDmmToken(dmmToken).getCurrentExchangeRate();
     }
 
     function getDmmTokenForUnderlying(address underlyingToken) public view returns (address) {
@@ -307,7 +329,7 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
      */
 
     function getSupplyValue(IDmmToken token, uint supply) private view returns (uint) {
-        uint underlyingTokenAmount = supply.mul(token.currentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);
+        uint underlyingTokenAmount = supply.mul(token.getCurrentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);
         address underlyingToken = getUnderlyingTokenForDmm(address(token));
         return underlyingTokenValuator.getTokenValue(underlyingToken, underlyingTokenAmount);
     }

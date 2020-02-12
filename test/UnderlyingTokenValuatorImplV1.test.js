@@ -37,7 +37,7 @@ describe('UnderlyingTokenValuatorImplV1', () => {
     await UnderlyingTokenValuatorImplV1.detectNetwork();
     UnderlyingTokenValuatorImplV1.link("StringHelpers", stringHelpers.address);
 
-    valuator = await UnderlyingTokenValuatorImplV1.new(usdc.address, dai.address);
+    valuator = await UnderlyingTokenValuatorImplV1.new(dai.address, usdc.address);
   });
 
   it('should get token properties', async () => {

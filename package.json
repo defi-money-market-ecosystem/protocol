@@ -7,8 +7,8 @@
     "compile": "oz compile",
     "format": "solium -d contracts/",
     "start-chain": "ganache-cli --deterministic --port 8545",
-    "test": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 5000 --recursive test/ --slow 1000",
-    "test-relay-interactions": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 10000 --recursive test/DmmToken.GaslessApprove.test.js --slow 2500"
+    "test": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 10000 --recursive test/ --slow 2500",
+    "test-controller": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 10000 --recursive test/DmmController.test.js --slow 2500"
   },
   "keywords": [],
   "author": "",

@@ -18,7 +18,7 @@ const {
   _10000,
   blacklistUser,
   disableMarkets,
-  doBeforeEach,
+  doDmmTokenBeforeEach,
   encodeHashAndSign,
   expectMint,
   expectOffChainRequestValidated,
@@ -38,7 +38,7 @@ describe('DmmToken.GaslessMint', async () => {
     const password = 'password';
     await web3.eth.personal.importRawKey(this.wallet.privateKey, password);
     await web3.eth.personal.unlockAccount(this.wallet.address, password, 600);
-    await doBeforeEach(this, contract, web3);
+    await doDmmTokenBeforeEach(this, contract, web3);
 
     this.send = send;
     await setupWallet(this, user);

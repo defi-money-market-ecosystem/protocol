@@ -14,7 +14,7 @@ const {
   _25,
   _75,
   _100,
-  doBeforeEach,
+  doDmmTokenBeforeEach,
   mint,
   redeem,
   setRealInterestRateOnController
@@ -32,7 +32,7 @@ describe('DmmToken.Misc', async () => {
   beforeEach(async () => {
     this.admin = admin;
     this.user = user;
-    await doBeforeEach(this, contract, web3);
+    await doDmmTokenBeforeEach(this, contract, web3);
   });
 
   /********************************
@@ -114,7 +114,7 @@ describe('DmmToken.Misc', async () => {
 
   it('should get current exchange rate & timestamp and update properly over 1 year', async () => {
     let latestTimestamp = await time.latest();
-    (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1());
+    (await this.contract.getCurrentExchangeRate()).should.be.bignumber.equal(_1());
     (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp);
 
     const originalTimestamp = latestTimestamp;
@@ -129,13 +129,13 @@ describe('DmmToken.Misc', async () => {
 
     const timeElapsed = latestTimestamp.sub(originalTimestamp);
     const interestAccrued = timeElapsed.mul(this.interestRate).div(secondsInYear);
-    (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1().add(interestAccrued));
+    (await this.contract.getCurrentExchangeRate()).should.be.bignumber.equal(_1().add(interestAccrued));
     (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp);
   });
 
   it('should get current exchange rate & timestamp and update properly over awkward time', async () => {
     let latestTimestamp = await time.latest();
-    (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1());
+    (await this.contract.getCurrentExchangeRate()).should.be.bignumber.equal(_1());
     (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp);
 
     const originalTimestamp = latestTimestamp;
@@ -150,7 +150,7 @@ describe('DmmToken.Misc', async () => {
 
     const timeElapsed = latestTimestamp.sub(originalTimestamp);
     const interestAccrued = timeElapsed.mul(this.interestRate).div(secondsInYear);
-    (await this.contract.currentExchangeRate()).should.be.bignumber.equal(_1().add(interestAccrued));
+    (await this.contract.getCurrentExchangeRate()).should.be.bignumber.equal(_1().add(interestAccrued));
     (await this.contract.exchangeRateLastUpdatedTimestamp()).should.be.bignumber.equal(latestTimestamp);
   });
 

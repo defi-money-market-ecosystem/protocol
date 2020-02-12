@@ -17,7 +17,7 @@ const {
   _25,
   blacklistUser,
   disableMarkets,
-  doBeforeEach,
+  doDmmTokenBeforeEach,
   encodeHashAndSign,
   expectRedeem,
   expectOffChainRequestValidated,
@@ -39,7 +39,7 @@ describe('DmmToken.GaslessRedeem', async () => {
     const password = 'password';
     await web3.eth.personal.importRawKey(this.wallet.privateKey, password);
     await web3.eth.personal.unlockAccount(this.wallet.address, password, 600);
-    await doBeforeEach(this, contract, web3);
+    await doDmmTokenBeforeEach(this, contract, web3);
 
     this.send = send;
     await setupWallet(this, user);
@@ -220,10 +220,12 @@ describe('DmmToken.GaslessRedeem', async () => {
   });
 
   it('should not mint using gasless request when owner blacklisted', async () => {
+    const amount = _25();
+    await mint(this.underlyingToken, this.contract, this.wallet.address, amount);
+
     await blacklistUser(this.blacklistable, this.wallet.address, admin);
     const nonce = _0();
     const expiry = _0();
-    const amount = _25();
     const feeAmount = _0();
     const feeRecipient = constants.ZERO_ADDRESS;
     const typeHash = await this.contract.REDEEM_TYPE_HASH();

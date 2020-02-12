@@ -1,3 +1,7 @@
 build/
 node_modules
 .idea
+
+# OpenZeppelin
+.openzeppelin/dev-*.json
+.openzeppelin/.session

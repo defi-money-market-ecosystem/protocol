@@ -10,7 +10,7 @@ const {
   _0,
   _100,
   _10000,
-  doBeforeEach,
+  doDmmTokenBeforeEach,
   setApproval,
   setBalanceFor,
   mint,
@@ -25,7 +25,7 @@ describe('DmmToken.Admin', async () => {
   beforeEach(async () => {
     this.admin = admin;
     this.user = user;
-    await doBeforeEach(this, contract, web3);
+    await doDmmTokenBeforeEach(this, contract, web3);
   });
 
   /********************************

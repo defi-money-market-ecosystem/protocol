@@ -1,21 +1,14 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import "./libs/AssemblyHelpers.sol";
-import "./utils/Blacklistable.sol";
 import "./interfaces/IDmmController.sol";
 import "./interfaces/IDmmToken.sol";
-import "./constants/CommonConstants.sol";
-import "./constants/DmmErrorCodes.sol";
-import "./utils/ERC20.sol";
 import "./libs/DmmTokenLibrary.sol";
+import "./utils/ERC20.sol";
+import "./utils/Blacklistable.sol";
 
-contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
+contract DmmToken is ERC20, IDmmToken {
 
     using SafeERC20 for IERC20;
     using SafeMath for uint;
@@ -54,7 +47,7 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
      * Private Fields
      */
 
-    Storage private _storage;
+    DmmTokenLibrary.Storage private _storage;
 
     constructor(
         string memory _symbol,
@@ -72,15 +65,18 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
         minRedeemAmount = _minRedeemAmount;
         controller = IDmmController(_controller);
 
+        uint256 chainId;
+        assembly {chainId := chainid()}
+
         domainSeparator = keccak256(abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes(name)),
                 keccak256(bytes(/* version */ "1")),
-                chainId(),
+                chainId,
                 address(this)
             ));
 
-        _storage = Storage({
+        _storage = DmmTokenLibrary.Storage({
             exchangeRate : DmmTokenLibrary.getExchangeRateBaseRate(),
             exchangeRateLastUpdatedTimestamp : block.timestamp
             });
@@ -106,6 +102,10 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
     }
 
     function pausable() public view returns (address) {
+        return address(controller);
+    }
+
+    function ownable() public view returns (address) {
         return address(controller);
     }
 
@@ -139,7 +139,7 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
         return this._withdrawUnderlying(_msgSender(), underlyingAmount);
     }
 
-    function currentExchangeRate() public view returns (uint) {
+    function getCurrentExchangeRate() public view returns (uint) {
         return _storage.getCurrentExchangeRate(controller.getInterestRate(address(this)));
     }
 
@@ -157,8 +157,6 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
     whenNotPaused
     isNotDisabled
     public returns (uint) {
-        blacklistable().checkNotBlacklisted(_msgSender());
-
         uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
         uint underlyingAmount = amount.amountToUnderlying(currentExchangeRate);
         this._mintDmm(_msgSender(), _msgSender(), amount, underlyingAmount);
@@ -175,8 +173,6 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
     isNotDisabled
     public returns (uint) {
         blacklistable().checkNotBlacklisted(_msgSender());
-        blacklistable().checkNotBlacklisted(sender);
-        blacklistable().checkNotBlacklisted(recipient);
 
         uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
         uint underlyingAmount = amount.amountToUnderlying(currentExchangeRate);
@@ -201,8 +197,6 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
     isNotDisabled
     public returns (uint) {
         blacklistable().checkNotBlacklisted(_msgSender());
-        blacklistable().checkNotBlacklisted(owner);
-        blacklistable().checkNotBlacklisted(recipient);
         if (feeRecipient != address(0x0)) {
             blacklistable().checkNotBlacklisted(feeRecipient);
         }
@@ -248,8 +242,6 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
     whenNotPaused
     public returns (uint) {
         blacklistable().checkNotBlacklisted(_msgSender());
-        blacklistable().checkNotBlacklisted(sender);
-        blacklistable().checkNotBlacklisted(recipient);
 
         uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
         uint underlyingAmount = amount.amountToUnderlying(currentExchangeRate);
@@ -273,8 +265,7 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
     whenNotPaused
     public returns (uint) {
         blacklistable().checkNotBlacklisted(_msgSender());
-        blacklistable().checkNotBlacklisted(owner);
-        blacklistable().checkNotBlacklisted(recipient);
+
         if (feeRecipient != address(0x0)) {
             blacklistable().checkNotBlacklisted(feeRecipient);
         }
@@ -308,8 +299,6 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
     whenNotPaused
     public {
         blacklistable().checkNotBlacklisted(_msgSender());
-        blacklistable().checkNotBlacklisted(owner);
-        blacklistable().checkNotBlacklisted(spender);
         if (feeRecipient != address(0x0)) {
             blacklistable().checkNotBlacklisted(feeRecipient);
         }
@@ -338,8 +327,6 @@ contract DmmToken is ERC20, Ownable, IDmmToken, AssemblyHelpers {
     whenNotPaused
     public {
         blacklistable().checkNotBlacklisted(_msgSender());
-        blacklistable().checkNotBlacklisted(owner);
-        blacklistable().checkNotBlacklisted(recipient);
         if (feeRecipient != address(0x0)) {
             blacklistable().checkNotBlacklisted(feeRecipient);
         }
