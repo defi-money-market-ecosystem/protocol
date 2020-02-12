@@ -18,6 +18,8 @@ interface IDmmToken {
     event TotalSupplyIncreased(uint oldTotalSupply, uint newTotalSupply);
     event TotalSupplyDecreased(uint oldTotalSupply, uint newTotalSupply);
 
+    event OffChainRequestValidated(address indexed owner, address indexed feeRecipient, uint nonce, uint expiry, uint feeAmount);
+
     /*****************
      * Structs
      */

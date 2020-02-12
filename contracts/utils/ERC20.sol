@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/lifecycle/Pausable.sol";
 import "@openzeppelin/contracts/access/roles/MinterRole.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./Blacklistable.sol";
 import "../constants/DmmErrorCodes.sol";
@@ -34,7 +35,7 @@ import "../constants/DmmErrorCodes.sol";
  * allowances. See {IERC20-approve}.
  */
 //contract ERC20 is Context, IERC20, DmmErrorCodes, MinterRole {
-contract ERC20 is Context, IERC20, MinterRole {
+contract ERC20 is Context, IERC20, MinterRole, ReentrancyGuard {
 
     using SafeMath for uint256;
 
@@ -99,7 +100,7 @@ contract ERC20 is Context, IERC20, MinterRole {
         address recipient,
         uint256 amount
     )
-    whenNotPaused
+    nonReentrant
     notBlacklisted(_msgSender())
     notBlacklisted(recipient)
     public returns (bool) {
@@ -125,7 +126,6 @@ contract ERC20 is Context, IERC20, MinterRole {
         address spender,
         uint256 amount
     )
-    whenNotPaused
     notBlacklisted(_msgSender())
     notBlacklisted(spender)
     public returns (bool) {
@@ -150,7 +150,7 @@ contract ERC20 is Context, IERC20, MinterRole {
         address recipient,
         uint256 amount
     )
-    whenNotPaused
+    nonReentrant
     notBlacklisted(_msgSender())
     notBlacklisted(sender)
     notBlacklisted(recipient)
@@ -176,7 +176,6 @@ contract ERC20 is Context, IERC20, MinterRole {
         address spender,
         uint256 addedValue
     )
-    whenNotPaused
     notBlacklisted(_msgSender())
     notBlacklisted(spender)
     public returns (bool) {
@@ -202,7 +201,6 @@ contract ERC20 is Context, IERC20, MinterRole {
         address spender,
         uint256 subtractedValue
     )
-    whenNotPaused
     notBlacklisted(_msgSender())
     notBlacklisted(spender)
     public returns (bool) {

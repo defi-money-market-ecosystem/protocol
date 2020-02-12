@@ -6,11 +6,10 @@ import "../constants/DmmErrorCodes.sol";
 /**
  * @dev Allows accounts to be blacklisted by the owner of the contract.
  *
- *  Taken from USDC's contract for blacklisting certain addresses from owning the token.
+ *  Taken from USDC's contract for blacklisting certain addresses from owning and interacting with the token.
  */
 contract Blacklistable is Ownable {
 
-    address public blacklister;
     mapping(address => bool) internal blacklisted;
 
     event Blacklisted(address indexed account);
@@ -18,10 +17,10 @@ contract Blacklistable is Ownable {
     event BlacklisterChanged(address indexed newBlacklister);
 
     /**
-     * @dev Throws if called by any account other than the blacklister
+     * @dev Throws if called by any account other than the creator of this contract
     */
     modifier onlyBlacklister() {
-        require(msg.sender == blacklister, "MUST_BE_BLACKLISTER");
+        require(msg.sender == owner(), "MUST_BE_BLACKLISTER");
         _;
     }
 
@@ -69,12 +68,6 @@ contract Blacklistable is Ownable {
     function unBlacklist(address account) public onlyBlacklister {
         blacklisted[account] = false;
         emit UnBlacklisted(account);
-    }
-
-    function updateBlacklister(address _newBlacklister) public onlyOwner {
-        require(_newBlacklister != address(0), "INVALID_BLACKLISTER");
-        blacklister = _newBlacklister;
-        emit BlacklisterChanged(blacklister);
     }
 
 }

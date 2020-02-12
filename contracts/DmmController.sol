@@ -97,6 +97,14 @@ contract DmmController is CommonConstants, IDmmController, Ownable {
      * Public Functions
      */
 
+    function transferOwnership(address newOwner) public onlyOwner {
+        super.transferOwnership(newOwner);
+        for (uint i = 0; i < dmmTokenIds.length; i++) {
+            uint dmmTokenId = dmmTokenIds[i];
+            Ownable(dmmTokenIdToDmmTokenAddressMap[dmmTokenId]).transferOwnership(newOwner);
+        }
+    }
+
     function blacklistable() public view returns (Blacklistable) {
         return Blacklistable(address(dmmBlacklistable));
     }

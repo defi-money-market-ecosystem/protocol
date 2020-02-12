@@ -24,6 +24,8 @@ library DmmTokenLibrary {
     event AdminDeposit(uint amount);
     event AdminWithdraw(uint amount);
 
+    event OffChainRequestValidated(address indexed owner, address indexed feeRecipient, uint nonce, uint expiry, uint feeAmount);
+
     /*****************
      * Public Constants
      */
@@ -32,18 +34,6 @@ library DmmTokenLibrary {
     uint public constant INTEREST_RATE_BASE = 1e18;
     uint public constant SECONDS_IN_YEAR = 31536000; // 60 * 60 * 24 * 365
 
-    // bytes32 public constant PERMIT_TYPE_HASH = keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant PERMIT_TYPE_HASH = 0x22fa96956322098f6fd394e06f1b7e0f6930565923f9ad3d20802e9a2eb58fb1;
-
-    // bytes32 public constant TRANSFER_TYPE_HASH = keccak256("Transfer(address owner,address recipient,uint256 nonce,uint256 expiry,uint amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant TRANSFER_TYPE_HASH = 0x25166116e36b48414096856a22ea40032193e38f65136c76738e306be6abd587;
-
-    // bytes32 public constant MINT_TYPE_HASH = keccak256("Mint(address owner,address recipient,uint256 nonce,uint256 expiry,uint256 amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant MINT_TYPE_HASH = 0x82e81310e0eab12a427992778464769ef831d801011489bc90ed3ef82f2cb3d1;
-
-    // bytes32 public constant REDEEM_TYPE_HASH = keccak256("Redeem(address owner,address recipient,uint256 nonce,uint256 expiry,uint256 amount,uint256 feeAmount,address feeRecipient)");
-    bytes32 public constant REDEEM_TYPE_HASH = 0x24e7162538bf7f86bd3180c9ee9f60f06db3bd66eb344ea3b00f69b84af5ddcf;
-
     /********************
      * Modifiers
      */
@@ -51,22 +41,6 @@ library DmmTokenLibrary {
     /*****************
      * Getters
      */
-
-    function getMintTypeHash() public pure returns (bytes32) {
-        return MINT_TYPE_HASH;
-    }
-
-    function getPermitTypeHash() public pure returns (bytes32) {
-        return PERMIT_TYPE_HASH;
-    }
-
-    function getRedeemTypeHash() public pure returns (bytes32) {
-        return REDEEM_TYPE_HASH;
-    }
-
-    function getTransferTypeHash() public pure returns (bytes32) {
-        return TRANSFER_TYPE_HASH;
-    }
 
     function getExchangeRateBaseRate() public pure returns (uint) {
         return EXCHANGE_RATE_BASE_RATE;
@@ -127,9 +101,30 @@ library DmmTokenLibrary {
         }
     }
 
+    function uintToString(uint _i) internal pure returns (string memory) {
+        bytes memory bstr = new bytes(32);
+        assembly {
+            mstore(add(bstr, 32), _i)
+        }
+        return string(bstr);
+    }
+
+    function bytesToString(bytes memory _bytes) internal pure returns (string memory) {
+        bytes memory result = new bytes((_bytes.length * 2) + 2);
+        bytes memory HEX = "0123456789abcdef";
+        result[0] = '0';
+        result[1] = 'x';
+        for (uint i = 0; i < _bytes.length; i++) {
+            result[2 + (i * 2)] = HEX[uint8(_bytes[i] >> 4)];
+            result[3 + (i * 2)] = HEX[uint8(_bytes[i] & 0x0f)];
+        }
+        return string(result);
+    }
+
     function validateOffChainMint(
         IDmmToken.Storage storage _storage,
         bytes32 domainSeparator,
+        bytes32 typeHash,
         address owner,
         address recipient,
         uint nonce,
@@ -145,7 +140,7 @@ library DmmTokenLibrary {
             abi.encodePacked(
                 "\x19\x01",
                 domainSeparator,
-                keccak256(abi.encode(MINT_TYPE_HASH, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient))
+                keccak256(abi.encode(typeHash, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient))
             )
         );
 
@@ -157,6 +152,7 @@ library DmmTokenLibrary {
     function validateOffChainRedeem(
         IDmmToken.Storage storage _storage,
         bytes32 domainSeparator,
+        bytes32 typeHash,
         address owner,
         address recipient,
         uint nonce,
@@ -172,7 +168,7 @@ library DmmTokenLibrary {
             abi.encodePacked(
                 "\x19\x01",
                 domainSeparator,
-                keccak256(abi.encode(REDEEM_TYPE_HASH, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient))
+                keccak256(abi.encode(typeHash, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient))
             )
         );
 
@@ -184,6 +180,7 @@ library DmmTokenLibrary {
     function validateOffChainPermit(
         IDmmToken.Storage storage _storage,
         bytes32 domainSeparator,
+        bytes32 typeHash,
         address owner,
         address spender,
         uint nonce,
@@ -199,7 +196,7 @@ library DmmTokenLibrary {
             abi.encodePacked(
                 "\x19\x01",
                 domainSeparator,
-                keccak256(abi.encode(PERMIT_TYPE_HASH, owner, spender, nonce, expiry, allowed, feeAmount, feeRecipient))
+                keccak256(abi.encode(typeHash, owner, spender, nonce, expiry, allowed, feeAmount, feeRecipient))
             )
         );
 
@@ -211,6 +208,7 @@ library DmmTokenLibrary {
     function validateOffChainTransfer(
         IDmmToken.Storage storage _storage,
         bytes32 domainSeparator,
+        bytes32 typeHash,
         address owner,
         address recipient,
         uint nonce,
@@ -226,7 +224,7 @@ library DmmTokenLibrary {
             abi.encodePacked(
                 "\x19\x01",
                 domainSeparator,
-                keccak256(abi.encode(TRANSFER_TYPE_HASH, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient))
+                keccak256(abi.encode(typeHash, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient))
             )
         );
 
@@ -297,12 +295,23 @@ library DmmTokenLibrary {
         bytes32 r,
         bytes32 s
     ) private {
+        uint expectedNonce = _storage.nonces[owner];
+
         require(owner == ecrecover(digest, v, r, s), "INVALID_SIGNATURE");
         require(expiry == 0 || now <= expiry, "REQUEST_EXPIRED");
-        require(nonce == _storage.nonces[owner]++, "INVALID_NONCE");
+        require(nonce == expectedNonce, "INVALID_NONCE");
         if (feeAmount > 0) {
             require(feeRecipient != address(0x0), "INVALID_FEE_ADDRESS");
         }
+
+        emit OffChainRequestValidated(
+            owner,
+            feeRecipient,
+            expectedNonce,
+            expiry,
+            feeAmount
+        );
+        _storage.nonces[owner] += 1;
     }
 
 }
