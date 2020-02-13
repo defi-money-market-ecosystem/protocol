@@ -27,6 +27,7 @@ contract DmmTokenFactory is Context, IDmmTokenFactory {
             totalSupply,
             controller
         );
+        token.transferOwnership(_msgSender());
         return token;
     }
 

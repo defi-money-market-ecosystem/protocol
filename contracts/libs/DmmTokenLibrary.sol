@@ -25,9 +25,6 @@ library DmmTokenLibrary {
     event Redeem(address indexed redeemer, address indexed recipient, uint amount);
     event FeeTransfer(address indexed owner, address indexed recipient, uint amount);
 
-    event AdminDeposit(uint amount);
-    event AdminWithdraw(uint amount);
-
     event OffChainRequestValidated(address indexed owner, address indexed feeRecipient, uint nonce, uint expiry, uint feeAmount);
 
     /*****************
@@ -83,7 +80,8 @@ library DmmTokenLibrary {
 
     function updateExchangeRateIfNecessaryAndGet(DmmToken token, Storage storage _storage) internal returns (uint) {
         uint previousExchangeRate = _storage.exchangeRate;
-        uint currentExchangeRate = getCurrentExchangeRate(_storage, token.controller().getInterestRate(address(token)));
+        uint dmmTokenInterestRate = token.controller().getInterestRateByDmmTokenAddress(address(token));
+        uint currentExchangeRate = getCurrentExchangeRate(_storage, dmmTokenInterestRate);
         if (currentExchangeRate != previousExchangeRate) {
             _storage.exchangeRateLastUpdatedTimestamp = block.timestamp;
             _storage.exchangeRate = currentExchangeRate;
@@ -91,26 +89,6 @@ library DmmTokenLibrary {
         } else {
             return currentExchangeRate;
         }
-    }
-
-    function uintToString(uint _i) internal pure returns (string memory) {
-        bytes memory bstr = new bytes(32);
-        assembly {
-            mstore(add(bstr, 32), _i)
-        }
-        return string(bstr);
-    }
-
-    function bytesToString(bytes memory _bytes) internal pure returns (string memory) {
-        bytes memory result = new bytes((_bytes.length * 2) + 2);
-        bytes memory HEX = "0123456789abcdef";
-        result[0] = '0';
-        result[1] = 'x';
-        for (uint i = 0; i < _bytes.length; i++) {
-            result[2 + (i * 2)] = HEX[uint8(_bytes[i] >> 4)];
-            result[3 + (i * 2)] = HEX[uint8(_bytes[i] & 0x0f)];
-        }
-        return string(result);
     }
 
     function validateOffChainMint(
@@ -225,33 +203,6 @@ library DmmTokenLibrary {
         validateOffChainRequest(_storage, digest, owner, nonce, expiry, feeAmount, feeRecipient, v, r, s);
     }
 
-    function _mintDmm(DmmToken token, address owner, address recipient, uint amount, uint underlyingAmount) internal {
-        require(token.balanceOf(address(token)) >= amount, "INSUFFICIENT_DMM_LIQUIDITY");
-
-        // Transfer underlying to this contract
-        IERC20(token.controller().getUnderlyingTokenForDmm(address(token))).safeTransferFrom(owner, address(token), underlyingAmount);
-
-        // Transfer DMM to the recipient
-        token.blacklistable().checkNotBlacklisted(owner);
-        token.transfer(recipient, amount);
-
-        emit Mint(owner, recipient, amount);
-    }
-
-    function _redeemDmm(DmmToken token, address owner, address recipient, uint amount, uint underlyingAmount) internal {
-        IERC20 underlyingToken = IERC20(token.controller().getUnderlyingTokenForDmm(address(token)));
-        require(underlyingToken.balanceOf(address(token)) >= underlyingAmount, "INSUFFICIENT_UNDERLYING_LIQUIDITY");
-
-        // Transfer DMM to this contract from whoever _msgSender() is
-        token.blacklistable().checkNotBlacklisted(recipient);
-        token.transferFrom(owner, address(token), amount);
-
-        // Transfer underlying to the recipient from this contract
-        underlyingToken.transfer(recipient, underlyingAmount);
-
-        emit Redeem(owner, recipient, amount);
-    }
-
     /***************************
      * Internal Admin Functions
      */
@@ -259,14 +210,12 @@ library DmmTokenLibrary {
     function _depositUnderlying(DmmToken token, address sender, uint underlyingAmount) internal returns (bool) {
         IERC20 underlyingToken = IERC20(token.controller().getUnderlyingTokenForDmm(address(token)));
         underlyingToken.safeTransferFrom(sender, address(token), underlyingAmount);
-        emit AdminDeposit(underlyingAmount);
         return true;
     }
 
     function _withdrawUnderlying(DmmToken token, address sender, uint underlyingAmount) internal returns (bool) {
         IERC20 underlyingToken = IERC20(token.controller().getUnderlyingTokenForDmm(address(token)));
         underlyingToken.safeTransfer(sender, underlyingAmount);
-        emit AdminWithdraw(underlyingAmount);
         return true;
     }
 

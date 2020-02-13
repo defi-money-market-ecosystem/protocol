@@ -7,6 +7,7 @@ import "./interfaces/IDmmToken.sol";
 import "./libs/DmmTokenLibrary.sol";
 import "./utils/ERC20.sol";
 import "./utils/Blacklistable.sol";
+import "./libs/DmmTokenLibrary.sol";
 
 contract DmmToken is ERC20, IDmmToken {
 
@@ -89,7 +90,7 @@ contract DmmToken is ERC20, IDmmToken {
      */
 
     modifier isNotDisabled {
-        require(controller.isMarketEnabled(address(this)), "MARKET_DISABLED");
+        require(controller.isMarketEnabledByDmmTokenAddress(address(this)), "MARKET_DISABLED");
         _;
     }
 
@@ -102,10 +103,6 @@ contract DmmToken is ERC20, IDmmToken {
     }
 
     function pausable() public view returns (address) {
-        return address(controller);
-    }
-
-    function ownable() public view returns (address) {
         return address(controller);
     }
 
@@ -140,7 +137,7 @@ contract DmmToken is ERC20, IDmmToken {
     }
 
     function getCurrentExchangeRate() public view returns (uint) {
-        return _storage.getCurrentExchangeRate(controller.getInterestRate(address(this)));
+        return _storage.getCurrentExchangeRate(controller.getInterestRateByDmmTokenAddress(address(this)));
     }
 
     function exchangeRateLastUpdatedTimestamp() public view returns (uint) {
@@ -152,33 +149,39 @@ contract DmmToken is ERC20, IDmmToken {
     }
 
     function mint(
-        uint amount
+        uint underlyingAmount
     )
     whenNotPaused
     isNotDisabled
     public returns (uint) {
-        uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
-        uint underlyingAmount = amount.amountToUnderlying(currentExchangeRate);
-        this._mintDmm(_msgSender(), _msgSender(), amount, underlyingAmount);
-        require(amount >= minMintAmount, "INSUFFICIENT_MINT_AMOUNT");
-        return underlyingAmount;
+        return _mint(_msgSender(), _msgSender(), underlyingAmount);
     }
 
     function mintFrom(
-        uint amount,
-        address sender,
-        address recipient
+        address owner,
+        address recipient,
+        uint underlyingAmount
     )
     whenNotPaused
     isNotDisabled
+    nonReentrant
     public returns (uint) {
-        blacklistable().checkNotBlacklisted(_msgSender());
+        uint amount = _mint(owner, recipient, underlyingAmount);
 
-        uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
-        uint underlyingAmount = amount.amountToUnderlying(currentExchangeRate);
-        this._mintDmm(sender, recipient, amount, underlyingAmount);
-        require(amount >= minMintAmount, "INSUFFICIENT_MINT_AMOUNT");
-        return underlyingAmount;
+        uint newAllowance = allowance(owner, _msgSender()).sub(amount, "INSUFFICIENT_ALLOWANCE");
+        _approve(owner, _msgSender(), newAllowance);
+
+        return amount;
+    }
+
+    function transferUnderlyingIn(address sender, uint underlyingAmount) internal {
+        address underlyingToken = controller.getUnderlyingTokenForDmm(address(this));
+        IERC20(underlyingToken).safeTransferFrom(sender, address(this), underlyingAmount);
+    }
+
+    function transferUnderlyingOut(address recipient, uint underlyingAmount) internal {
+        address underlyingToken = controller.getUnderlyingTokenForDmm(address(this));
+        IERC20(underlyingToken).transfer(recipient, underlyingAmount);
     }
 
     function mintFromGaslessRequest(
@@ -186,7 +189,7 @@ contract DmmToken is ERC20, IDmmToken {
         address recipient,
         uint nonce,
         uint expiry,
-        uint amount,
+        uint underlyingAmount,
         uint feeAmount,
         address feeRecipient,
         uint8 v,
@@ -202,19 +205,22 @@ contract DmmToken is ERC20, IDmmToken {
         }
 
         // To avoid stack too deep issues, splitting the call into 2 parts is essential.
-        _storage.validateOffChainMint(domainSeparator, MINT_TYPE_HASH, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient, v, r, s);
+        _storage.validateOffChainMint(domainSeparator, MINT_TYPE_HASH, owner, recipient, nonce, expiry, underlyingAmount, feeAmount, feeRecipient, v, r, s);
 
-        uint amountLessFee = amount.sub(feeAmount, "FEE_TOO_LARGE");
+        // Initially, we mint to this contract so we can send handle the fees
+        uint amount = _mintDmm(_storage, owner, address(this), underlyingAmount);
+        require(amount >= feeAmount, "FEE_TOO_LARGE");
+
+        uint amountLessFee = amount.sub(feeAmount);
         require(amountLessFee >= minMintAmount, "INSUFFICIENT_MINT_AMOUNT");
 
-        uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
-        uint underlyingAmount = amountLessFee.amountToUnderlying(currentExchangeRate);
-        this._mintDmm(owner, recipient, amountLessFee, underlyingAmount);
+        if (address(this) != recipient) {
+            _transfer(address(this), recipient, amountLessFee);
+        }
 
         if (feeAmount > 0) {
-            // Mint to the fee recipient
-            uint underlyingFeeAmount = feeAmount.amountToUnderlying(currentExchangeRate);
-            this._mintDmm(owner, feeRecipient, feeAmount, underlyingFeeAmount);
+            // Send to the fee recipient
+            _transfer(address(this), feeRecipient, feeAmount);
         }
 
         return amountLessFee;
@@ -225,29 +231,20 @@ contract DmmToken is ERC20, IDmmToken {
     )
     whenNotPaused
     public returns (uint) {
-        blacklistable().checkNotBlacklisted(_msgSender());
-
-        uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
-        uint underlyingAmount = amount.amountToUnderlying(currentExchangeRate);
-        this._redeemDmm(_msgSender(), _msgSender(), amount, underlyingAmount);
-        require(amount >= minRedeemAmount, "INSUFFICIENT_REDEEM_AMOUNT");
-        return underlyingAmount;
+        return _redeem(_msgSender(), _msgSender(), amount);
     }
 
     function redeemFrom(
-        uint amount,
-        address sender,
-        address recipient
+        address owner,
+        address recipient,
+        uint amount
     )
     whenNotPaused
+    nonReentrant
     public returns (uint) {
-        blacklistable().checkNotBlacklisted(_msgSender());
-
-        uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
-        uint underlyingAmount = amount.amountToUnderlying(currentExchangeRate);
-        this._redeemDmm(sender, recipient, amount, underlyingAmount);
-        require(amount >= minRedeemAmount, "INSUFFICIENT_REDEEM_AMOUNT");
-        return underlyingAmount;
+        uint newAllowance = allowance(owner, _msgSender()).sub(amount, "INSUFFICIENT_ALLOWANCE");
+        _approve(owner, _msgSender(), newAllowance);
+        return _redeem(owner, recipient, amount);
     }
 
     function redeemFromGaslessRequest(
@@ -276,9 +273,7 @@ contract DmmToken is ERC20, IDmmToken {
         uint amountLessFee = amount.sub(feeAmount, "FEE_TOO_LARGE");
         require(amountLessFee >= minRedeemAmount, "INSUFFICIENT_REDEEM_AMOUNT");
 
-        uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
-        uint underlyingAmount = amountLessFee.amountToUnderlying(currentExchangeRate);
-        this._redeemDmm(owner, recipient, amountLessFee, underlyingAmount);
+        uint underlyingAmount = _redeemDmm(_storage, owner, recipient, amountLessFee);
         doFeeTransferForDmmIfNecessary(owner, feeRecipient, feeAmount);
 
         return underlyingAmount;
@@ -341,6 +336,59 @@ contract DmmToken is ERC20, IDmmToken {
     /************************************
      * Private & Internal Functions
      */
+
+    function _mint(address owner, address recipient, uint underlyingAmount) internal returns (uint) {
+        return _mintDmm(_storage, owner, recipient, underlyingAmount);
+    }
+
+    function _mintDmm(DmmTokenLibrary.Storage storage _storage, address owner, address recipient, uint underlyingAmount) private returns (uint) {
+        blacklistable().checkNotBlacklisted(_msgSender());
+
+        uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
+        uint amount = underlyingAmount.underlyingToAmount(currentExchangeRate);
+
+        require(balanceOf(address(this)) >= amount, "INSUFFICIENT_DMM_LIQUIDITY");
+
+        // Transfer underlying to this contract
+        transferUnderlyingIn(owner, underlyingAmount);
+
+        // Transfer DMM to the recipient
+        blacklistable().checkNotBlacklisted(owner);
+        _transfer(address(this), recipient, amount);
+
+        emit Mint(owner, recipient, amount);
+
+        require(amount >= minMintAmount, "INSUFFICIENT_MINT_AMOUNT");
+
+        return amount;
+    }
+
+    function _redeem(address owner, address recipient, uint amount) internal returns (uint) {
+        return _redeemDmm(_storage, owner, recipient, amount);
+    }
+
+    function _redeemDmm(DmmTokenLibrary.Storage storage _storage, address owner, address recipient, uint amount) private returns (uint) {
+        blacklistable().checkNotBlacklisted(_msgSender());
+
+        uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
+        uint underlyingAmount = amount.amountToUnderlying(currentExchangeRate);
+
+        IERC20 underlyingToken = IERC20(this.controller().getUnderlyingTokenForDmm(address(this)));
+        require(underlyingToken.balanceOf(address(this)) >= underlyingAmount, "INSUFFICIENT_UNDERLYING_LIQUIDITY");
+
+        // Transfer DMM to this contract from whoever _msgSender() is
+        this.blacklistable().checkNotBlacklisted(recipient);
+        _transfer(owner, address(this), amount);
+
+        // Transfer underlying to the recipient from this contract
+        transferUnderlyingOut(recipient, amount);
+
+        emit Redeem(owner, recipient, amount);
+
+        require(amount >= minRedeemAmount, "INSUFFICIENT_REDEEM_AMOUNT");
+
+        return underlyingAmount;
+    }
 
     function doFeeTransferForDmmIfNecessary(address owner, address feeRecipient, uint feeAmount) private {
         if (feeAmount > 0) {

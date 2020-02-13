@@ -33,7 +33,7 @@ describe('DmmToken.UserInteractions', async () => {
    * Mint Function
    */
 
-  it('should mint to sender if wallet is set up', async () => {
+  it('should mint to owner if wallet is set up', async () => {
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
     const receipt = await this.contract.mint(_25(), {from: user});
 
@@ -51,17 +51,17 @@ describe('DmmToken.UserInteractions', async () => {
     await pauseEcosystem(this.controller, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
 
-    expectRevert(
+    await expectRevert(
       this.contract.mint(_25(), {from: user}),
       'ECOSYSTEM_PAUSED'
-    )
+    );
   });
 
   it('should not mint if market is disabled', async () => {
     await disableMarkets(this.controller, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
 
-    expectRevert(
+    await expectRevert(
       this.contract.mint(_25(), {from: user}),
       'MARKET_DISABLED'
     );
@@ -71,7 +71,7 @@ describe('DmmToken.UserInteractions', async () => {
     await blacklistUser(this.blacklistable, user, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
 
-    expectRevert(
+    await expectRevert(
       this.contract.mint(_25(), {from: user}),
       'BLACKLISTED'
     );
@@ -80,7 +80,7 @@ describe('DmmToken.UserInteractions', async () => {
   it('should not mint if amount is too small', async () => {
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
 
-    expectRevert(
+    await expectRevert(
       this.contract.mint(new BN('1'), {from: user}),
       'INSUFFICIENT_MINT_AMOUNT'
     );
@@ -106,18 +106,6 @@ describe('DmmToken.UserInteractions', async () => {
     (await this.underlyingToken.balanceOf(user)).should.be.bignumber.equal(_10000());
   });
 
-  it('should not redeem if ecosystem is paused', async () => {
-    await mint(this.underlyingToken, this.contract, user, _25());
-    await pauseEcosystem(this.controller, admin);
-    await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.contract.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-
-    await expectRevert(
-      this.contract.redeem(_25(), {from: user}),
-      'ECOSYSTEM_PAUSED'
-    )
-  });
-
   it('should redeem if market is disabled', async () => {
     await mint(this.underlyingToken, this.contract, user, _25());
     await disableMarkets(this.controller, admin);
@@ -133,6 +121,18 @@ describe('DmmToken.UserInteractions', async () => {
 
     (await this.contract.balanceOf(user)).should.be.bignumber.equal(_0());
     (await this.underlyingToken.balanceOf(user)).should.be.bignumber.equal(_10000());
+  });
+
+  it('should not redeem if ecosystem is paused', async () => {
+    await mint(this.underlyingToken, this.contract, user, _25());
+    await pauseEcosystem(this.controller, admin);
+    await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(this.contract.address, constants.MAX_UINT256, {from: user});
+
+    await expectRevert(
+      this.contract.redeem(_25(), {from: user}),
+      'ECOSYSTEM_PAUSED'
+    )
   });
 
   it('should not redeem if sender is blacklisted', async () => {

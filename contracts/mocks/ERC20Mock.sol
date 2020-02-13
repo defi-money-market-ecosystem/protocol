@@ -9,10 +9,6 @@ contract ERC20Mock is ERC20, Blacklistable {
         return address(this);
     }
 
-    function ownable() public view returns (address) {
-        return address(this);
-    }
-
     function blacklistable() public view returns (Blacklistable) {
         return Blacklistable(address(this));
     }

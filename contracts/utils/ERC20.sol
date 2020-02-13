@@ -3,6 +3,7 @@ pragma solidity ^0.5.0;
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./Blacklistable.sol";
@@ -33,11 +34,11 @@ import "../interfaces/IPausable.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20 is Context, IERC20, ReentrancyGuard {
+contract ERC20 is Context, IERC20, ReentrancyGuard, Ownable {
 
     using SafeMath for uint256;
 
-    mapping(address => uint256) private _balances;
+    mapping(address => uint256) internal _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
 
@@ -64,18 +65,11 @@ contract ERC20 is Context, IERC20, ReentrancyGuard {
         _;
     }
 
-
-    modifier onlyOwner() {
-        require(IOwnable(ownable()).owner() == _msgSender(), "Ownable: caller is not the owner");
-        _;
-    }
     /********************
      * Public Functions
      */
 
     function pausable() public view returns (address);
-
-    function ownable() public view returns (address);
 
     function blacklistable() public view returns (Blacklistable);
 

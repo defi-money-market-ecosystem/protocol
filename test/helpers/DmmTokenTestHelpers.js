@@ -11,6 +11,7 @@ const {
 const ethereumJsUtil = require('ethereumjs-util');
 
 const _0 = () => new BN('0');
+const _00625 = () => new BN('62500000000000000');
 const _0_5 = () => new BN('500000000000000000');
 const _1 = () => new BN('1000000000000000000');
 const _24 = () => new BN('24000000000000000000');
@@ -20,6 +21,7 @@ const _50 = () => new BN('50000000000000000000');
 const _75 = () => new BN('75000000000000000000');
 const _100 = () => new BN('100000000000000000000');
 const _10000 = () => new BN('10000000000000000000000');
+const _1000000 = () => new BN('1000000000000000000000000');
 
 const doDmmTokenBeforeEach = async (thisInstance, contracts, web3) => {
   web3Config.getWeb3 = () => web3;
@@ -83,11 +85,80 @@ const doDmmTokenBeforeEach = async (thisInstance, contracts, web3) => {
   );
 };
 
+const doDmmEtherBeforeEach = async (thisInstance, contracts, web3, lastUser) => {
+  web3Config.getWeb3 = () => web3;
+
+  const DmmBlacklistable = contracts.fromArtifact('DmmBlacklistable');
+  const DmmControllerMock = contracts.fromArtifact('DmmControllerMock');
+  const DmmEther = contracts.fromArtifact('DmmEther');
+  const DmmTokenLibrary = contracts.fromArtifact('DmmTokenLibrary');
+  const WETHMock = contracts.fromArtifact('WETHMock');
+  const SafeERC20 = contracts.fromArtifact('SafeERC20');
+  const SafeMath = contracts.fromArtifact('SafeMath');
+
+  await Promise.all([
+    WETHMock.detectNetwork(), DmmEther.detectNetwork(), DmmTokenLibrary.detectNetwork()
+  ]);
+
+  const safeERC20 = await SafeERC20.new();
+  const safeMath = await SafeMath.new();
+  const dmmTokenLibrary = await DmmTokenLibrary.new();
+
+  await Promise.all([
+    WETHMock.link("SafeMath", safeMath.address),
+    DmmEther.link("SafeERC20", safeERC20.address),
+    DmmEther.link("SafeMath", safeMath.address),
+    DmmEther.link("DmmTokenLibrary", dmmTokenLibrary.address),
+  ]);
+
+  thisInstance.blacklistable = await DmmBlacklistable.new({from: thisInstance.admin});
+
+  thisInstance.underlyingToken = await WETHMock.new({from: thisInstance.admin});
+  thisInstance.interestRate = _0();
+  thisInstance.controller = await DmmControllerMock.new(
+    thisInstance.blacklistable.address,
+    thisInstance.underlyingToken.address,
+    thisInstance.interestRate,
+    {from: thisInstance.admin}
+  );
+
+  const setWethBalanceReceipt = await thisInstance.underlyingToken.setBalance(thisInstance.user, _100());
+  expectEvent(
+    setWethBalanceReceipt,
+    'Transfer'
+  );
+
+  const setEthBalanceReceipt = await thisInstance.underlyingToken.deposit({from: lastUser, value: _100()});
+  expectEvent(
+    setEthBalanceReceipt,
+    'Deposit'
+  );
+
+  thisInstance.symbol = "dmmETH";
+  thisInstance.name = "DMM: ETH";
+  thisInstance.decimals = new BN(18);
+  thisInstance.minMintAmount = _1();
+  thisInstance.minRedeemAmount = _1();
+  thisInstance.totalSupply = _10000();
+
+  thisInstance.contract = await DmmEther.new(
+    thisInstance.underlyingToken.address,
+    thisInstance.symbol,
+    thisInstance.name,
+    thisInstance.decimals,
+    thisInstance.minMintAmount,
+    thisInstance.minRedeemAmount,
+    thisInstance.totalSupply,
+    thisInstance.controller.address,
+    {from: thisInstance.admin}
+  );
+};
+
 const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
   web3Config.getWeb3 = () => web3;
 
   const DmmBlacklistable = contracts.fromArtifact('DmmBlacklistable');
-  const DmmCollateralValuator = contracts.fromArtifact('DmmCollateralValuator');
+  const DmmCollateralValuatorMock = contracts.fromArtifact('DmmCollateralValuatorMock');
   const DmmController = contracts.fromArtifact('DmmController');
   const DmmToken = contracts.fromArtifact('DmmToken');
   const DmmTokenFactory = contracts.fromArtifact('DmmTokenFactory');
@@ -99,38 +170,42 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
   const StringHelpers = contracts.fromArtifact('StringHelpers');
   const UnderlyingTokenValuatorImplV1 = contracts.fromArtifact('UnderlyingTokenValuatorImplV1');
 
-  await ERC20Mock.detectNetwork();
-  await DmmController.detectNetwork();
-  await DmmToken.detectNetwork();
-  await DmmTokenFactory.detectNetwork();
-  await DmmTokenLibrary.detectNetwork();
-  await StringHelpers.detectNetwork();
-  await UnderlyingTokenValuatorImplV1.detectNetwork();
+  await Promise.all(
+    [
+      ERC20Mock.detectNetwork(),
+      DmmController.detectNetwork(),
+      DmmToken.detectNetwork(),
+      DmmTokenFactory.detectNetwork(),
+      DmmTokenLibrary.detectNetwork(),
+      StringHelpers.detectNetwork(),
+      UnderlyingTokenValuatorImplV1.detectNetwork(),
+    ]
+  );
 
   const safeERC20 = await SafeERC20.new();
   const safeMath = await SafeMath.new();
   const dmmTokenLibrary = await DmmTokenLibrary.new();
   const stringHelpers = await StringHelpers.new();
 
-  await ERC20Mock.link('SafeMath', safeMath.address);
-
-  await DmmController.link('DmmTokenLibrary', dmmTokenLibrary.address);
-
-  await DmmTokenFactory.link('SafeERC20', safeERC20.address);
-  await DmmTokenFactory.link('SafeMath', safeMath.address);
-  await DmmTokenFactory.link('DmmTokenLibrary', dmmTokenLibrary.address);
-
-  await DmmToken.link('SafeERC20', safeERC20.address);
-  await DmmToken.link('SafeMath', safeMath.address);
-  await DmmToken.link('DmmTokenLibrary', dmmTokenLibrary.address);
-
-  await UnderlyingTokenValuatorImplV1.link("StringHelpers", stringHelpers.address);
+  await Promise.all(
+    [
+      ERC20Mock.link('SafeMath', safeMath.address),
+      DmmController.link('DmmTokenLibrary', dmmTokenLibrary.address),
+      DmmTokenFactory.link('SafeERC20', safeERC20.address),
+      DmmTokenFactory.link('SafeMath', safeMath.address),
+      DmmTokenFactory.link('DmmTokenLibrary', dmmTokenLibrary.address),
+      DmmToken.link('SafeERC20', safeERC20.address),
+      DmmToken.link('SafeMath', safeMath.address),
+      DmmToken.link('DmmTokenLibrary', dmmTokenLibrary.address),
+      UnderlyingTokenValuatorImplV1.link("StringHelpers", stringHelpers.address),
+    ]
+  );
 
   thisInstance.dai = await ERC20Mock.new({from: thisInstance.admin});
   thisInstance.usdc = await ERC20Mock.new({from: thisInstance.admin});
 
   thisInstance.interestRateInterface = await InterestRateInterfaceImplV1.new({from: thisInstance.admin});
-  thisInstance.collateralValuator = await DmmCollateralValuator.new({from: thisInstance.admin});
+  thisInstance.collateralValuator = await DmmCollateralValuatorMock.new({from: thisInstance.admin});
   thisInstance.underlyingTokenValuator = await UnderlyingTokenValuatorImplV1.new(
     thisInstance.dai.address,
     thisInstance.usdc.address,
@@ -148,8 +223,8 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
     thisInstance.underlyingTokenValuator.address,
     thisInstance.dmmTokenFactory.address,
     thisInstance.blacklistable.address,
-    thisInstance.minReserveRatio,
     thisInstance.minCollateralization,
+    thisInstance.minReserveRatio,
     {from: thisInstance.admin}
   );
 
@@ -226,12 +301,12 @@ const encodePermitHashAndSign = async (thisInstance, typeHash, recipient, nonce,
   return signMessage(thisInstance, digest);
 };
 
-const expectMint = (thisInstance, receipt, recipient, amount) => {
+const expectMint = (thisInstance, receipt, minter, recipient, amount) => {
   expectEvent(
     receipt,
     'Mint',
     {
-      minter: thisInstance.wallet.address,
+      minter: minter ? minter : thisInstance.wallet.address,
       recipient: recipient,
       amount: amount ? amount : _25(),
     }
@@ -320,7 +395,7 @@ const mint = async (underlyingToken, dmmToken, user, amount, expectedError) => {
 
   if (expectedError) {
     await expectRevert.unspecified(
-      dmmToken.mint(amount, {from: user}),
+      dmmToken.contract.methods.mint(amount, {from: user}),
       expectedError
     )
   } else {
@@ -328,7 +403,7 @@ const mint = async (underlyingToken, dmmToken, user, amount, expectedError) => {
     expectEvent(
       mintReceipt,
       'Mint',
-      {minter: user, recipient: user, amount: amount}
+      {minter: user, recipient: user}
     );
   }
 };
@@ -351,7 +426,7 @@ const redeem = async (dmmToken, user, amount, expectedError) => {
     expectEvent(
       redemptionReceipt,
       'Redeem',
-      {redeemer: user, recipient: user, amount: amount}
+      {redeemer: user, recipient: user}
     );
   }
 };
@@ -390,7 +465,7 @@ const setApproval = async (token, owner, spender) => {
 };
 
 const setRealInterestRateOnController = async (thisInstance) => {
-  thisInstance.interestRate = new BN('62500000000000000');
+  thisInstance.interestRate = _00625();
   await thisInstance.controller.setInterestRate(thisInstance.interestRate);
 };
 
@@ -412,6 +487,8 @@ const signMessage = async (thisInstance, digest) => {
 
 module.exports = {
   _0,
+  _00625,
+  _0_5,
   _1,
   _24,
   _24_5,
@@ -420,7 +497,9 @@ module.exports = {
   _75,
   _100,
   _10000,
+  _1000000,
   doDmmControllerBeforeEach,
+  doDmmEtherBeforeEach,
   doDmmTokenBeforeEach,
   encodeHashAndSign,
   encodePermitHashAndSign,

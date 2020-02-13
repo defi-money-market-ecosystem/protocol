@@ -3,11 +3,15 @@ const {expect} = require('chai');
 require('@openzeppelin/test-helpers/src/config/web3').getWeb3 = () => web3;
 require('chai').should();
 const {
+  BN,
+  constants,
   expectEvent,
   expectRevert,
 } = require('@openzeppelin/test-helpers');
 const {
-  _0,
+  _00625,
+  _0_5,
+  _1,
   _100,
   _10000,
   doDmmControllerBeforeEach,
@@ -21,6 +25,9 @@ const {
 const [admin, user] = accounts;
 
 describe('DmmController', async () => {
+
+  const ownableError = 'Ownable: caller is not the owner';
+  const defaultDmmTokenId = new BN('1');
 
   beforeEach(async () => {
     this.admin = admin;
@@ -38,75 +45,343 @@ describe('DmmController', async () => {
   });
 
   it('should add market', async () => {
-    // TODO
+    await addMarket();
   });
 
-  it('should enable market', async () => {
-    // TODO
+  it('should enable and disable market', async () => {
+    await addMarket();
+
+    await expectRevert(
+      this.controller.enableMarket(defaultDmmTokenId, {from: admin}),
+      'MARKET_ALREADY_ENABLED',
+    );
+    const disableReceipt = await this.controller.disableMarket(defaultDmmTokenId, {from: admin});
+    expectEvent(
+      disableReceipt,
+      'DisableMarket',
+      {dmmTokenId: defaultDmmTokenId},
+    );
+
+
+    await expectRevert(
+      this.controller.disableMarket(defaultDmmTokenId, {from: admin}),
+      'MARKET_ALREADY_DISABLED',
+    );
+    const enableReceipt = await this.controller.enableMarket(defaultDmmTokenId, {from: admin});
+    expectEvent(
+      enableReceipt,
+      'EnableMarket',
+      {dmmTokenId: defaultDmmTokenId},
+    );
   });
 
-  it('should disable market', async () => {
-    // TODO
+  it('should not enable and disable market if not owner', async () => {
+    await addMarket();
+
+    await expectRevert(
+      this.controller.disableMarket(defaultDmmTokenId, {from: user}),
+      ownableError,
+    );
+
+    await expectRevert(
+      this.controller.enableMarket(defaultDmmTokenId, {from: user}),
+      ownableError,
+    );
   });
 
   it('should set new interest rate interface', async () => {
-    // TODO
+    const receipt = await this.controller.setInterestRateInterface(constants.ZERO_ADDRESS, {from: admin});
+    expectEvent(
+      receipt,
+      'InterestRateInterfaceChanged',
+      {
+        previousInterestRateInterface: this.interestRateInterface.address,
+        newInterestRateInterface: constants.ZERO_ADDRESS
+      },
+    );
+  });
+
+  it('should not set new interest rate interface if not owner', async () => {
+    await expectRevert(
+      this.controller.setInterestRateInterface(constants.ZERO_ADDRESS, {from: user}),
+      ownableError
+    );
+  });
+
+  it('should set new collateral valuator', async () => {
+    const receipt = await this.controller.setCollateralValuator(constants.ZERO_ADDRESS, {from: admin});
+    expectEvent(
+      receipt,
+      'CollateralValuatorChanged',
+      {
+        previousCollateralValuator: this.collateralValuator.address,
+        newCollateralValuator: constants.ZERO_ADDRESS
+      },
+    );
+  });
+
+  it('should not set new collateral valuator if not owner', async () => {
+    await expectRevert(
+      this.controller.setCollateralValuator(constants.ZERO_ADDRESS, {from: user}),
+      ownableError
+    );
+  });
+
+  it('should set new underlying token valuator', async () => {
+    const receipt = await this.controller.setUnderlyingTokenValuator(constants.ZERO_ADDRESS, {from: admin});
+    expectEvent(
+      receipt,
+      'UnderlyingTokenValuatorChanged',
+      {
+        previousUnderlyingTokenValuator: this.underlyingTokenValuator.address,
+        newUnderlyingTokenValuator: constants.ZERO_ADDRESS
+      },
+    );
+  });
+
+  it('should not set new underlying token valuator if not owner', async () => {
+    await expectRevert(
+      this.controller.setUnderlyingTokenValuator(constants.ZERO_ADDRESS, {from: user}),
+      ownableError
+    );
   });
 
   it('should set new min collateralization', async () => {
-    // TODO
+    const receipt = await this.controller.setMinCollateralization(_0_5(), {from: admin});
+    expectEvent(
+      receipt,
+      'MinCollateralizationChanged',
+      {
+        previousMinCollateralization: _1(),
+        newMinCollateralization: _0_5(),
+      },
+    );
+  });
+
+  it('should not set new min collateralization if not owner', async () => {
+    await expectRevert(
+      this.controller.setMinCollateralization(_0_5(), {from: user}),
+      ownableError
+    );
   });
 
   it('should set new min reserve ratio', async () => {
-    // TODO
+    const receipt = await this.controller.setMinReserveRatio(_1(), {from: admin});
+    expectEvent(
+      receipt,
+      'MinReserveRatioChanged',
+      {
+        previousMinReserveRatio: _0_5(),
+        newMinReserveRatio: _1(),
+      },
+    );
+  });
+
+  it('should not set new min reserve ratio if not owner', async () => {
+    await expectRevert(
+      this.controller.setMinReserveRatio(_1(), {from: user}),
+      ownableError
+    );
   });
 
   it('should increase total supply', async () => {
-    // TODO
+    await addMarket();
+    const receipt = await this.controller.increaseTotalSupply(defaultDmmTokenId, _100(), {from: admin});
+    expectEvent(
+      receipt,
+      'TotalSupplyIncreased',
+      {oldTotalSupply: _10000(), newTotalSupply: _100().add(_10000())}
+    );
+  });
+
+  it('should not increase total supply if not owner', async () => {
+    await addMarket();
+    await expectRevert(
+      this.controller.increaseTotalSupply(defaultDmmTokenId, _100(), {from: user}),
+      ownableError,
+    );
+  });
+
+  it('should not increase total supply if ecosystem paused', async () => {
+    await addMarket();
+    await pauseEcosystem(this.controller, admin);
+    await expectRevert(
+      this.controller.increaseTotalSupply(defaultDmmTokenId, _100(), {from: admin}),
+      "ECOSYSTEM_PAUSED",
+    );
+  });
+
+  it('should not increase total supply if there is insufficient collateral', async () => {
+    await addMarket();
+    await this.collateralValuator.setCollateralValue(_1());
+    await expectRevert(
+      this.controller.increaseTotalSupply(defaultDmmTokenId, _100(), {from: admin}),
+      "INSUFFICIENT_COLLATERAL",
+    );
   });
 
   it('should decrease total supply', async () => {
-    // TODO
+    await addMarket();
+    const receipt = await this.controller.decreaseTotalSupply(defaultDmmTokenId, _100(), {from: admin});
+    expectEvent(
+      receipt,
+      'TotalSupplyDecreased',
+      {oldTotalSupply: _10000(), newTotalSupply: _10000().sub(_100())}
+    );
+  });
+
+  it('should not decrease total supply if not owner', async () => {
+    await addMarket();
+    await expectRevert(
+      this.controller.decreaseTotalSupply(defaultDmmTokenId, _100(), {from: user}),
+      ownableError,
+    );
+  });
+
+  it('should not decrease total supply if ecosystem is paused', async () => {
+    await addMarket();
+    await pauseEcosystem(this.controller, admin);
+    await expectRevert(
+      this.controller.decreaseTotalSupply(defaultDmmTokenId, _100(), {from: admin}),
+      "ECOSYSTEM_PAUSED",
+    );
+  });
+
+  it('should not decrease total supply if there is too much active supply', async () => {
+    await addMarket();
+    await expectRevert(
+      this.controller.decreaseTotalSupply(defaultDmmTokenId, _10000().add(_10000()), {from: admin}),
+      "TOO_MUCH_ACTIVE_SUPPLY",
+    );
   });
 
   it('should allow admin to withdraw underlying', async () => {
-    // TODO
+    await addMarket();
+    const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
+    const dmmToken = contract.fromArtifact('DmmToken', dmmTokenAddress);
+    await mint(this.dai, dmmToken, user, _100());
+
+    const receipt = await this.controller.adminWithdrawFunds(defaultDmmTokenId, _1(), {from: admin});
+    expectEvent(
+      receipt,
+      'AdminWithdraw',
+      {admin: admin, amount: _1()} // the controller is the admin of the token
+    );
+  });
+
+  it('should not allow admin to withdraw underlying when there is insufficient leftover reserves', async () => {
+    await addMarket();
+    const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
+    const dmmToken = contract.fromArtifact('DmmToken', dmmTokenAddress);
+    await mint(this.dai, dmmToken, user, _1());
+
+    await expectRevert(
+      this.controller.adminWithdrawFunds(defaultDmmTokenId, _1(), {from: admin}),
+      'INSUFFICIENT_LEFTOVER_RESERVES',
+    );
+  });
+
+  it('should not allow non-admin to withdraw underlying', async () => {
+    await addMarket();
+    const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
+    const dmmToken = contract.fromArtifact('DmmToken', dmmTokenAddress);
+    await mint(this.dai, dmmToken, user, _100());
+
+    await expectRevert(
+      this.controller.adminWithdrawFunds(defaultDmmTokenId, _1(), {from: user}),
+      ownableError,
+    );
   });
 
   it('should allow admin to deposit underlying', async () => {
-    // TODO
+    const amount = _100();
+    await addMarket();
+    await setBalanceFor(this.dai, admin, amount);
+    await setApproval(this.dai, admin, this.controller.address);
+
+    const receipt = await this.controller.adminDepositFunds(defaultDmmTokenId, amount, {from: admin});
+    expectEvent(
+      receipt,
+      'AdminDeposit',
+      {admin: admin, amount: amount}
+    );
   });
 
   it('should not allow non-admin to deposit underlying', async () => {
-    // TODO
+    const amount = _100();
+    await addMarket();
+    await setBalanceFor(this.dai, admin, amount);
+    await setApproval(this.dai, admin, this.controller.address);
+
+    await expectRevert(
+      this.controller.adminDepositFunds(defaultDmmTokenId, amount, {from: user}),
+      ownableError,
+    );
   });
 
-  it('should not allow non-admin to deposit underlying', async () => {
-    // TODO
+  it('should get interest rate using underlying token address', async () => {
+    await addMarket();
+    (await this.controller.getInterestRateByUnderlyingTokenAddress(this.dai.address)).should.be.bignumber.equal(_00625());
   });
 
-  it('should get interest rate using token ID', async () => {
-    // TODO
+  it('should get interest rate using DMM token address', async () => {
+    await addMarket();
+    const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
+    (await this.controller.getInterestRateByDmmTokenAddress(dmmTokenAddress)).should.be.bignumber.equal(_00625());
   });
 
-  it('should get interest rate using token address', async () => {
-    // TODO
-  });
-
-  it('should get exchange rate using underlying token address', async () => {
-    // TODO
+  it('should get interest rate using DMM token ID', async () => {
+    await addMarket();
+    (await this.controller.getInterestRateByDmmTokenId(defaultDmmTokenId)).should.be.bignumber.equal(_00625());
   });
 
   it('should get exchange rate using DMM token address', async () => {
-    // TODO
+    await addMarket();
+    const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
+    (await this.controller.getInterestRateByDmmTokenAddress(dmmTokenAddress)).should.be.bignumber.equal(_00625());
+  });
+
+  it('should get exchange rate using DMM token address', async () => {
+    await addMarket();
+    const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
+    (await this.controller.getExchangeRate(dmmTokenAddress)).should.be.bignumber.equal(_1());
   });
 
   it('should get is market enabled', async () => {
-    // TODO
+    await addMarket();
+    expect(await this.controller.isMarketEnabledByDmmTokenId(defaultDmmTokenId)).equals(true);
+
+    const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
+    expect(await this.controller.isMarketEnabledByDmmTokenAddress(dmmTokenAddress)).equals(true);
   });
 
   it('should get DMM token ID from DMM token address', async () => {
-    // TODO
+    await addMarket();
+    const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
+    (await this.controller.getTokenIdFromDmmTokenAddress(dmmTokenAddress)).should.be.bignumber.equals(defaultDmmTokenId);
   });
+
+  /**********************
+   * Utility Functions
+   */
+
+  const addMarket = async () => {
+    const receipt = await this.controller.addMarket(
+      this.dai.address,
+      "dmmDAI",
+      "DMM: DAI",
+      18,
+      _1(),
+      _1(),
+      _10000(),
+      {from: admin}
+    );
+
+    expectEvent(
+      receipt,
+      'MarketAdded',
+      {dmmTokenId: defaultDmmTokenId, underlyingToken: this.dai.address}
+    );
+  };
 
 });

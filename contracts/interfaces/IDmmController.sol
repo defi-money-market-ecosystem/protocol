@@ -6,6 +6,12 @@ import "../utils/Blacklistable.sol";
 
 interface IDmmController {
 
+    event TotalSupplyIncreased(uint oldTotalSupply, uint newTotalSupply);
+    event TotalSupplyDecreased(uint oldTotalSupply, uint newTotalSupply);
+
+    event AdminDeposit(address indexed admin, uint amount);
+    event AdminWithdraw(address indexed admin, uint amount);
+
     function blacklistable() external view returns (Blacklistable);
 
     /**
@@ -67,19 +73,19 @@ interface IDmmController {
      * @dev Allows the owners of the DMM Ecosystem to withdraw funds from a DMMA. These withdrawn funds are then
      *      allocated to real-world assets that will be used to pay interest into the DMMA.
      *
-     * @param newMinReserveRatio   The new ratio (with 18 decimals) that is used to enforce a certain percentage of assets
-     *                          are kept in each DMMA.
+     * @param newMinCollateralization   The new min collateralization (with 18 decimals) at which the DMME must be in
+     *                                  order to add to the total supply of DMM.
      */
-    function setMinReserveRatio(uint newMinReserveRatio) external;
+    function setMinCollateralization(uint newMinCollateralization) external;
 
     /**
      * @dev Allows the owners of the DMM Ecosystem to withdraw funds from a DMMA. These withdrawn funds are then
      *      allocated to real-world assets that will be used to pay interest into the DMMA.
      *
-     * @param newMinCollateralization   The new min collateralization (with 18 decimals) at which the DMME must be in
-     *                                  order to add to the total supply of DMM.
+     * @param newMinReserveRatio   The new ratio (with 18 decimals) that is used to enforce a certain percentage of assets
+     *                          are kept in each DMMA.
      */
-    function setMinCollateralization(uint newMinCollateralization) external;
+    function setMinReserveRatio(uint newMinReserveRatio) external;
 
     /**
      * @dev Increases the max supply for the provided `dmmTokenId` by `amount`. This call reverts with
@@ -136,7 +142,7 @@ interface IDmmController {
      * @return  The current interest rate, represented using 18 decimals. Meaning `65000000000000000` is 6.5% APY or
      *          0.065.
      */
-    function getInterestRateForUnderlying(address underlyingToken) external view returns (uint);
+    function getInterestRateByUnderlyingTokenAddress(address underlyingToken) external view returns (uint);
 
     /**
      * @dev Gets the interest rate from the DMM token, IE DMM: DAI or DMM: USDC.
@@ -144,7 +150,7 @@ interface IDmmController {
      * @return  The current interest rate, represented using 18 decimals. Meaning, `65000000000000000` is 6.5% APY or
      *          0.065.
      */
-    function getInterestRate(uint dmmTokenId) external view returns (uint);
+    function getInterestRateByDmmTokenId(uint dmmTokenId) external view returns (uint);
 
     /**
      * @dev Gets the interest rate from the DMM token, IE DMM: DAI or DMM: USDC.
@@ -152,7 +158,7 @@ interface IDmmController {
      * @return  The current interest rate, represented using 18 decimals. Meaning, `65000000000000000` is 6.5% APY or
      *          0.065.
      */
-    function getInterestRate(address dmmToken) external view returns (uint);
+    function getInterestRateByDmmTokenAddress(address dmmToken) external view returns (uint);
 
     /**
      * @dev Gets the exchange rate from the underlying to the DMM token, such that
@@ -160,7 +166,7 @@ interface IDmmController {
      *
      * @return  The current exchange rate, represented using 18 decimals. Meaning, `200000000000000000` is 0.2.
      */
-    function getExchangeRateForUnderlying(address underlyingToken) external view returns (uint);
+    function getExchangeRateByUnderlying(address underlyingToken) external view returns (uint);
 
     /**
      * @dev Gets the exchange rate from the underlying to the DMM token, such that
@@ -183,12 +189,12 @@ interface IDmmController {
     /**
      * @return True if the market is enabled for this DMMA or false if it is not enabled.
      */
-    function isMarketEnabled(uint dmmTokenId) external view returns (bool);
+    function isMarketEnabledByDmmTokenId(uint dmmTokenId) external view returns (bool);
 
     /**
-     * @return True if the market is enabled for this underlying token (IE DAI) or false if it is not enabled.
+     * @return True if the market is enabled for this DMM token (IE DMM: DAI) or false if it is not enabled.
      */
-    function isMarketEnabled(address underlyingToken) external view returns (bool);
+    function isMarketEnabledByDmmTokenAddress(address dmmToken) external view returns (bool);
 
     /**
      * @return True if the market is enabled for this underlying token (IE DAI) or false if it is not enabled.

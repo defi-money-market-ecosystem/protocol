@@ -65,7 +65,7 @@ describe('DmmToken.GaslessMint', async () => {
       '0x' + signedMessage.s.toString('hex'),
     );
 
-    expectMint(this, receipt, recipient);
+    expectMint(this, receipt, this.wallet.address, this.contract.address);
     expectOffChainRequestValidated(this, receipt, feeRecipient, feeAmount, nonce, expiry);
 
     // Nonce should be incremented
@@ -93,7 +93,7 @@ describe('DmmToken.GaslessMint', async () => {
       '0x' + signedMessage.s.toString('hex'),
     );
 
-    expectMint(this, receipt, recipient, _24());
+    expectMint(this, receipt, this.wallet.address, this.contract.address, _25());
     expectOffChainRequestValidated(this, receipt, feeRecipient, feeAmount, nonce, expiry);
 
     (await this.contract.balanceOf(recipient)).should.be.bignumber.equal(_24());
@@ -122,7 +122,7 @@ describe('DmmToken.GaslessMint', async () => {
       '0x' + signedMessage.s.toString('hex'),
     );
 
-    expectMint(this, receipt, recipient);
+    expectMint(this, receipt, this.wallet.address, this.contract.address);
     expectOffChainRequestValidated(this, receipt, feeRecipient, feeAmount, nonce, expiry);
 
     // Request 2
@@ -142,7 +142,7 @@ describe('DmmToken.GaslessMint', async () => {
       '0x' + signedMessage.s.toString('hex'),
     );
 
-    expectMint(this, receipt, recipient);
+    expectMint(this, receipt, this.wallet.address, this.contract.address);
     expectOffChainRequestValidated(this, receipt, feeRecipient, feeAmount, nonce, expiry);
 
     // Nonce should be incremented twice

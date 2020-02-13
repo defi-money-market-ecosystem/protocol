@@ -19,7 +19,7 @@ const {
 } = require('./helpers/DmmTokenTestHelpers');
 
 // Use the different accounts, which are unlocked and funded with Ether
-const [admin, deployer, user] = accounts;
+const [admin, other, user] = accounts;
 
 describe('DmmToken.ContractInteractions', async () => {
 
@@ -33,10 +33,10 @@ describe('DmmToken.ContractInteractions', async () => {
    * MintFrom Function
    */
 
-  it('should mintFrom to sender via admin if wallet is set up', async () => {
+  it('should mintFrom to owner via admin if wallet is set up', async () => {
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
-    const receipt = await this.contract.mintFrom(_25(), user, admin, {from: admin});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
+    const receipt = await this.contract.mintFrom(user, admin, _25(), {from: admin});
 
     expectEvent(
       receipt,
@@ -48,13 +48,23 @@ describe('DmmToken.ContractInteractions', async () => {
     (await this.underlyingToken.balanceOf(user)).should.be.bignumber.equal(_10000().sub(_25()));
   });
 
+  it('should not mintFrom to owner if owner is not approved', async () => {
+    await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
+
+    await expectRevert(
+      this.contract.mintFrom(user, other, _25(), {from: other}),
+      'INSUFFICIENT_ALLOWANCE',
+    );
+  });
+
   it('should not mintFrom if ecosystem is paused', async () => {
     await pauseEcosystem(this.controller, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
     await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
-      this.contract.mintFrom(_25(), user, admin, {from: admin}),
+      this.contract.mintFrom(user, admin, _25(), {from: admin}),
       'ECOSYSTEM_PAUSED'
     )
   });
@@ -65,18 +75,18 @@ describe('DmmToken.ContractInteractions', async () => {
     await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
-      this.contract.mintFrom(_25(), user, admin, {from: admin}),
+      this.contract.mintFrom(user, admin, _25(), {from: admin}),
       'MARKET_DISABLED'
     );
   });
 
-  it('should not mintFrom if sender is blacklisted', async () => {
+  it('should not mintFrom if owner is blacklisted', async () => {
     await blacklistUser(this.blacklistable, user, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
     await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
-      this.contract.mintFrom(_25(), user, admin, {from: admin}),
+      this.contract.mintFrom(user, admin, _25(), {from: admin}),
       'BLACKLISTED'
     );
   });
@@ -87,18 +97,18 @@ describe('DmmToken.ContractInteractions', async () => {
     await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
-      this.contract.mintFrom(_25(), user, admin, {from: admin}),
+      this.contract.mintFrom(user, admin, _25(), {from: admin}),
       'BLACKLISTED'
     );
   });
 
   it('should not mintFrom if receiver is blacklisted', async () => {
-    await blacklistUser(this.blacklistable, deployer, admin);
+    await blacklistUser(this.blacklistable, other, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
     await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
-      this.contract.mintFrom(_25(), user, deployer, {from: admin}),
+      this.contract.mintFrom(user, other, _25(), {from: admin}),
       'BLACKLISTED'
     );
   });
@@ -108,7 +118,7 @@ describe('DmmToken.ContractInteractions', async () => {
     await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
-      this.contract.mintFrom(new BN('1'), user, admin, {from: admin}),
+      this.contract.mintFrom(user, admin, new BN('1'), {from: admin}),
       'INSUFFICIENT_MINT_AMOUNT'
     );
   });
@@ -123,7 +133,7 @@ describe('DmmToken.ContractInteractions', async () => {
     await this.contract.approve(this.contract.address, constants.MAX_UINT256, {from: user});
     await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
-    const receipt = await this.contract.redeemFrom(_25(), user, admin, {from: admin});
+    const receipt = await this.contract.redeemFrom(user, admin, _25(), {from: admin});
     expectEvent(
       receipt,
       'Redeem',
@@ -144,7 +154,7 @@ describe('DmmToken.ContractInteractions', async () => {
     await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
-      this.contract.redeemFrom(_25(), user, admin, {from: admin}),
+      this.contract.redeemFrom(user, admin, _25(), {from: admin}),
       'ECOSYSTEM_PAUSED'
     )
   });
@@ -156,7 +166,7 @@ describe('DmmToken.ContractInteractions', async () => {
     await this.contract.approve(this.contract.address, constants.MAX_UINT256, {from: user});
     await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
-    const receipt = await this.contract.redeemFrom(_25(), user, admin, {from: admin});
+    const receipt = await this.contract.redeemFrom(user, admin, _25(), {from: admin});
     expectEvent(
       receipt,
       'Redeem',
@@ -169,7 +179,7 @@ describe('DmmToken.ContractInteractions', async () => {
     (await this.underlyingToken.balanceOf(admin)).should.be.bignumber.equal(_25());
   });
 
-  it('should not redeemFrom if sender is blacklisted', async () => {
+  it('should not redeemFrom if sender is not approved', async () => {
     await mint(this.underlyingToken, this.contract, user, _25());
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
     await this.contract.approve(this.contract.address, constants.MAX_UINT256, {from: user});
@@ -177,7 +187,20 @@ describe('DmmToken.ContractInteractions', async () => {
     await blacklistUser(this.blacklistable, user, admin);
 
     await expectRevert(
-      this.contract.redeemFrom(_25(), user, admin, {from: admin}),
+      this.contract.redeemFrom(user, other, _25(), {from: other}),
+      'INSUFFICIENT_ALLOWANCE'
+    );
+  });
+
+  it('should not redeemFrom if user is blacklisted', async () => {
+    await mint(this.underlyingToken, this.contract, user, _25());
+    await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(this.contract.address, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
+    await blacklistUser(this.blacklistable, user, admin);
+
+    await expectRevert(
+      this.contract.redeemFrom(user, admin, _25(), {from: admin}),
       'BLACKLISTED'
     );
   });
@@ -190,7 +213,7 @@ describe('DmmToken.ContractInteractions', async () => {
     await blacklistUser(this.blacklistable, admin, admin);
 
     await expectRevert(
-      this.contract.redeemFrom(_25(), user, admin, {from: admin}),
+      this.contract.redeemFrom(user, admin, _25(), {from: admin}),
       'BLACKLISTED'
     );
   });
@@ -200,10 +223,10 @@ describe('DmmToken.ContractInteractions', async () => {
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
     await this.contract.approve(this.contract.address, constants.MAX_UINT256, {from: user});
     await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
-    await blacklistUser(this.blacklistable, deployer, admin);
+    await blacklistUser(this.blacklistable, other, admin);
 
     await expectRevert(
-      this.contract.redeemFrom(_25(), user, deployer, {from: admin}),
+      this.contract.redeemFrom(user, other, _25(), {from: admin}),
       'BLACKLISTED'
     );
   });
@@ -215,7 +238,7 @@ describe('DmmToken.ContractInteractions', async () => {
     await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
-      this.contract.redeemFrom(new BN('1'), user, admin, {from: admin}),
+      this.contract.redeemFrom(user, admin, new BN('1'), {from: admin}),
       'INSUFFICIENT_REDEEM_AMOUNT'
     );
   });

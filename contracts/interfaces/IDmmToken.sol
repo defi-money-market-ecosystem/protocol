@@ -118,6 +118,7 @@ interface IDmmToken {
      *      corresponding amount of DMM to the msg.sender. Note, this call reverts with INSUFFICIENT_DMM_LIQUIDITY if
      *      there is not enough DMM available to be minted.
      *
+     * @param amount The amount of underlying to send to this DMMA for conversion to DMM.
      * @return The amount of DMM minted.
      */
     function mint(uint amount) external returns (uint);
@@ -128,12 +129,12 @@ interface IDmmToken {
      *      token that is at least of size `amount` / `exchangeRate`. This call reverts with INSUFFICIENT_DMM_LIQUIDITY if
      *      there is not enough DMM available to be minted.
      *
-     * @param amount        The amount of DMM token to be minted for the recipient.
-     * @param sender        The address that is sending the `underlyingAmount` underlying token.
+     * @param owner         The address that is sending the `underlyingAmount` underlying token.
      * @param recipient     The address the will receive the newly minted DMM.
-     * @return The amount of underlying pulled from `sender`.
+     * @param amount        The amount of underlying to send to this DMMA for conversion to DMM.
+     * @return The amount of DMM minted.
      */
-    function mintFrom(uint amount, address sender, address recipient) external returns (uint);
+    function mintFrom(address owner, address recipient, uint amount) external returns (uint);
 
     /**
      * @dev Transfers the token around which this DMMA wraps from sender to the DMMA contract. Then, sends the
@@ -149,7 +150,7 @@ interface IDmmToken {
      *                      owner's current nonce.
      * @param expiry        The timestamp, in unix seconds, at which the signed off-chain message expires. A value of 0
      *                      means there is no expiration.
-     * @param amount        The amount of DMM that should be minted for `owner` and sent to `recipient`.
+     * @param amount        The amount of underlying that should be minted for `owner` and sent to `recipient`.
      * @param feeAmount     The amount of DMM to be sent to feeRecipient for sending this transaction on behalf of
      *                      owner. Can be 0, which means the user won't be charged a fee. Must be <= `amount`.
      * @param feeRecipient  The address that should receive the fee. A value of 0x0 will send the fees to `msg.sender`.
@@ -157,7 +158,7 @@ interface IDmmToken {
      * @param v             The ECDSA V parameter.
      * @param r             The ECDSA R parameter.
      * @param s             The ECDSA S parameter.
-     * @return  The amount of DMM minted to recipient.
+     * @return  The amount of DMM minted.
      */
     function mintFromGaslessRequest(
         address owner,
@@ -188,12 +189,12 @@ interface IDmmToken {
      *      size `amount`. This call reverts with INSUFFICIENT_UNDERLYING_LIQUIDITY if there is not enough underlying
      *      available to be redeemed.
      *
-     * @param amount        The amount of DMM token to be redeemed for the recipient.
-     * @param sender        The address that is sending the `underlyingAmount` underlying token.
+     * @param owner         The address that is sending the `underlyingAmount` underlying token.
      * @param recipient     The address the will receive the newly redeemed DMM.
-     * @return The amount of underlying pulled from `sender`.
+     * @param amount        The amount of DMM token to be redeemed for the recipient.
+     * @return The amount of underlying redeemed.
      */
-    function redeemFrom(uint amount, address sender, address recipient) external returns (uint);
+    function redeemFrom(address owner, address recipient, uint amount) external returns (uint);
 
     /**
      * @dev Transfers DMM from `owner` to the DMMA contract. Then, sends the corresponding amount of token around which
@@ -217,7 +218,7 @@ interface IDmmToken {
      * @param v             The ECDSA V parameter.
      * @param r             The ECDSA R parameter.
      * @param s             The ECDSA S parameter.
-     * @return  The amount of underlying received by recipient.
+     * @return  The amount of underlying redeemed.
      */
     function redeemFromGaslessRequest(
         address owner,

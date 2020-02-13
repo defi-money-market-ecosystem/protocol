@@ -8,6 +8,11 @@
     "format": "solium -d contracts/",
     "start-chain": "ganache-cli --deterministic --port 8545",
     "test": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 10000 --recursive test/ --slow 2500",
+    "test-ether-token-contract-interactions": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 10000 --recursive test/DmmEther.ContractInteractions.test.js --slow 2500",
+    "test-ether-token-user-interactions": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 10000 --recursive test/DmmEther.UserInteractions.test.js --slow 2500",
+    "test-token-contract-interactions": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 10000 --recursive test/DmmToken.ContractInteractions.test.js --slow 2500",
+    "test-token-gasless-interactions": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 10000 --recursive test/DmmToken.Gasless*.test.js --slow 2500",
+    "test-token-user-interactions": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 10000 --recursive test/DmmToken.UserInteractions.test.js --slow 2500",
     "test-controller": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 10000 --recursive test/DmmController.test.js --slow 2500"
   },
   "keywords": [],
@@ -17,6 +22,7 @@
     "@openzeppelin/cli": "^2.6.0",
     "@openzeppelin/contract-loader": "^0.6.1",
     "@openzeppelin/contracts": "^2.4.0",
+    "@truffle/contract": "^4.1.8",
     "ganache-cli": "^6.9.0"
   },
   "devDependencies": {
