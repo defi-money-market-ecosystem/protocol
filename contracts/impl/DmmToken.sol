@@ -2,12 +2,11 @@ pragma solidity ^0.5.12;
 
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "./interfaces/IDmmController.sol";
-import "./interfaces/IDmmToken.sol";
-import "./libs/DmmTokenLibrary.sol";
-import "./utils/ERC20.sol";
-import "./utils/Blacklistable.sol";
-import "./libs/DmmTokenLibrary.sol";
+import "../libs/DmmTokenLibrary.sol";
+import "../interfaces/IDmmController.sol";
+import "../interfaces/IDmmToken.sol";
+import "../utils/ERC20.sol";
+import "../utils/Blacklistable.sol";
 
 contract DmmToken is ERC20, IDmmToken {
 

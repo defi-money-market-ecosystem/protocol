@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-import "../DmmToken.sol";
+import "../impl/DmmToken.sol";
 
 library DmmTokenLibrary {
 

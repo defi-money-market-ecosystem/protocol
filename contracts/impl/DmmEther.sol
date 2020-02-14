@@ -1,7 +1,7 @@
 pragma solidity ^0.5.0;
 
-import "./interfaces/IWETH.sol";
 import "./DmmToken.sol";
+import "../interfaces/IWETH.sol";
 
 /**
  * @dev A wrapper around Ether and WETH for minting DMM.

@@ -3,17 +3,17 @@ pragma solidity ^0.5.0;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
-import "./DmmBlacklistable.sol";
-import "./constants/CommonConstants.sol";
-import "./interfaces/ICollateralValuator.sol";
-import "./interfaces/IDmmController.sol";
-import "./interfaces/IDmmToken.sol";
-import "./interfaces/InterestRateInterface.sol";
-import "./interfaces/IDmmController.sol";
-import "./interfaces/IUnderlyingTokenValuator.sol";
-import "./interfaces/ICollateralValuator.sol";
-import "./interfaces/IDmmTokenFactory.sol";
-import "./utils/Blacklistable.sol";
+import "../constants/CommonConstants.sol";
+import "../impl/DmmBlacklistable.sol";
+import "../interfaces/ICollateralValuator.sol";
+import "../interfaces/IDmmController.sol";
+import "../interfaces/IDmmToken.sol";
+import "../interfaces/InterestRateInterface.sol";
+import "../interfaces/IDmmController.sol";
+import "../interfaces/IUnderlyingTokenValuator.sol";
+import "../interfaces/ICollateralValuator.sol";
+import "../interfaces/IDmmTokenFactory.sol";
+import "../utils/Blacklistable.sol";
 
 contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
 
