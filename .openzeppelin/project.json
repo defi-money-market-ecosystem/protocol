@@ -1,7 +1,7 @@
 {
   "manifestVersion": "2.2",
   "contracts": {
-    "InterestRateInterfaceImplV1": "InterestRateInterfaceImplV1",
+    "InterestRateImplV1": "InterestRateImplV1",
     "DmmToken": "DmmToken"
   },
   "dependencies": {},

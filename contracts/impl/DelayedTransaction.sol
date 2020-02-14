@@ -57,6 +57,10 @@ contract DelayedTransaction is IDelayedTransaction
         timeToLive = _timeToLive;
     }
 
+    function setTimeToLive(uint _timeToLive) public onlyAuthorized {
+        timeToLive = _timeToLive;
+    }
+
     // If the function that is called has no delay the function is called immediately,
     // otherwise the function call is stored on-chain and can be executed later using
     // `executeTransaction` when the necessary time has passed.

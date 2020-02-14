@@ -2,7 +2,7 @@ pragma solidity ^0.5.0;
 
 import "../interfaces/InterestRateInterface.sol";
 
-contract InterestRateInterfaceImplV1 is InterestRateInterface {
+contract InterestRateImplV1 is InterestRateInterface {
 
     constructor() public {
     }

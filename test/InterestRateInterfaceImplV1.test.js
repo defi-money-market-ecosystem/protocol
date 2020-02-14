@@ -9,14 +9,14 @@ const {BN} = require('@openzeppelin/test-helpers');
 const [admin, deployer, user] = accounts;
 
 // Create a contract object from a compilation artifact
-const InterestRateInterfaceImplV1 = contract.fromArtifact('InterestRateInterfaceImplV1');
+const InterestRateImplV1 = contract.fromArtifact('InterestRateImplV1');
 
 const expectedInterestRate = new BN('62500000000000000');
 
-describe('InterestRateInterfaceImplV1', () => {
+describe('InterestRateImplV1', () => {
 
   beforeEach(async () => {
-    this.contract = await InterestRateInterfaceImplV1.new();
+    this.contract = await InterestRateImplV1.new();
   });
 
   it('should get the interest rate', async () => {

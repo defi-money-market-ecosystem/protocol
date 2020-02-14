@@ -1,6 +1,6 @@
 {
   "contracts": {
-    "InterestRateInterfaceImplV1": {
+    "InterestRateImplV1": {
       "address": "0xe78A0F7E598Cc8b0Bb87894B0F60dD2a88d6a8Ab",
       "constructorCode": "6080604052348015600f57600080fd5b5060a98061001e6000396000f3fe",
       "bodyBytecodeHash": "17f2f5169a891e228e55c0a35fa4d095e7e4c366f433e2f2f76552f55d7fd0dc",
