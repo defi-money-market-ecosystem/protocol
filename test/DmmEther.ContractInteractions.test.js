@@ -62,7 +62,7 @@ describe('DmmEther.ContractInteractions', async () => {
   it('should not mintFrom if ecosystem is paused', async () => {
     await pauseEcosystem(this.controller, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
       this.contract.mintFrom(user, admin, _25(), {from: admin}),
@@ -73,7 +73,7 @@ describe('DmmEther.ContractInteractions', async () => {
   it('should not mintFrom if market is disabled', async () => {
     await disableMarkets(this.controller, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
       this.contract.mintFrom(user, admin, _25(), {from: admin}),
@@ -82,9 +82,9 @@ describe('DmmEther.ContractInteractions', async () => {
   });
 
   it('should not mintFrom if owner is blacklisted', async () => {
-    await blacklistUser(this.blacklistable, user, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
+    await blacklistUser(this.blacklistable, user, admin);
 
     await expectRevert(
       this.contract.mintFrom(user, admin, _25(), {from: admin}),
@@ -93,9 +93,9 @@ describe('DmmEther.ContractInteractions', async () => {
   });
 
   it('should not mintFrom if msg.sender is blacklisted', async () => {
-    await blacklistUser(this.blacklistable, admin, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
+    await blacklistUser(this.blacklistable, admin, admin);
 
     await expectRevert(
       this.contract.mintFrom(user, admin, _25(), {from: admin}),
@@ -106,7 +106,7 @@ describe('DmmEther.ContractInteractions', async () => {
   it('should not mintFrom if receiver is blacklisted', async () => {
     await blacklistUser(this.blacklistable, other, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
       this.contract.mintFrom(user, other, _25(), {from: admin}),
@@ -116,7 +116,7 @@ describe('DmmEther.ContractInteractions', async () => {
 
   it('should not mintFrom if amount is too small', async () => {
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
       this.contract.mintFrom(user, admin, new BN('1'), {from: admin}),
@@ -130,8 +130,8 @@ describe('DmmEther.ContractInteractions', async () => {
 
   it('should mintFromViaEther to owner via admin if wallet is set up', async () => {
     const adminBalance = await balance.current(admin);
-    await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
     await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
 
     const gasPrice = new BN(1e9);
     const receipt = await this.contract.mintFromViaEther(user, admin, {from: admin, value: _25(), gasPrice});
@@ -148,20 +148,31 @@ describe('DmmEther.ContractInteractions', async () => {
     (await balance.current(admin)).should.be.bignumber.equal(adminBalance.sub(totalGasCost).sub(_25()));
   });
 
-  it('should not mintFromViaEther to owner if sender is not approved', async () => {
-    await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
+  it('should mintFromViaEther to owner if sender is not approved', async () => {
+    // This works because msg.sender sends the funds anyway
     await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
-    await expectRevert(
-      this.contract.mintFromViaEther(user, other, {from: other, value: _25()}),
-      'INSUFFICIENT_ALLOWANCE',
+    const adminBalance = await balance.current(admin);
+
+    const gasPrice = new BN(1e9);
+    const receipt = await this.contract.mintFromViaEther(user, admin, {from: admin, value: _25(), gasPrice});
+    const totalGasCost = gasPrice.mul(new BN(receipt.receipt.gasUsed));
+
+    expectEvent(
+      receipt,
+      'Mint',
+      {minter: user, recipient: admin, amount: _25()}
     );
+
+    (await this.contract.balanceOf(admin)).should.be.bignumber.equal(_25());
+    (await this.underlyingToken.balanceOf(user)).should.be.bignumber.equal(_100());
+    (await balance.current(admin)).should.be.bignumber.equal(adminBalance.sub(totalGasCost).sub(_25()));
   });
 
   it('should not mintFromViaEther if ecosystem is paused', async () => {
     await pauseEcosystem(this.controller, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
       this.contract.mintFromViaEther(user, admin, {from: admin, value: _25()}),
@@ -172,7 +183,7 @@ describe('DmmEther.ContractInteractions', async () => {
   it('should not mintFromViaEther if market is disabled', async () => {
     await disableMarkets(this.controller, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
       this.contract.mintFromViaEther(user, admin, {from: admin, value: _25()}),
@@ -181,9 +192,9 @@ describe('DmmEther.ContractInteractions', async () => {
   });
 
   it('should not mintFromViaEther if owner is blacklisted', async () => {
-    await blacklistUser(this.blacklistable, user, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
+    await blacklistUser(this.blacklistable, user, admin);
 
     await expectRevert(
       this.contract.mintFromViaEther(user, admin, {from: admin, value: _25()}),
@@ -192,9 +203,10 @@ describe('DmmEther.ContractInteractions', async () => {
   });
 
   it('should not mintFromViaEther if msg.sender is blacklisted', async () => {
-    await blacklistUser(this.blacklistable, admin, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
+
+    await blacklistUser(this.blacklistable, admin, admin);
 
     await expectRevert(
       this.contract.mintFromViaEther(user, admin, {from: admin, value: _25()}),
@@ -205,7 +217,7 @@ describe('DmmEther.ContractInteractions', async () => {
   it('should not mintFromViaEther if receiver is blacklisted', async () => {
     await blacklistUser(this.blacklistable, other, admin);
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
       this.contract.mintFromViaEther(user, other, {from: admin, value: _25()}),
@@ -215,7 +227,7 @@ describe('DmmEther.ContractInteractions', async () => {
 
   it('should not mintFromViaEther if amount is too small', async () => {
     await this.underlyingToken.approve(this.contract.address, constants.MAX_UINT256, {from: user});
-    await this.underlyingToken.approve(admin, constants.MAX_UINT256, {from: user});
+    await this.contract.approve(admin, constants.MAX_UINT256, {from: user});
 
     await expectRevert(
       this.contract.mintFromViaEther(user, admin, {from: admin, value: new BN('1')}),

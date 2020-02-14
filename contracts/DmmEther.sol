@@ -46,7 +46,7 @@ contract DmmEther is DmmToken {
         IWETH(wethToken).deposit.value(msg.value)();
         _shouldTransferIn = false;
 
-        return _mint(_msgSender(), _msgSender(), msg.value);
+        return _mint(_msgSender(), _msgSender(), msg.value, /* shouldDelegateCall */ false);
     }
 
     function mintFromViaEther(
@@ -57,8 +57,7 @@ contract DmmEther is DmmToken {
         IWETH(wethToken).deposit.value(msg.value)();
         _shouldTransferIn = false;
 
-        // Call super because there is authentication done in there.
-        return super.mintFrom(sender, recipient, msg.value);
+        return _mint(sender, recipient, msg.value, /* shouldDelegateCall */ true);
     }
 
     function mint(
@@ -68,7 +67,7 @@ contract DmmEther is DmmToken {
     isNotDisabled
     public returns (uint) {
         _shouldTransferIn = true;
-        return _mint(_msgSender(), _msgSender(), underlyingAmount);
+        return _mint(_msgSender(), _msgSender(), underlyingAmount, /* shouldDelegateCall */ false);
     }
 
 
@@ -81,8 +80,7 @@ contract DmmEther is DmmToken {
     isNotDisabled
     public returns (uint) {
         _shouldTransferIn = true;
-        // Call super because there is authentication done in there.
-        return super.mintFrom(sender, recipient, underlyingAmount);
+        return _mint(sender, recipient, underlyingAmount, /* shouldDelegateCall */ true);
     }
 
     function mintFromGaslessRequest(
@@ -101,7 +99,7 @@ contract DmmEther is DmmToken {
     isNotDisabled
     public returns (uint) {
         _shouldTransferIn = true;
-        return mintFromGaslessRequest(
+        return super.mintFromGaslessRequest(
             owner,
             recipient,
             nonce,
@@ -117,7 +115,7 @@ contract DmmEther is DmmToken {
 
     function redeemToWETH(uint amount) whenNotPaused public returns (uint) {
         _shouldRedeemToETH = false;
-        return _redeem(_msgSender(), _msgSender(), amount);
+        return _redeem(_msgSender(), _msgSender(), amount, /* shouldUseAllowance */ false);
     }
 
     function redeemFromToWETH(
@@ -126,13 +124,12 @@ contract DmmEther is DmmToken {
         uint amount
     ) whenNotPaused public payable returns (uint) {
         _shouldRedeemToETH = false;
-        // Call super because there is authentication done in there.
-        return super.redeemFrom(sender, recipient, amount);
+        return _redeem(sender, recipient, amount, /* shouldUseAllowance */ true);
     }
 
     function redeem(uint amount) whenNotPaused public returns (uint) {
         _shouldRedeemToETH = true;
-        return _redeem(_msgSender(), _msgSender(), amount);
+        return _redeem(_msgSender(), _msgSender(), amount, /* shouldUseAllowance */ false);
     }
 
     function redeemFrom(
@@ -141,8 +138,7 @@ contract DmmEther is DmmToken {
         uint amount
     ) whenNotPaused public returns (uint) {
         _shouldRedeemToETH = true;
-        // Call super because there is authentication done in there.
-        return super.redeemFrom(sender, recipient, amount);
+        return _redeem(sender, recipient, amount, /* shouldUseAllowance */ true);
     }
 
     function redeemFromGaslessRequest(
@@ -203,12 +199,11 @@ contract DmmEther is DmmToken {
         );
     }
 
-    function transferUnderlyingIn(address sender, uint underlyingAmount) internal {
+    function transferUnderlyingIn(address sender, uint underlyingAmount, bool shouldDelegateCall) internal {
         if (!_shouldTransferIn) {
             // Do nothing. The ETH was already transferred into this contract
         } else {
-            address underlyingToken = controller.getUnderlyingTokenForDmm(address(this));
-            IERC20(underlyingToken).safeTransferFrom(sender, address(this), underlyingAmount.sub(msg.value));
+            super.transferUnderlyingIn(sender, underlyingAmount, shouldDelegateCall);
         }
     }
 

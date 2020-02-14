@@ -192,7 +192,7 @@ describe('DmmToken.GaslessRedeem', async () => {
   });
 
 
-  it('should not mint using gasless request when msg.sender blacklisted', async () => {
+  it('should not redeem using gasless request when msg.sender blacklisted', async () => {
     await blacklistUser(this.blacklistable, user, admin);
     const nonce = _0();
     const expiry = _0();
@@ -219,7 +219,7 @@ describe('DmmToken.GaslessRedeem', async () => {
     );
   });
 
-  it('should not mint using gasless request when owner blacklisted', async () => {
+  it('should not redeem using gasless request when owner blacklisted', async () => {
     const amount = _25();
     await mint(this.underlyingToken, this.contract, this.wallet.address, amount);
 
@@ -248,7 +248,7 @@ describe('DmmToken.GaslessRedeem', async () => {
     );
   });
 
-  it('should not mint using gasless request when fee recipient blacklisted', async () => {
+  it('should not redeem using gasless request when fee recipient blacklisted', async () => {
     await blacklistUser(this.blacklistable, otherFeeRecipient, admin);
     const nonce = _0();
     const expiry = _0();
@@ -275,7 +275,7 @@ describe('DmmToken.GaslessRedeem', async () => {
     );
   });
 
-  it('should not mint using gasless request when ecosystem is paused', async () => {
+  it('should not redeem using gasless request when ecosystem is paused', async () => {
     await pauseEcosystem(this.controller, admin);
     const nonce = _0();
     const expiry = _0();
@@ -302,7 +302,7 @@ describe('DmmToken.GaslessRedeem', async () => {
     );
   });
 
-  it('should not mint using gasless request when actual mint amount is too small', async () => {
+  it('should not redeem using gasless request when actual mint amount is too small', async () => {
     const nonce = _0();
     const expiry = _0();
     const amount = _25();
@@ -328,7 +328,7 @@ describe('DmmToken.GaslessRedeem', async () => {
     );
   });
 
-  it('should not mint using gasless request when fee is too large', async () => {
+  it('should not redeem using gasless request when fee is too large', async () => {
     const nonce = _0();
     const expiry = _0();
     const amount = _1();
@@ -354,7 +354,7 @@ describe('DmmToken.GaslessRedeem', async () => {
     );
   });
 
-  it('should not mint using gasless request when fee recipient is 0x0 address', async () => {
+  it('should not redeem using gasless request when fee recipient is 0x0 address', async () => {
     const nonce = _0();
     const expiry = _0();
     const amount = _25();
@@ -380,7 +380,7 @@ describe('DmmToken.GaslessRedeem', async () => {
     );
   });
 
-  it('should not mint using gasless request when signature is invalid', async () => {
+  it('should not redeem using gasless request when signature is invalid', async () => {
     const nonce = _0();
     const expiry = _0();
     const amount = _25();
@@ -406,7 +406,7 @@ describe('DmmToken.GaslessRedeem', async () => {
     );
   });
 
-  it('should not mint using gasless request when signature is expired', async () => {
+  it('should not redeem using gasless request when signature is expired', async () => {
     const latestTimestamp = await time.latest();
     const nonce = _0();
     const expiry = latestTimestamp.sub(new BN(100));
@@ -433,7 +433,7 @@ describe('DmmToken.GaslessRedeem', async () => {
     );
   });
 
-  it('should not mint using gasless request when nonce is invalid', async () => {
+  it('should not redeem using gasless request when nonce is invalid', async () => {
     const nonce = new BN('24832');
     const expiry = _0();
     const amount = _25();
@@ -459,7 +459,7 @@ describe('DmmToken.GaslessRedeem', async () => {
     );
   });
 
-  it('should not mint using gasless request when owner is 0x0 address', async () => {
+  it('should not redeem using gasless request when owner is 0x0 address', async () => {
     const nonce = _0();
     const expiry = _0();
     const amount = _25();
@@ -485,7 +485,7 @@ describe('DmmToken.GaslessRedeem', async () => {
     );
   });
 
-  it('should not mint using gasless request when recipient is 0x0 address', async () => {
+  it('should not redeem using gasless request when recipient is 0x0 address', async () => {
     const nonce = _0();
     const expiry = _0();
     const amount = _25();

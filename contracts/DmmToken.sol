@@ -154,7 +154,7 @@ contract DmmToken is ERC20, IDmmToken {
     whenNotPaused
     isNotDisabled
     public returns (uint) {
-        return _mint(_msgSender(), _msgSender(), underlyingAmount);
+        return _mint(_msgSender(), _msgSender(), underlyingAmount, /* shouldCheckAllowance */ false);
     }
 
     function mintFrom(
@@ -166,17 +166,24 @@ contract DmmToken is ERC20, IDmmToken {
     isNotDisabled
     nonReentrant
     public returns (uint) {
-        uint amount = _mint(owner, recipient, underlyingAmount);
-
-        uint newAllowance = allowance(owner, _msgSender()).sub(amount, "INSUFFICIENT_ALLOWANCE");
-        _approve(owner, _msgSender(), newAllowance);
-
-        return amount;
+        return _mint(owner, recipient, underlyingAmount, /* shouldCheckAllowance */ true);
     }
 
-    function transferUnderlyingIn(address sender, uint underlyingAmount) internal {
+    function transferUnderlyingIn(address owner, uint underlyingAmount, bool shouldCheckAllowance) internal {
         address underlyingToken = controller.getUnderlyingTokenForDmm(address(this));
-        IERC20(underlyingToken).safeTransferFrom(sender, address(this), underlyingAmount);
+        if (shouldCheckAllowance) {
+            // This is the best way to check that the owner's underlying can be spent by `msg.sender`, because the user
+            // must set an allowance for:
+            // 1) The msg_sender
+            // 2) This contract
+            // However, this contract cannot modify the user's allowance for underlying. The main negative side-effect
+            // of this is that the user must set an allowance twice before allowing a spender to initiate a call to
+            // #mintFrom
+            uint currentAllowance = _allowances[owner][_msgSender()];
+            _allowances[owner][_msgSender()] = currentAllowance.sub(underlyingAmount, "INSUFFICIENT_ALLOWANCE");
+        }
+
+        IERC20(underlyingToken).safeTransferFrom(owner, address(this), underlyingAmount);
     }
 
     function transferUnderlyingOut(address recipient, uint underlyingAmount) internal {
@@ -207,8 +214,10 @@ contract DmmToken is ERC20, IDmmToken {
         // To avoid stack too deep issues, splitting the call into 2 parts is essential.
         _storage.validateOffChainMint(domainSeparator, MINT_TYPE_HASH, owner, recipient, nonce, expiry, underlyingAmount, feeAmount, feeRecipient, v, r, s);
 
-        // Initially, we mint to this contract so we can send handle the fees
-        uint amount = _mintDmm(_storage, owner, address(this), underlyingAmount);
+        // Initially, we mint to this contract so we can send handle the fees.
+        // We don't delegate the call for transferring the underlying in, because gasless requests are designed to
+        // allow any relayer to broadcast the user's cryptographically-secure message.
+        uint amount = _mintDmm(_storage, owner, address(this), underlyingAmount, /* shouldCheckAllowance */ false);
         require(amount >= feeAmount, "FEE_TOO_LARGE");
 
         uint amountLessFee = amount.sub(feeAmount);
@@ -231,7 +240,7 @@ contract DmmToken is ERC20, IDmmToken {
     )
     whenNotPaused
     public returns (uint) {
-        return _redeem(_msgSender(), _msgSender(), amount);
+        return _redeem(_msgSender(), _msgSender(), amount, /* shouldUseAllowance */ false);
     }
 
     function redeemFrom(
@@ -242,9 +251,7 @@ contract DmmToken is ERC20, IDmmToken {
     whenNotPaused
     nonReentrant
     public returns (uint) {
-        uint newAllowance = allowance(owner, _msgSender()).sub(amount, "INSUFFICIENT_ALLOWANCE");
-        _approve(owner, _msgSender(), newAllowance);
-        return _redeem(owner, recipient, amount);
+        return _redeem(owner, recipient, amount, /* shouldUseAllowance */ true);
     }
 
     function redeemFromGaslessRequest(
@@ -273,7 +280,7 @@ contract DmmToken is ERC20, IDmmToken {
         uint amountLessFee = amount.sub(feeAmount, "FEE_TOO_LARGE");
         require(amountLessFee >= minRedeemAmount, "INSUFFICIENT_REDEEM_AMOUNT");
 
-        uint underlyingAmount = _redeemDmm(_storage, owner, recipient, amountLessFee);
+        uint underlyingAmount = _redeemDmm(_storage, owner, recipient, amountLessFee, /* shouldUseAllowance */ false);
         doFeeTransferForDmmIfNecessary(owner, feeRecipient, feeAmount);
 
         return underlyingAmount;
@@ -337,11 +344,11 @@ contract DmmToken is ERC20, IDmmToken {
      * Private & Internal Functions
      */
 
-    function _mint(address owner, address recipient, uint underlyingAmount) internal returns (uint) {
-        return _mintDmm(_storage, owner, recipient, underlyingAmount);
+    function _mint(address owner, address recipient, uint underlyingAmount, bool shouldCheckAllowance) internal returns (uint) {
+        return _mintDmm(_storage, owner, recipient, underlyingAmount, shouldCheckAllowance);
     }
 
-    function _mintDmm(DmmTokenLibrary.Storage storage _storage, address owner, address recipient, uint underlyingAmount) private returns (uint) {
+    function _mintDmm(DmmTokenLibrary.Storage storage _storage, address owner, address recipient, uint underlyingAmount, bool shouldCheckAllowance) private returns (uint) {
         blacklistable().checkNotBlacklisted(_msgSender());
 
         uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
@@ -350,7 +357,7 @@ contract DmmToken is ERC20, IDmmToken {
         require(balanceOf(address(this)) >= amount, "INSUFFICIENT_DMM_LIQUIDITY");
 
         // Transfer underlying to this contract
-        transferUnderlyingIn(owner, underlyingAmount);
+        transferUnderlyingIn(owner, underlyingAmount, shouldCheckAllowance);
 
         // Transfer DMM to the recipient
         blacklistable().checkNotBlacklisted(owner);
@@ -363,11 +370,11 @@ contract DmmToken is ERC20, IDmmToken {
         return amount;
     }
 
-    function _redeem(address owner, address recipient, uint amount) internal returns (uint) {
-        return _redeemDmm(_storage, owner, recipient, amount);
+    function _redeem(address owner, address recipient, uint amount, bool shouldUseAllowance) internal returns (uint) {
+        return _redeemDmm(_storage, owner, recipient, amount, shouldUseAllowance);
     }
 
-    function _redeemDmm(DmmTokenLibrary.Storage storage _storage, address owner, address recipient, uint amount) private returns (uint) {
+    function _redeemDmm(DmmTokenLibrary.Storage storage _storage, address owner, address recipient, uint amount, bool shouldUseAllowance) private returns (uint) {
         blacklistable().checkNotBlacklisted(_msgSender());
 
         uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
@@ -378,6 +385,11 @@ contract DmmToken is ERC20, IDmmToken {
 
         // Transfer DMM to this contract from whoever _msgSender() is
         this.blacklistable().checkNotBlacklisted(recipient);
+
+        if (shouldUseAllowance) {
+            uint newAllowance = allowance(owner, _msgSender()).sub(amount, "INSUFFICIENT_ALLOWANCE");
+            _approve(owner, _msgSender(), newAllowance);
+        }
         _transfer(owner, address(this), amount);
 
         // Transfer underlying to the recipient from this contract

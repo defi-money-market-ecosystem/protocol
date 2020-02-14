@@ -40,7 +40,7 @@ contract ERC20 is Context, IERC20, ReentrancyGuard, Ownable {
 
     mapping(address => uint256) internal _balances;
 
-    mapping(address => mapping(address => uint256)) private _allowances;
+    mapping(address => mapping(address => uint256)) internal _allowances;
 
     uint256 internal _totalSupply;
 
