@@ -14,6 +14,7 @@ library DmmTokenLibrary {
     struct Storage {
         uint exchangeRate;
         uint exchangeRateLastUpdatedTimestamp;
+        uint exchangeRateLastUpdatedBlockNumber;
         mapping(address => uint) nonces;
     }
 
@@ -84,6 +85,7 @@ library DmmTokenLibrary {
         uint currentExchangeRate = getCurrentExchangeRate(_storage, dmmTokenInterestRate);
         if (currentExchangeRate != previousExchangeRate) {
             _storage.exchangeRateLastUpdatedTimestamp = block.timestamp;
+            _storage.exchangeRateLastUpdatedBlockNumber = block.number;
             _storage.exchangeRate = currentExchangeRate;
             return currentExchangeRate;
         } else {

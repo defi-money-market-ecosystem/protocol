@@ -78,7 +78,8 @@ contract DmmToken is ERC20, IDmmToken {
 
         _storage = DmmTokenLibrary.Storage({
             exchangeRate : DmmTokenLibrary.getExchangeRateBaseRate(),
-            exchangeRateLastUpdatedTimestamp : block.timestamp
+            exchangeRateLastUpdatedTimestamp : block.timestamp,
+            exchangeRateLastUpdatedBlockNumber : block.number
             });
 
         mintToThisContract(_totalSupply);
@@ -141,6 +142,10 @@ contract DmmToken is ERC20, IDmmToken {
 
     function exchangeRateLastUpdatedTimestamp() public view returns (uint) {
         return _storage.exchangeRateLastUpdatedTimestamp;
+    }
+
+    function exchangeRateLastUpdatedBlockNumber() public view returns (uint) {
+        return _storage.exchangeRateLastUpdatedBlockNumber;
     }
 
     function nonceOf(address owner) public view returns (uint) {

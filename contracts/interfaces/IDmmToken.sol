@@ -103,6 +103,11 @@ interface IDmmToken {
     function exchangeRateLastUpdatedTimestamp() external view returns (uint);
 
     /**
+      * @dev The timestamp at which the exchange rate was last updated.
+      */
+    function exchangeRateLastUpdatedBlockNumber() external view returns (uint);
+
+    /**
      * @dev The exchange rate from underlying to DMM. Invert this number to go from DMM to underlying. This number
      *      has 18 decimals.
      */
@@ -150,7 +155,7 @@ interface IDmmToken {
      *                      owner's current nonce.
      * @param expiry        The timestamp, in unix seconds, at which the signed off-chain message expires. A value of 0
      *                      means there is no expiration.
-     * @param amount        The amount of underlying that should be minted for `owner` and sent to `recipient`.
+     * @param amount        The amount of underlying that should be minted by `owner` and sent to `recipient`.
      * @param feeAmount     The amount of DMM to be sent to feeRecipient for sending this transaction on behalf of
      *                      owner. Can be 0, which means the user won't be charged a fee. Must be <= `amount`.
      * @param feeRecipient  The address that should receive the fee. A value of 0x0 will send the fees to `msg.sender`.

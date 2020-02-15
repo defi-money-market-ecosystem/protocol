@@ -23,6 +23,7 @@
     "@openzeppelin/contract-loader": "^0.6.1",
     "@openzeppelin/contracts": "^2.4.0",
     "@truffle/contract": "^4.1.8",
+    "chainlink": "^0.8.2",
     "ganache-cli": "^6.9.0"
   },
   "devDependencies": {
