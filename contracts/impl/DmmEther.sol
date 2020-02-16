@@ -118,15 +118,6 @@ contract DmmEther is DmmToken {
         return _redeem(_msgSender(), _msgSender(), amount, /* shouldUseAllowance */ false);
     }
 
-    function redeemFromToWETH(
-        address sender,
-        address recipient,
-        uint amount
-    ) whenNotPaused public payable returns (uint) {
-        _shouldRedeemToETH = false;
-        return _redeem(sender, recipient, amount, /* shouldUseAllowance */ true);
-    }
-
     function redeem(uint amount) whenNotPaused public returns (uint) {
         _shouldRedeemToETH = true;
         return _redeem(_msgSender(), _msgSender(), amount, /* shouldUseAllowance */ false);
@@ -156,36 +147,7 @@ contract DmmEther is DmmToken {
     whenNotPaused
     public returns (uint) {
         _shouldRedeemToETH = true;
-        return super.redeemFromGaslessRequest(
-            owner,
-            recipient,
-            nonce,
-            expiry,
-            amount,
-            feeAmount,
-            feeRecipient,
-            v,
-            r,
-            s
-        );
-    }
-
-    function redeemFromGaslessRequestToWETH(
-        address owner,
-        address recipient,
-        uint nonce,
-        uint expiry,
-        uint amount,
-        uint feeAmount,
-        address feeRecipient,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-    whenNotPaused
-    public returns (uint) {
-        _shouldRedeemToETH = false;
-        return super.redeemFromGaslessRequest(
+        return _redeemFromGaslessRequest(
             owner,
             recipient,
             nonce,

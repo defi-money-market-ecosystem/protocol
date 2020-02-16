@@ -8,7 +8,7 @@ import "../interfaces/IDmmToken.sol";
 import "../utils/ERC20.sol";
 import "../utils/Blacklistable.sol";
 
-contract DmmToken is ERC20, IDmmToken {
+contract DmmToken is ERC20, IDmmToken, CommonConstants {
 
     using SafeERC20 for IERC20;
     using SafeMath for uint;
@@ -77,7 +77,7 @@ contract DmmToken is ERC20, IDmmToken {
             ));
 
         _storage = DmmTokenLibrary.Storage({
-            exchangeRate : DmmTokenLibrary.getExchangeRateBaseRate(),
+            exchangeRate : EXCHANGE_RATE_BASE_RATE,
             exchangeRateLastUpdatedTimestamp : block.timestamp,
             exchangeRateLastUpdatedBlockNumber : block.number
             });
@@ -210,10 +210,7 @@ contract DmmToken is ERC20, IDmmToken {
     whenNotPaused
     isNotDisabled
     public returns (uint) {
-        blacklistable().checkNotBlacklisted(_msgSender());
-        if (feeRecipient != address(0x0)) {
-            blacklistable().checkNotBlacklisted(feeRecipient);
-        }
+        checkGaslessBlacklist(_msgSender(), feeRecipient);
 
         // To avoid stack too deep issues, splitting the call into 2 parts is essential.
         _storage.validateOffChainMint(domainSeparator, MINT_TYPE_HASH, owner, recipient, nonce, expiry, underlyingAmount, feeAmount, feeRecipient, v, r, s);
@@ -227,14 +224,9 @@ contract DmmToken is ERC20, IDmmToken {
         uint amountLessFee = amount.sub(feeAmount);
         require(amountLessFee >= minMintAmount, "INSUFFICIENT_MINT_AMOUNT");
 
-        if (address(this) != recipient) {
-            _transfer(address(this), recipient, amountLessFee);
-        }
+        _transfer(address(this), recipient, amountLessFee);
 
-        if (feeAmount > 0) {
-            // Send to the fee recipient
-            _transfer(address(this), feeRecipient, feeAmount);
-        }
+        doFeeTransferForDmmIfNecessary(address(this), feeRecipient, feeAmount);
 
         return amountLessFee;
     }
@@ -272,22 +264,18 @@ contract DmmToken is ERC20, IDmmToken {
     )
     whenNotPaused
     public returns (uint) {
-        blacklistable().checkNotBlacklisted(_msgSender());
-
-        if (feeRecipient != address(0x0)) {
-            blacklistable().checkNotBlacklisted(feeRecipient);
-        }
-
-        // To avoid stack too deep issues, splitting the call into 2 parts is essential.
-        _storage.validateOffChainRedeem(domainSeparator, REDEEM_TYPE_HASH, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient, v, r, s);
-
-        uint amountLessFee = amount.sub(feeAmount, "FEE_TOO_LARGE");
-        require(amountLessFee >= minRedeemAmount, "INSUFFICIENT_REDEEM_AMOUNT");
-
-        uint underlyingAmount = _redeemDmm(_storage, owner, recipient, amountLessFee, /* shouldUseAllowance */ false);
-        doFeeTransferForDmmIfNecessary(owner, feeRecipient, feeAmount);
-
-        return underlyingAmount;
+        return _redeemFromGaslessRequest(
+            owner,
+            recipient,
+            nonce,
+            expiry,
+            amount,
+            feeAmount,
+            feeRecipient,
+            v,
+            r,
+            s
+        );
     }
 
     function permit(
@@ -304,17 +292,13 @@ contract DmmToken is ERC20, IDmmToken {
     )
     whenNotPaused
     public {
-        blacklistable().checkNotBlacklisted(_msgSender());
-        if (feeRecipient != address(0x0)) {
-            blacklistable().checkNotBlacklisted(feeRecipient);
-        }
+        checkGaslessBlacklist(_msgSender(), feeRecipient);
 
         _storage.validateOffChainPermit(domainSeparator, PERMIT_TYPE_HASH, owner, spender, nonce, expiry, allowed, feeAmount, feeRecipient, v, r, s);
 
         uint wad = allowed ? uint(- 1) : 0;
         _approve(owner, spender, wad);
 
-        require(balanceOf(owner) >= feeAmount, "INSUFFICIENT_BALANCE_FOR_FEE");
         doFeeTransferForDmmIfNecessary(owner, feeRecipient, feeAmount);
     }
 
@@ -332,10 +316,7 @@ contract DmmToken is ERC20, IDmmToken {
     )
     whenNotPaused
     public {
-        blacklistable().checkNotBlacklisted(_msgSender());
-        if (feeRecipient != address(0x0)) {
-            blacklistable().checkNotBlacklisted(feeRecipient);
-        }
+        checkGaslessBlacklist(_msgSender(), feeRecipient);
 
         _storage.validateOffChainTransfer(domainSeparator, TRANSFER_TYPE_HASH, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient, v, r, s);
 
@@ -356,7 +337,7 @@ contract DmmToken is ERC20, IDmmToken {
         blacklistable().checkNotBlacklisted(_msgSender());
 
         uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
-        uint amount = underlyingAmount.underlyingToAmount(currentExchangeRate);
+        uint amount = underlyingAmount.underlyingToAmount(currentExchangeRate, EXCHANGE_RATE_BASE_RATE);
 
         require(balanceOf(address(this)) >= amount, "INSUFFICIENT_DMM_LIQUIDITY");
 
@@ -380,15 +361,13 @@ contract DmmToken is ERC20, IDmmToken {
 
     function _redeemDmm(DmmTokenLibrary.Storage storage _storage, address owner, address recipient, uint amount, bool shouldUseAllowance) private returns (uint) {
         blacklistable().checkNotBlacklisted(_msgSender());
+        blacklistable().checkNotBlacklisted(recipient);
 
         uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
-        uint underlyingAmount = amount.amountToUnderlying(currentExchangeRate);
+        uint underlyingAmount = amount.amountToUnderlying(currentExchangeRate, EXCHANGE_RATE_BASE_RATE);
 
         IERC20 underlyingToken = IERC20(this.controller().getUnderlyingTokenForDmm(address(this)));
         require(underlyingToken.balanceOf(address(this)) >= underlyingAmount, "INSUFFICIENT_UNDERLYING_LIQUIDITY");
-
-        // Transfer DMM to this contract from whoever _msgSender() is
-        this.blacklistable().checkNotBlacklisted(recipient);
 
         if (shouldUseAllowance) {
             uint newAllowance = allowance(owner, _msgSender()).sub(amount, "INSUFFICIENT_ALLOWANCE");
@@ -406,8 +385,42 @@ contract DmmToken is ERC20, IDmmToken {
         return underlyingAmount;
     }
 
+    function _redeemFromGaslessRequest(
+        address owner,
+        address recipient,
+        uint nonce,
+        uint expiry,
+        uint amount,
+        uint feeAmount,
+        address feeRecipient,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal returns (uint) {
+        checkGaslessBlacklist(_msgSender(), feeRecipient);
+
+        // To avoid stack too deep issues, splitting the call into 2 parts is essential.
+        _storage.validateOffChainRedeem(domainSeparator, REDEEM_TYPE_HASH, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient, v, r, s);
+
+        uint amountLessFee = amount.sub(feeAmount, "FEE_TOO_LARGE");
+        require(amountLessFee >= minRedeemAmount, "INSUFFICIENT_REDEEM_AMOUNT");
+
+        uint underlyingAmount = _redeemDmm(_storage, owner, recipient, amountLessFee, /* shouldUseAllowance */ false);
+        doFeeTransferForDmmIfNecessary(owner, feeRecipient, feeAmount);
+
+        return underlyingAmount;
+    }
+
+    function checkGaslessBlacklist(address msgSender, address feeRecipient) private view {
+        blacklistable().checkNotBlacklisted(_msgSender());
+        if (feeRecipient != address(0x0)) {
+            blacklistable().checkNotBlacklisted(feeRecipient);
+        }
+    }
+
     function doFeeTransferForDmmIfNecessary(address owner, address feeRecipient, uint feeAmount) private {
         if (feeAmount > 0) {
+            require(balanceOf(owner) >= feeAmount, "INSUFFICIENT_BALANCE_FOR_FEE");
             _transfer(owner, feeRecipient, feeAmount);
             emit FeeTransfer(owner, feeRecipient, feeAmount);
         }

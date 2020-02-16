@@ -13,7 +13,7 @@ const {
   _0,
   _1,
   _24,
-  _24_5,
+  _24_99,
   _25,
   _10000,
   blacklistUser,
@@ -261,7 +261,7 @@ describe('DmmToken.GaslessMint', async () => {
     const nonce = _0();
     const expiry = _0();
     const amount = _25();
-    const feeAmount = _24_5();
+    const feeAmount = _24_99();
     const feeRecipient = otherFeeRecipient;
     const typeHash = await this.contract.MINT_TYPE_HASH();
     const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);

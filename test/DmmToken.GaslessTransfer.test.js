@@ -12,7 +12,6 @@ const {
   _0,
   _1,
   _24,
-  _24_5,
   _25,
   blacklistUser,
   disableMarkets,

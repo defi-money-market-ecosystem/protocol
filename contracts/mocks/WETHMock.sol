@@ -8,6 +8,9 @@ contract WETHMock is ERC20Mock, IWETH {
     event Deposit(address indexed sender, uint wad);
     event Withdrawal(address indexed sender, uint wad);
 
+    constructor() public {
+    }
+
     function() external payable {
         deposit();
     }

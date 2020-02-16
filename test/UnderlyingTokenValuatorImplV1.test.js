@@ -1,8 +1,5 @@
-const {accounts, contract, web3} = require('@openzeppelin/test-environment');
-require('@openzeppelin/test-helpers/configure')({
-  provider: 'http://localhost:8545',
-
-});
+const {accounts, contract} = require('@openzeppelin/test-environment');
+require('@openzeppelin/test-helpers/configure');
 const {expect} = require('chai');
 require('chai').should();
 const {BN, constants, expectRevert} = require('@openzeppelin/test-helpers');

@@ -13,7 +13,7 @@ const {
   _0,
   _1,
   _24,
-  _24_5,
+  _24_99,
   _25,
   blacklistUser,
   disableMarkets,
@@ -302,11 +302,11 @@ describe('DmmToken.GaslessRedeem', async () => {
     );
   });
 
-  it('should not redeem using gasless request when actual mint amount is too small', async () => {
+  it('should not redeem using gasless request when actual redeem amount is too small', async () => {
     const nonce = _0();
     const expiry = _0();
     const amount = _25();
-    const feeAmount = _24_5();
+    const feeAmount = _24_99();
     const feeRecipient = otherFeeRecipient;
     const typeHash = await this.contract.REDEEM_TYPE_HASH();
     const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);

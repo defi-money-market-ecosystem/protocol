@@ -1,5 +1,6 @@
 pragma solidity ^0.5.0;
 
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
@@ -9,9 +10,7 @@ import "../interfaces/ICollateralValuator.sol";
 import "../interfaces/IDmmController.sol";
 import "../interfaces/IDmmToken.sol";
 import "../interfaces/InterestRateInterface.sol";
-import "../interfaces/IDmmController.sol";
 import "../interfaces/IUnderlyingTokenValuator.sol";
-import "../interfaces/ICollateralValuator.sol";
 import "../interfaces/IDmmTokenFactory.sol";
 import "../utils/Blacklistable.sol";
 
@@ -45,8 +44,10 @@ contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
     ICollateralValuator public collateralValuator;
     IUnderlyingTokenValuator public underlyingTokenValuator;
     IDmmTokenFactory public dmmTokenFactory;
+    IDmmTokenFactory public dmmEtherFactory;
     uint public minCollateralization;
     uint public minReserveRatio;
+    address public wethToken;
 
     /********************************
      * DMM Account Management
@@ -72,18 +73,22 @@ contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
         address _interestRateInterface,
         address _collateralValuator,
         address _underlyingTokenValuator,
+        address _dmmEtherFactory,
         address _dmmTokenFactory,
         address _dmmBlacklistable,
         uint256 _minCollateralization,
-        uint256 _minReserveRatio
+        uint256 _minReserveRatio,
+        address _wethToken
     ) public {
         interestRateInterface = InterestRateInterface(_interestRateInterface);
         collateralValuator = ICollateralValuator(_collateralValuator);
         underlyingTokenValuator = IUnderlyingTokenValuator(_underlyingTokenValuator);
         dmmTokenFactory = IDmmTokenFactory(_dmmTokenFactory);
+        dmmEtherFactory = IDmmTokenFactory(_dmmEtherFactory);
         dmmBlacklistable = DmmBlacklistable(_dmmBlacklistable);
         minCollateralization = _minCollateralization;
         minReserveRatio = _minReserveRatio;
+        wethToken = _wethToken;
     }
 
     /*****************
@@ -129,15 +134,31 @@ contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
     ) public onlyOwner {
         // Start the IDs at 1. Zero is reserved for the empty case when it doesn't exist.
         uint dmmTokenId = dmmTokenIds.length + 1;
-        IDmmToken dmmToken = dmmTokenFactory.deployToken(
-            symbol,
-            name,
-            decimals,
-            minMintAmount,
-            minRedeemAmount,
-            totalSupply,
-        /* controller */ address(this)
-        );
+        address controller = address(this);
+        IDmmToken dmmToken;
+
+        if (underlyingToken == wethToken) {
+            dmmToken = dmmEtherFactory.deployToken(
+                symbol,
+                name,
+                decimals,
+                minMintAmount,
+                minRedeemAmount,
+                totalSupply,
+                controller
+            );
+        } else {
+            dmmToken = dmmTokenFactory.deployToken(
+                symbol,
+                name,
+                decimals,
+                minMintAmount,
+                minRedeemAmount,
+                totalSupply,
+                controller
+            );
+        }
+
         address dmmTokenAddress = address(dmmToken);
 
         // Update the maps

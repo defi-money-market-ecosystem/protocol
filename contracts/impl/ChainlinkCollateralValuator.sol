@@ -18,9 +18,11 @@ contract ChainlinkCollateralValuator is ICollateralValuator, ChainlinkClient, Ow
     uint private _lastUpdatedBlockNumber;
 
     constructor(
+        address linkToken,
         uint oraclePayment,
         bytes32 collateralValueJobId
     ) public {
+        setChainlinkToken(linkToken);
         _oraclePayment = oraclePayment;
         _collateralValueJobId = collateralValueJobId;
         _collateralValue = 1e18;
@@ -59,12 +61,12 @@ contract ChainlinkCollateralValuator is ICollateralValuator, ChainlinkClient, Ow
     function getCollateralValue(
         address oracle
     ) public onlyOwner {
-        Chainlink.Request memory req = buildChainlinkRequest(
+        Chainlink.Request memory request = buildChainlinkRequest(
             _collateralValueJobId,
             address(this),
             this.fulfillGetCollateralValue.selector
         );
-        sendChainlinkRequestTo(oracle, req, _oraclePayment);
+        sendChainlinkRequestTo(oracle, request, _oraclePayment);
     }
 
     function fulfillGetCollateralValue(

@@ -9,8 +9,9 @@ const {
   expectRevert,
 } = require('@openzeppelin/test-helpers');
 const {
+  _001,
   _00625,
-  _0_5,
+  _05,
   _1,
   _100,
   _10000,
@@ -147,20 +148,20 @@ describe('DmmController', async () => {
   });
 
   it('should set new min collateralization', async () => {
-    const receipt = await this.controller.setMinCollateralization(_0_5(), {from: admin});
+    const receipt = await this.controller.setMinCollateralization(_05(), {from: admin});
     expectEvent(
       receipt,
       'MinCollateralizationChanged',
       {
         previousMinCollateralization: _1(),
-        newMinCollateralization: _0_5(),
+        newMinCollateralization: _05(),
       },
     );
   });
 
   it('should not set new min collateralization if not owner', async () => {
     await expectRevert(
-      this.controller.setMinCollateralization(_0_5(), {from: user}),
+      this.controller.setMinCollateralization(_05(), {from: user}),
       ownableError
     );
   });
@@ -171,7 +172,7 @@ describe('DmmController', async () => {
       receipt,
       'MinReserveRatioChanged',
       {
-        previousMinReserveRatio: _0_5(),
+        previousMinReserveRatio: _05(),
         newMinReserveRatio: _1(),
       },
     );
@@ -371,8 +372,8 @@ describe('DmmController', async () => {
       "dmmDAI",
       "DMM: DAI",
       18,
-      _1(),
-      _1(),
+      _001(),
+      _001(),
       _10000(),
       {from: admin}
     );

@@ -6,16 +6,16 @@ const {
   constants,
   expectEvent,
   expectRevert,
-  time,
 } = require('@openzeppelin/test-helpers');
 const ethereumJsUtil = require('ethereumjs-util');
 
 const _0 = () => new BN('0');
+const _001 = () => new BN('10000000000');
 const _00625 = () => new BN('62500000000000000');
-const _0_5 = () => new BN('500000000000000000');
+const _05 = () => new BN('500000000000000000');
 const _1 = () => new BN('1000000000000000000');
 const _24 = () => new BN('24000000000000000000');
-const _24_5 = () => new BN('24500000000000000000');
+const _24_99 = () => new BN('24999999999999999999');
 const _25 = () => new BN('25000000000000000000');
 const _50 = () => new BN('50000000000000000000');
 const _75 = () => new BN('75000000000000000000');
@@ -34,9 +34,7 @@ const doDmmTokenBeforeEach = async (thisInstance, contracts, web3) => {
   const SafeERC20 = contracts.fromArtifact('SafeERC20');
   const SafeMath = contracts.fromArtifact('SafeMath');
 
-  await Promise.all([
-    ERC20Mock.detectNetwork(), DmmToken.detectNetwork(), DmmTokenLibrary.detectNetwork()
-  ]);
+  await Promise.all([ERC20Mock.detectNetwork(), DmmToken.detectNetwork()]);
 
   const safeERC20 = await SafeERC20.new();
   const safeMath = await SafeMath.new();
@@ -66,11 +64,11 @@ const doDmmTokenBeforeEach = async (thisInstance, contracts, web3) => {
     'Transfer'
   );
 
-  thisInstance.symbol = "dmmDAI";
+  thisInstance.symbol = "mDAI";
   thisInstance.name = "DMM: DAI";
   thisInstance.decimals = new BN(18);
-  thisInstance.minMintAmount = _1();
-  thisInstance.minRedeemAmount = _1();
+  thisInstance.minMintAmount = _001();
+  thisInstance.minRedeemAmount = _001();
   thisInstance.totalSupply = _10000();
 
   thisInstance.contract = await DmmToken.new(
@@ -97,7 +95,7 @@ const doDmmEtherBeforeEach = async (thisInstance, contracts, web3, lastUser) => 
   const SafeMath = contracts.fromArtifact('SafeMath');
 
   await Promise.all([
-    WETHMock.detectNetwork(), DmmEther.detectNetwork(), DmmTokenLibrary.detectNetwork()
+    WETHMock.detectNetwork(), DmmEther.detectNetwork()
   ]);
 
   const safeERC20 = await SafeERC20.new();
@@ -137,8 +135,8 @@ const doDmmEtherBeforeEach = async (thisInstance, contracts, web3, lastUser) => 
   thisInstance.symbol = "dmmETH";
   thisInstance.name = "DMM: ETH";
   thisInstance.decimals = new BN(18);
-  thisInstance.minMintAmount = _1();
-  thisInstance.minRedeemAmount = _1();
+  thisInstance.minMintAmount = _001();
+  thisInstance.minRedeemAmount = _001();
   thisInstance.totalSupply = _10000();
 
   thisInstance.contract = await DmmEther.new(
@@ -160,7 +158,7 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
   const DmmBlacklistable = contracts.fromArtifact('DmmBlacklistable');
   const DmmCollateralValuatorMock = contracts.fromArtifact('DmmCollateralValuatorMock');
   const DmmController = contracts.fromArtifact('DmmController');
-  const DmmToken = contracts.fromArtifact('DmmToken');
+  const DmmEtherFactory = contracts.fromArtifact('DmmEtherFactory');
   const DmmTokenFactory = contracts.fromArtifact('DmmTokenFactory');
   const DmmTokenLibrary = contracts.fromArtifact('DmmTokenLibrary');
   const ERC20Mock = contracts.fromArtifact('ERC20Mock');
@@ -169,14 +167,14 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
   const SafeMath = contracts.fromArtifact('SafeMath');
   const StringHelpers = contracts.fromArtifact('StringHelpers');
   const UnderlyingTokenValuatorImplV1 = contracts.fromArtifact('UnderlyingTokenValuatorImplV1');
+  const WETHMock = contracts.fromArtifact('WETHMock');
 
   await Promise.all(
     [
       ERC20Mock.detectNetwork(),
       DmmController.detectNetwork(),
-      DmmToken.detectNetwork(),
+      DmmEtherFactory.detectNetwork(),
       DmmTokenFactory.detectNetwork(),
-      DmmTokenLibrary.detectNetwork(),
       StringHelpers.detectNetwork(),
       UnderlyingTokenValuatorImplV1.detectNetwork(),
     ]
@@ -194,15 +192,16 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
       DmmTokenFactory.link('SafeERC20', safeERC20.address),
       DmmTokenFactory.link('SafeMath', safeMath.address),
       DmmTokenFactory.link('DmmTokenLibrary', dmmTokenLibrary.address),
-      DmmToken.link('SafeERC20', safeERC20.address),
-      DmmToken.link('SafeMath', safeMath.address),
-      DmmToken.link('DmmTokenLibrary', dmmTokenLibrary.address),
+      DmmEtherFactory.link('SafeERC20', safeERC20.address),
+      DmmEtherFactory.link('SafeMath', safeMath.address),
+      DmmEtherFactory.link('DmmTokenLibrary', dmmTokenLibrary.address),
       UnderlyingTokenValuatorImplV1.link("StringHelpers", stringHelpers.address),
     ]
   );
 
   thisInstance.dai = await ERC20Mock.new({from: thisInstance.admin});
   thisInstance.usdc = await ERC20Mock.new({from: thisInstance.admin});
+  thisInstance.weth = await WETHMock.new({from: thisInstance.admin});
 
   thisInstance.interestRateInterface = await InterestRateImplV1.new({from: thisInstance.admin});
   thisInstance.collateralValuator = await DmmCollateralValuatorMock.new({from: thisInstance.admin});
@@ -212,21 +211,26 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
     {from: thisInstance.admin},
   );
 
+  thisInstance.dmmEtherFactory = await DmmEtherFactory.new(thisInstance.weth.address, {from: thisInstance.admin});
   thisInstance.dmmTokenFactory = await DmmTokenFactory.new({from: thisInstance.admin});
   thisInstance.blacklistable = await DmmBlacklistable.new({from: thisInstance.admin});
-  thisInstance.minReserveRatio = _0_5();
+  thisInstance.minReserveRatio = _05();
   thisInstance.minCollateralization = _1();
 
   thisInstance.controller = await DmmController.new(
     thisInstance.interestRateInterface.address,
     thisInstance.collateralValuator.address,
     thisInstance.underlyingTokenValuator.address,
+    thisInstance.dmmEtherFactory.address,
     thisInstance.dmmTokenFactory.address,
     thisInstance.blacklistable.address,
     thisInstance.minCollateralization,
     thisInstance.minReserveRatio,
+    thisInstance.weth.address,
     {from: thisInstance.admin}
   );
+
+  await thisInstance.dmmTokenFactory.transferOwnership(thisInstance.controller.address, {from: thisInstance.admin});
 
   const setDaiBalanceReceipt = await thisInstance.dai.setBalance(thisInstance.user, _10000());
   expectEvent(
@@ -487,11 +491,12 @@ const signMessage = async (thisInstance, digest) => {
 
 module.exports = {
   _0,
+  _001,
   _00625,
-  _0_5,
+  _05,
   _1,
   _24,
-  _24_5,
+  _24_99,
   _25,
   _50,
   _75,

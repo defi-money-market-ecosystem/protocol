@@ -1,12 +1,14 @@
 pragma solidity ^0.5.0;
 
 import "./DmmEther.sol";
-import "../interfaces/IDmmToken.sol";
 import "../interfaces/IDmmTokenFactory.sol";
 
-contract DmmTokenFactory is Context, IDmmTokenFactory, Ownable {
+contract DmmEtherFactory is Context, IDmmTokenFactory, Ownable {
 
-    constructor() public {
+    address public wethToken;
+
+    constructor(address _wethToken) public {
+        wethToken = _wethToken;
     }
 
     function deployToken(
@@ -18,7 +20,8 @@ contract DmmTokenFactory is Context, IDmmTokenFactory, Ownable {
         uint totalSupply,
         address controller
     ) public onlyOwner returns (IDmmToken) {
-        DmmToken token = new DmmToken(
+        DmmEther token = new DmmEther(
+            wethToken,
             symbol,
             name,
             decimals,
@@ -27,22 +30,6 @@ contract DmmTokenFactory is Context, IDmmTokenFactory, Ownable {
             totalSupply,
             controller
         );
-//        if (underlyingToken == wethToken) {
-//            token = new DmmEther(
-//                wethToken,
-//                symbol,
-//                name,
-//                decimals,
-//                minMintAmount,
-//                minRedeemAmount,
-//                totalSupply,
-//                controller
-//            );
-//        } else {
-
-//        }
-
-
         token.transferOwnership(_msgSender());
         return token;
     }

@@ -1,6 +1,9 @@
 pragma solidity ^0.5.0;
 
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+
 import "../impl/DmmToken.sol";
+import "../constants/CommonConstants.sol";
 
 library DmmTokenLibrary {
 
@@ -32,32 +35,19 @@ library DmmTokenLibrary {
      * Public Constants
      */
 
-    uint public constant EXCHANGE_RATE_BASE_RATE = 1e18;
     uint public constant INTEREST_RATE_BASE = 1e18;
     uint public constant SECONDS_IN_YEAR = 31536000; // 60 * 60 * 24 * 365
-
-    /********************
-     * Modifiers
-     */
-
-    /*****************
-     * Getters
-     */
-
-    function getExchangeRateBaseRate() public pure returns (uint) {
-        return EXCHANGE_RATE_BASE_RATE;
-    }
 
     /**********************
      * Public Functions
      */
 
-    function amountToUnderlying(uint amount, uint exchangeRate) internal pure returns (uint) {
-        return (amount.mul(exchangeRate)).div(EXCHANGE_RATE_BASE_RATE);
+    function amountToUnderlying(uint amount, uint exchangeRate, uint exchangeRateBaseRate) internal pure returns (uint) {
+        return (amount.mul(exchangeRate)).div(exchangeRateBaseRate);
     }
 
-    function underlyingToAmount(uint underlyingAmount, uint exchangeRate) internal pure returns (uint) {
-        return (underlyingAmount.mul(EXCHANGE_RATE_BASE_RATE)).div(exchangeRate);
+    function underlyingToAmount(uint underlyingAmount, uint exchangeRate, uint exchangeRateBaseRate) internal pure returns (uint) {
+        return (underlyingAmount.mul(exchangeRateBaseRate)).div(exchangeRate);
     }
 
     function accrueInterest(uint exchangeRate, uint interestRate, uint _seconds) internal pure returns (uint) {

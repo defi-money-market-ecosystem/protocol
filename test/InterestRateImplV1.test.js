@@ -4,7 +4,6 @@ const {expect} = require('chai');
 require('chai').should();
 const {BN} = require('@openzeppelin/test-helpers');
 
-
 // Use the different accounts, which are unlocked and funded with Ether
 const [admin, deployer, user] = accounts;
 
