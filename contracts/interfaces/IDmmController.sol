@@ -33,8 +33,7 @@ interface IDmmController {
     ) external;
 
     /**
-     * @dev Enables the corresponding DMMA from minting new tokens. This allows the market to close over time, since
-     *      users are only able to redeem tokens.
+     * @dev Enables the corresponding DMMA to allow minting new tokens.
      *
      * @param dmmTokenId  The DMMA that should be enabled.
      */
@@ -106,7 +105,7 @@ interface IDmmController {
      * @param dmmTokenId The ID of the DMM token whose underlying will be funded.
      * @param underlyingAmount  The amount underlying the DMM token that will be deposited into the DMMA.
      */
-    function adminWithdrawFunds(uint dmmTokenId, uint256 underlyingAmount) external;
+    function adminWithdrawFunds(uint dmmTokenId, uint underlyingAmount) external;
 
     /**
      * @dev Allows the owners of the DMM Ecosystem to deposit funds into a DMMA. These funds are used to disburse
@@ -115,7 +114,7 @@ interface IDmmController {
      * @param dmmTokenId The ID of the DMM token whose underlying will be funded.
      * @param underlyingAmount  The amount underlying the DMM token that will be deposited into the DMMA.
      */
-    function adminDepositFunds(uint dmmTokenId, uint256 underlyingAmount) external;
+    function adminDepositFunds(uint dmmTokenId, uint underlyingAmount) external;
 
     /**
      * @dev Gets the collateralization of the system by dividing the total value of all the assets by the value of the

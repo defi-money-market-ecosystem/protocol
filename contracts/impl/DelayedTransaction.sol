@@ -168,6 +168,14 @@ contract DelayedTransaction is IDelayedTransaction
         return delayedFunctions.length;
     }
 
+    function addDelay(
+        address to,
+        bytes4 functionSelector,
+        uint delay
+    ) public onlyAuthorized {
+        setFunctionDelay(to, functionSelector, delay);
+    }
+
     // == Internal Functions ==
 
     function transactInternal(

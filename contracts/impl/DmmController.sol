@@ -132,6 +132,8 @@ contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
         uint minRedeemAmount,
         uint totalSupply
     ) public onlyOwner {
+        require(underlyingTokenAddressToDmmTokenIdMap[underlyingToken] == 0, "TOKEN_ALREADY_EXISTS");
+
         // Start the IDs at 1. Zero is reserved for the empty case when it doesn't exist.
         uint dmmTokenId = dmmTokenIds.length + 1;
         address controller = address(this);
