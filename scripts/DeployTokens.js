@@ -1,4 +1,4 @@
-const {safeMath, stringHelpers, dmmTokenLibrary} = require('./DeployLibrary');
+const {BN} = require('ethereumjs-util');
 
 global.dai = null;
 global.link = null;
@@ -14,11 +14,21 @@ const deployTokens = async (loader, environment) => {
     link = await ERC20Mock.new({gas: 6e6});
     usdc = await ERC20Mock.new({gas: 6e6});
     weth = await WETH.new({gas: 6e6});
+
+    const recipient = '0x8D7f03FdE1A626223364E592740a233b72395235';
+    await dai.setBalance(recipient, new BN('100000000000000000000'));
+    await usdc.setBalance(recipient, new BN('100000000'));
+    await weth.setBalance(recipient, new BN('1000000000000000000'));
   } else if (environment === 'TESTNET') {
-    dai = loader.truffle.fromArtifact('ERC20', '0x6b175474e89094c44da98b954eedeac495271d0f');
+    dai = await ERC20Mock.new({gas: 6e6});
     link = loader.truffle.fromArtifact('ERC20', '0x01BE23585060835E02B77ef475b0Cc51aA1e0709');
-    usdc = loader.truffle.fromArtifact('ERC20', '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48');
-    weth = loader.truffle.fromArtifact('ERC20', '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2');
+    usdc = await ERC20Mock.new({gas: 6e6});
+    weth = await WETH.new({gas: 6e6});
+
+    const recipient = '0x8D7f03FdE1A626223364E592740a233b72395235';
+    await dai.setBalance(recipient, new BN('100000000000000000000'));
+    await usdc.setBalance(recipient, new BN('100000000'));
+    await weth.setBalance(recipient, new BN('1000000000000000000'));
   } else if (environment === 'PRODUCTION') {
     dai = loader.truffle.fromArtifact('ERC20', '0x6b175474e89094c44da98b954eedeac495271d0f');
     link = loader.truffle.fromArtifact('ERC20', '0x514910771af9ca656af840dff83e8264ecf986ca');

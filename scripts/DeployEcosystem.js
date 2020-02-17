@@ -84,12 +84,43 @@ const deployEcosystem = async (loader, environment) => {
     {gas: 4e6}
   );
 
+  await addMarketsIfLocal(environment);
+
   console.log('InterestRateImplV1: ', interestRateImplV1.address);
   console.log('ChainlinkCollateralValuator: ', chainlinkCollateralValuator.address);
   console.log('UnderlyingTokenValuatorImplV1: ', underlyingTokenValuatorImplV1.address);
   console.log('DmmTokenFactory: ', dmmTokenFactory.address);
   console.log('DmmBlacklistable: ', dmmBlacklist.address);
   console.log('DmmController: ', dmmController.address);
+};
+
+const addMarketsIfLocal = async (environment) => {
+  if(environment !== 'LOCAL') {
+    return;
+  }
+
+  dmmTokenFactory.transferOwnership(dmmController.address);
+
+  await dmmController.addMarket(
+    dai.address,
+    "mDAI",
+    "DMM: DAI",
+    18,
+    _0_1,
+    _0_1,
+    _1.mul(new BN(100)),
+    {gas: 6e6},
+  );
+  await dmmController.addMarket(
+    usdc.address,
+    "mUSDC",
+    "DMM: USDC",
+    6,
+    new BN('100000'),
+    new BN('100000'),
+    new BN('100000000'),
+    {gas: 6e6},
+  );
 };
 
 module.exports = {

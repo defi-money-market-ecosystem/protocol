@@ -358,6 +358,10 @@ contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
         return dmmTokenId;
     }
 
+    function getDmmTokenIds() public view returns (uint[] memory) {
+        return dmmTokenIds;
+    }
+
     /**********************
      * Private Functions
      */

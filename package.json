@@ -6,7 +6,7 @@
   "scripts": {
     "compile": "oz compile",
     "format": "solium -d contracts/",
-    "start-chain": "ganache-cli --deterministic --port 8545 -l 10000000",
+    "start-chain": "ganache-cli --deterministic --port 8545 -l 10000000 -i 1337",
     "test": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/ --slow 2500",
     "test-controller": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/DmmController.test.js --slow 2500",
     "test-ether-token-contract-interactions": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/DmmEther.ContractInteractions.test.js --slow 2500",
