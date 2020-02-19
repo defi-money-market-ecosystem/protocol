@@ -1,15 +1,13 @@
 pragma solidity ^0.5.0;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../interfaces/ICollateralValuator.sol";
+import "./AtmLike.sol";
 
 import "chainlink/v0.5/contracts/ChainlinkClient.sol";
 
-contract ChainlinkCollateralValuator is ICollateralValuator, ChainlinkClient, Ownable {
-
-    using SafeERC20 for IERC20;
+contract ChainlinkCollateralValuator is ICollateralValuator, ChainlinkClient, Ownable, AtmLike {
 
     uint private _oraclePayment;
     bytes32 private _collateralValueJobId;
@@ -38,14 +36,6 @@ contract ChainlinkCollateralValuator is ICollateralValuator, ChainlinkClient, Ow
         return _lastUpdatedBlockNumber;
     }
 
-    function deposit(address token, uint amount) public onlyOwner {
-        IERC20(token).transferFrom(_msgSender(), address(this), amount);
-    }
-
-    function withdraw(address token, address recipient, uint amount) public onlyOwner {
-        IERC20(token).safeTransfer(recipient, amount);
-    }
-
     function getCollateralValue() public view returns (uint) {
         return _collateralValue;
     }
@@ -70,9 +60,9 @@ contract ChainlinkCollateralValuator is ICollateralValuator, ChainlinkClient, Ow
     }
 
     function fulfillGetCollateralValue(
-        bytes32 _requestId,
+        bytes32 requestId,
         uint collateralValue
-    ) public recordChainlinkFulfillment(_requestId) {
+    ) public recordChainlinkFulfillment(requestId) {
         _collateralValue = collateralValue;
         _lastUpdatedTimestamp = block.timestamp;
         _lastUpdatedBlockNumber = block.number;

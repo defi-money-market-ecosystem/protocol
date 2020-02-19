@@ -1,5 +1,6 @@
 // const {dai, link, usdc, weth} = require('./DeployTokens');
 const {BN} = require('ethereumjs-util');
+const {callContract, deployContract, linkContract} = require('./ContractUtils');
 
 global.interestRateImplV1 = null;
 global.chainlinkCollateralValuator = null;
@@ -14,7 +15,7 @@ const _0_1 = new BN('100000000000000000'); // 0.1
 const _05 = new BN('500000000000000000'); // 0.5
 const _1 = new BN('1000000000000000000'); // 1.0
 
-const deployEcosystem = async (loader, environment) => {
+const deployEcosystem = async (loader, environment, deployer) => {
   const ChainlinkCollateralValuator = loader.truffle.fromArtifact('ChainlinkCollateralValuator');
   const DmmBlacklistable = loader.truffle.fromArtifact('DmmBlacklistable');
   const InterestRateImplV1 = loader.truffle.fromArtifact('InterestRateImplV1');
@@ -45,46 +46,61 @@ const deployEcosystem = async (loader, environment) => {
 
   await DmmEtherFactory.link('DmmTokenLibrary', dmmTokenLibrary.address);
   await DmmTokenFactory.link('DmmTokenLibrary', dmmTokenLibrary.address);
-  await UnderlyingTokenValuatorImplV1.link('StringHelpers', stringHelpers.address);
+
+  linkContract(UnderlyingTokenValuatorImplV1, 'StringHelpers', stringHelpers.address);
 
   console.log("Deploying InterestRateImplV1...");
-  interestRateImplV1 = await InterestRateImplV1.new({gas: 4e6});
+  interestRateImplV1 = await deployContract(InterestRateImplV1, [], deployer, 4e6);
 
   console.log("Deploying ChainlinkCollateralValuator...");
-  chainlinkCollateralValuator = await ChainlinkCollateralValuator.new(link.address, _0_1, chainlinkJobId, {gas: 4e6});
+  chainlinkCollateralValuator = await deployContract(ChainlinkCollateralValuator, [link.address, _0_1, chainlinkJobId], deployer, 4e6);
 
-  console.log("Deploying UnderlyingTokenValuatorImplV1...");
-  underlyingTokenValuatorImplV1 = await UnderlyingTokenValuatorImplV1.new(dai.address, usdc.address, {gas: 4e6});
+  console.log("Deploying UnderlyingTokenValuatorImplV1... ");
+  underlyingTokenValuatorImplV1 = await deployContract(UnderlyingTokenValuatorImplV1, [dai.address, usdc.address], deployer, 4e6);
 
   console.log("Deploying DmmEtherFactory...");
-  dmmEtherFactory = await DmmEtherFactory.new(weth.address, {gas: 6e6});
+  dmmEtherFactory = await deployContract(DmmEtherFactory, [weth.address], deployer, 6e6);
 
   console.log("Deploying DmmTokenFactory...");
-  dmmTokenFactory = await DmmTokenFactory.new({gas: 6e6});
+  dmmTokenFactory = await deployContract(DmmTokenFactory, [], deployer, 6e6);
 
   console.log("Deploying DmmBlacklistable...");
-  dmmBlacklist = await DmmBlacklistable.new({gas: 4e6});
+  dmmBlacklist = await deployContract(DmmBlacklistable, [], deployer, 4e6);
 
   if (environment === 'TESTNET' || environment === 'PRODUCTION') {
+    console.log("Sending 10 LINK to collateral valuator");
+    const _10 = _1.mul(new BN('10'));
+    await callContract(link, 'transfer', [chainlinkCollateralValuator.address, _10], deployer, 3e5);
+
     console.log("Sending chainlinkRequest using oracle ", oracleAddress);
-    await chainlinkCollateralValuator.getCollateralValue(oracleAddress);
+    await callContract(
+      chainlinkCollateralValuator,
+      'getCollateralValue',
+      [oracleAddress],
+      deployer,
+      1e6,
+    )
   }
 
   console.log("Deploying DmmController...");
-  dmmController = await DmmController.new(
-    interestRateImplV1.address,
-    chainlinkCollateralValuator.address,
-    underlyingTokenValuatorImplV1.address,
-    dmmEtherFactory.address,
-    dmmTokenFactory.address,
-    dmmBlacklist.address,
-    /* minCollateralization */ _1,
-    /* minReserveRatio */ _05,
-    weth.address,
-    {gas: 4e6}
+  dmmController = await deployContract(
+    DmmController,
+    [
+      interestRateImplV1.address,
+      chainlinkCollateralValuator.address,
+      underlyingTokenValuatorImplV1.address,
+      dmmEtherFactory.address,
+      dmmTokenFactory.address,
+      dmmBlacklist.address,
+      /* minCollateralization */ _1,
+      /* minReserveRatio */ _05,
+      weth.address,
+    ],
+    deployer,
+    4e6,
   );
 
-  await addMarketsIfLocal(environment);
+  await addMarketsIfLocal(environment, deployer);
 
   console.log('InterestRateImplV1: ', interestRateImplV1.address);
   console.log('ChainlinkCollateralValuator: ', chainlinkCollateralValuator.address);
@@ -94,32 +110,43 @@ const deployEcosystem = async (loader, environment) => {
   console.log('DmmController: ', dmmController.address);
 };
 
-const addMarketsIfLocal = async (environment) => {
-  if(environment !== 'LOCAL') {
+const addMarketsIfLocal = async (environment, deployer) => {
+  if (environment !== 'LOCAL') {
     return;
   }
 
-  dmmTokenFactory.transferOwnership(dmmController.address);
+  await callContract(dmmTokenFactory, 'transferOwnership', [dmmController.address], deployer, 3e5);
 
-  await dmmController.addMarket(
-    dai.address,
-    "mDAI",
-    "DMM: DAI",
-    18,
-    _0_1,
-    _0_1,
-    _1.mul(new BN(100)),
-    {gas: 6e6},
+  await callContract(
+    dmmController,
+    'addMarket',
+    [
+      dai.address,
+      "mDAI",
+      "DMM: DAI",
+      18,
+      _0_1,
+      _0_1,
+      _1.mul(new BN(100)),
+    ],
+    deployer,
+    6e6,
   );
-  await dmmController.addMarket(
-    usdc.address,
-    "mUSDC",
-    "DMM: USDC",
-    6,
-    new BN('100000'),
-    new BN('100000'),
-    new BN('100000000'),
-    {gas: 6e6},
+
+  await callContract(
+    dmmController,
+    'addMarket',
+    [
+      usdc.address,
+      "mUSDC",
+      "DMM: USDC",
+      6,
+      new BN('100000'),
+      new BN('100000'),
+      new BN('100000000'),
+    ],
+    deployer,
+    6e6,
   );
 };
 

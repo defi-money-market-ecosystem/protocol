@@ -1,21 +1,23 @@
-const deployOwnershipChanges = async (environment, multiSigWallet) => {
-  await transferOwnership('ChainlinkCollateralValuator', chainlinkCollateralValuator, delayedOwner.address);
-  await transferOwnership('DmmEtherFactory', dmmEtherFactory, dmmController.address);
+const {callContract} = require('./ContractUtils');
+
+const deployOwnershipChanges = async (environment, deployer, multiSigWallet) => {
+  await transferOwnership('ChainlinkCollateralValuator', chainlinkCollateralValuator, delayedOwner.address, deployer);
+  await transferOwnership('DmmEtherFactory', dmmEtherFactory, dmmController.address, deployer);
   if (environment !== 'LOCAL') {
     // It's already transferred by this point, if local.
-    await transferOwnership('DmmTokenFactory', dmmTokenFactory, dmmController.address);
+    await transferOwnership('DmmTokenFactory', dmmTokenFactory, dmmController.address, deployer);
   }
-  await transferOwnership('DmmBlacklist', dmmBlacklist, delayedOwner.address);
-  await transferOwnership('DmmController', dmmController, delayedOwner.address);
+  await transferOwnership('DmmBlacklist', dmmBlacklist, delayedOwner.address, deployer);
+  await transferOwnership('DmmController', dmmController, delayedOwner.address, deployer);
 
   if (environment !== 'LOCAL') {
-    await transferOwnership('DelayedOwner', delayedOwner, multiSigWallet);
+    await transferOwnership('DelayedOwner', delayedOwner, multiSigWallet, deployer);
   }
 };
 
-const transferOwnership = async (contractName, contract, newOwner) => {
+const transferOwnership = async (contractName, contract, newOwner, deployer) => {
   console.log(`Transferring ${contractName}(${contract.address}) ownership to ${newOwner}`);
-  await contract.transferOwnership(newOwner);
+  await callContract(contract, 'transferOwnership', [newOwner], deployer, 3e5);
 };
 
 module.exports = {

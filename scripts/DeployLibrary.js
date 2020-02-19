@@ -1,27 +1,22 @@
+const {deployContract} = require('./ContractUtils');
+
 global.safeMath = null;
 global.dmmTokenLibrary = null;
 global.stringHelpers = null;
 
-const deployLibraries = async (loader, environment) => {
+const deployLibraries = async (loader, environment, deployer) => {
   const SafeMath = loader.truffle.fromArtifact('SafeMath');
   const DmmTokenLibrary = loader.truffle.fromArtifact('DmmTokenLibrary');
   const StringHelpers = loader.truffle.fromArtifact('StringHelpers');
 
-  if (environment === 'LOCAL') {
-    global.safeMath = await SafeMath.new();
-    global.dmmTokenLibrary = await DmmTokenLibrary.new();
-    global.stringHelpers = await StringHelpers.new();
-  } else if (environment === 'TESTNET') {
-    global.safeMath = await SafeMath.new();
-    global.dmmTokenLibrary = await DmmTokenLibrary.new();
-    global.stringHelpers = await StringHelpers.new();
-  } else if (environment === 'PRODUCTION') {
-    global.safeMath = await SafeMath.new();
-    global.dmmTokenLibrary = await DmmTokenLibrary.new();
-    global.stringHelpers = await StringHelpers.new();
-  } else {
-    new Error('Invalid environment, found ' + environment);
-  }
+  console.log("Deploying SafeMath...");
+  global.safeMath = await deployContract(SafeMath, [], deployer, 4e6);
+
+  console.log("Deploying DmmTokenLibrary...");
+  global.dmmTokenLibrary = await deployContract(DmmTokenLibrary, [], deployer, 4e6);
+
+  console.log("Deploying StringHelpers...");
+  global.stringHelpers = await deployContract(StringHelpers, [], deployer, 4e6);
 
   console.log("SafeMath ", safeMath.address);
   console.log("DmmTokenLibrary ", dmmTokenLibrary.address);
