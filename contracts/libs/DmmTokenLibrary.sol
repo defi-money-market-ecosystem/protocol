@@ -1,9 +1,9 @@
 pragma solidity ^0.5.0;
 
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "../impl/DmmToken.sol";
 import "../constants/CommonConstants.sol";
+import "../interfaces/IDmmToken.sol";
 
 library DmmTokenLibrary {
 
@@ -69,7 +69,7 @@ library DmmTokenLibrary {
         }
     }
 
-    function updateExchangeRateIfNecessaryAndGet(DmmToken token, Storage storage _storage) internal returns (uint) {
+    function updateExchangeRateIfNecessaryAndGet(IDmmToken token, Storage storage _storage) internal returns (uint) {
         uint previousExchangeRate = _storage.exchangeRate;
         uint dmmTokenInterestRate = token.controller().getInterestRateByDmmTokenAddress(address(token));
         uint currentExchangeRate = getCurrentExchangeRate(_storage, dmmTokenInterestRate);
@@ -199,13 +199,13 @@ library DmmTokenLibrary {
      * Internal Admin Functions
      */
 
-    function _depositUnderlying(DmmToken token, address sender, uint underlyingAmount) internal returns (bool) {
+    function _depositUnderlying(IDmmToken token, address sender, uint underlyingAmount) internal returns (bool) {
         IERC20 underlyingToken = IERC20(token.controller().getUnderlyingTokenForDmm(address(token)));
         underlyingToken.safeTransferFrom(sender, address(token), underlyingAmount);
         return true;
     }
 
-    function _withdrawUnderlying(DmmToken token, address sender, uint underlyingAmount) internal returns (bool) {
+    function _withdrawUnderlying(IDmmToken token, address sender, uint underlyingAmount) internal returns (bool) {
         IERC20 underlyingToken = IERC20(token.controller().getUnderlyingTokenForDmm(address(token)));
         underlyingToken.safeTransfer(sender, underlyingAmount);
         return true;

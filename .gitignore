@@ -5,3 +5,5 @@ node_modules
 # OpenZeppelin
 .openzeppelin/dev-*.json
 .openzeppelin/.session
+
+ethereum-nodes.txt

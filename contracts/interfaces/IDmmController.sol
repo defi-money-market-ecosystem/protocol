@@ -1,7 +1,6 @@
 pragma solidity ^0.5.0;
 
 import "./InterestRateInterface.sol";
-import "@openzeppelin/contracts/lifecycle/Pausable.sol";
 import "../utils/Blacklistable.sol";
 
 interface IDmmController {

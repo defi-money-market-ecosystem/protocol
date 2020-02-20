@@ -1,11 +1,11 @@
 pragma solidity ^0.5.0;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
+import "../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../interfaces/ICollateralValuator.sol";
 import "./AtmLike.sol";
 
-import "chainlink/v0.5/contracts/ChainlinkClient.sol";
+import "../../node_modules/chainlink/v0.5/contracts/ChainlinkClient.sol";
 
 contract ChainlinkCollateralValuator is ICollateralValuator, ChainlinkClient, Ownable, AtmLike {
 
@@ -56,6 +56,7 @@ contract ChainlinkCollateralValuator is ICollateralValuator, ChainlinkClient, Ow
             address(this),
             this.fulfillGetCollateralValue.selector
         );
+        request.add("action", "sumActive");
         sendChainlinkRequestTo(oracle, request, _oraclePayment);
     }
 
@@ -66,6 +67,8 @@ contract ChainlinkCollateralValuator is ICollateralValuator, ChainlinkClient, Ow
         _collateralValue = collateralValue;
         _lastUpdatedTimestamp = block.timestamp;
         _lastUpdatedBlockNumber = block.number;
+
+        emit CollateralValueUpdated(collateralValue);
     }
 
 }

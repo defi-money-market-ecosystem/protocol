@@ -1,8 +1,9 @@
 pragma solidity ^0.5.0;
 
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "../../node_modules/@openzeppelin/contracts/lifecycle/Pausable.sol";
+import "../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
+import "../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
+import "../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 import "../constants/CommonConstants.sol";
 import "../impl/DmmBlacklistable.sol";
@@ -96,12 +97,12 @@ contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
      */
 
     modifier whenNotPaused() {
-        require(!isPaused(), "ECOSYSTEM_PAUSED");
+        require(!paused(), "ECOSYSTEM_PAUSED");
         _;
     }
 
     modifier whenPaused() {
-        require(isPaused(), "ECOSYSTEM_NOT_PAUSED");
+        require(paused(), "ECOSYSTEM_NOT_PAUSED");
         _;
     }
 
@@ -115,8 +116,10 @@ contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
      */
 
     function transferOwnership(address newOwner) public onlyOwner {
+        address oldOwner = owner();
         super.transferOwnership(newOwner);
-        addPauser(newOwner);
+        _removePauser(oldOwner);
+        _addPauser(newOwner);
     }
 
     function blacklistable() public view returns (Blacklistable) {
@@ -273,7 +276,7 @@ contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
         uint totalLiabilities = 0;
         for (uint i = 0; i < dmmTokenIds.length; i++) {
             // IDs start at 1
-            IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i]]);
+            IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i + 1]]);
             uint underlyingValue = getSupplyValue(token, IERC20(address(token)).totalSupply());
             totalLiabilities = totalLiabilities.add(underlyingValue);
         }

@@ -1,5 +1,7 @@
 pragma solidity ^0.5.0;
 
+import "./IDmmController.sol";
+
 /**
  * Basically an interface except, contains the implementation of the type-hashes for offline signature generation.
  *
@@ -27,7 +29,7 @@ interface IDmmToken {
     /**
      * @dev The controller that deployed this parent
      */
-    function controller() external view returns (address);
+    function controller() external view returns (IDmmController);
 
     /**
      * @dev Returns the name of the token.

@@ -1,7 +1,7 @@
 pragma solidity ^0.5.0;
 
-import "@openzeppelin/contracts/lifecycle/Pausable.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "../../node_modules/@openzeppelin/contracts/lifecycle/Pausable.sol";
+import "../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 import "../utils/Blacklistable.sol";
 import "../interfaces/IDmmController.sol";
 

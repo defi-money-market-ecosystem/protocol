@@ -1,12 +1,12 @@
 const {BN} = require('ethereumjs-util');
-const Index = require("./index");
 
 const linkContract = (artifact, libraryName, address) => {
   artifact.bytecode = artifact.bytecode.split(`__${libraryName}_________________________`).join(address.substring(2))
 };
 
-const deployContract = async (artifact, params, deployer, gasLimit) => {
-  const contract = new Index.web3.eth.Contract(artifact.abi, null, {data: '0x' + artifact.bytecode});
+const deployContract = async (artifact, params, deployer, gasLimit, web3, gasPrice) => {
+  web3 = !!web3 ? web3 : require("./index").web3;
+  const contract = new web3.eth.Contract(artifact.abi, null, {data: '0x' + artifact.bytecode});
   const mappedParams = params.map(param => {
     if (BN.isBN(param)) {
       return '0x' + param.toString(16);
@@ -22,7 +22,7 @@ const deployContract = async (artifact, params, deployer, gasLimit) => {
     .send({
       from: deployer,
       gas: gasLimit,
-      gasPrice: Index.defaultGasPrice,
+      gasPrice: gasPrice || require("./index").defaultGasPrice,
     })
     .on('receipt', receipt => {
       console.log(`Contract Deployed at address ${receipt.contractAddress} with TransactionHash: ${receipt.transactionHash}`);
@@ -34,7 +34,9 @@ const deployContract = async (artifact, params, deployer, gasLimit) => {
     });
 };
 
-const callContract = async (artifact, methodName, params, sender, gasLimit, value) => {
+const callContract = async (artifact, methodName, params, sender, gasLimit, value, web3, gasPrice) => {
+  web3 = !!web3 ? web3 : require("./index").web3;
+
   console.log(`Calling ${methodName} at ${artifact.address}...`);
   const mappedParams = params.map(param => {
     if (BN.isBN(param)) {
@@ -45,7 +47,7 @@ const callContract = async (artifact, methodName, params, sender, gasLimit, valu
   });
   const [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10] = mappedParams;
 
-  const contract = new Index.web3.eth.Contract(artifact.abi || artifact._jsonInterface, artifact.address);
+  const contract = new web3.eth.Contract(artifact.abi || artifact._jsonInterface, artifact.address);
   return (!p1 ? contract.methods[methodName]()
     : !p2 ? contract.methods[methodName](p1)
       : !p3 ? contract.methods[methodName](p1, p2)
@@ -60,7 +62,7 @@ const callContract = async (artifact, methodName, params, sender, gasLimit, valu
     .send({
       from: sender,
       gas: gasLimit,
-      gasPrice: Index.defaultGasPrice,
+      gasPrice: gasPrice || require('./index').defaultGasPrice,
       value: value ? value : undefined,
     })
     .then((receipt) => {

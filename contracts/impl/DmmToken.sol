@@ -1,6 +1,6 @@
 pragma solidity ^0.5.12;
 
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 import "../libs/DmmTokenLibrary.sol";
 import "../interfaces/IDmmController.sol";
@@ -218,7 +218,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         // Initially, we mint to this contract so we can send handle the fees.
         // We don't delegate the call for transferring the underlying in, because gasless requests are designed to
         // allow any relayer to broadcast the user's cryptographically-secure message.
-        uint amount = _mintDmm(_storage, owner, address(this), underlyingAmount, /* shouldCheckAllowance */ false);
+        uint amount = _mint(owner, address(this), underlyingAmount, /* shouldCheckAllowance */ false);
         require(amount >= feeAmount, "FEE_TOO_LARGE");
 
         uint amountLessFee = amount.sub(feeAmount);
@@ -330,10 +330,6 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
      */
 
     function _mint(address owner, address recipient, uint underlyingAmount, bool shouldCheckAllowance) internal returns (uint) {
-        return _mintDmm(_storage, owner, recipient, underlyingAmount, shouldCheckAllowance);
-    }
-
-    function _mintDmm(DmmTokenLibrary.Storage storage _storage, address owner, address recipient, uint underlyingAmount, bool shouldCheckAllowance) private returns (uint) {
         blacklistable().checkNotBlacklisted(_msgSender());
 
         uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
@@ -356,10 +352,6 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
     }
 
     function _redeem(address owner, address recipient, uint amount, bool shouldUseAllowance) internal returns (uint) {
-        return _redeemDmm(_storage, owner, recipient, amount, shouldUseAllowance);
-    }
-
-    function _redeemDmm(DmmTokenLibrary.Storage storage _storage, address owner, address recipient, uint amount, bool shouldUseAllowance) private returns (uint) {
         blacklistable().checkNotBlacklisted(_msgSender());
         blacklistable().checkNotBlacklisted(recipient);
 
@@ -405,7 +397,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         uint amountLessFee = amount.sub(feeAmount, "FEE_TOO_LARGE");
         require(amountLessFee >= minRedeemAmount, "INSUFFICIENT_REDEEM_AMOUNT");
 
-        uint underlyingAmount = _redeemDmm(_storage, owner, recipient, amountLessFee, /* shouldUseAllowance */ false);
+        uint underlyingAmount = _redeem(owner, recipient, amountLessFee, /* shouldUseAllowance */ false);
         doFeeTransferForDmmIfNecessary(owner, feeRecipient, feeAmount);
 
         return underlyingAmount;

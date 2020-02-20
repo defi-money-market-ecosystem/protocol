@@ -24,28 +24,22 @@ const main = async () => {
   const delayedOwner = await DelayedOwner.at("0xcfD027019F9Ff28AC3db417b630c7a21881090fb");
   const dmmController = await DmmController.at("0x02ee9AEbb75470D517BFf722D36762d2b231539C");
 
-  console.log("Owner, Pending Owner ", await delayedOwner.owner(), await delayedOwner.pendingOwner());
+  // const innerAbi = dmmController.contract.methods.setCollateralValuator(
+  //   "0x681Ba299ee5619DC96f5d87aE0F5B19EAB3Cbe8A"
+  // ).encodeABI();
+  //
+  // const actualAbi = delayedOwner.contract.methods.transact(
+  //   "0x02ee9AEbb75470D517BFf722D36762d2b231539C",
+  //   innerAbi,
+  // ).encodeABI();
 
-  // console.log(dmmController);
-  const innerAbi = dmmController.contract.methods.addMarket(
-    "0xbA901EeC621E8a3d77cd2e43aB78Ce96528B4496",
-    "mUSDC",
-    "DMM: USDC",
-    6,
-    "1",
-    "1",
-    "5000000000000", // 5m
-  ).encodeABI();
-
-  const actualAbi = delayedOwner.contract.methods.transact(
-    "0x02ee9AEbb75470D517BFf722D36762d2b231539C",
-    innerAbi,
+  const actualAbi = delayedOwner.contract.methods.executeTransaction(
+    0,
   ).encodeABI();
 
   console.log("actualAbi ", actualAbi);
-
-  const realAbi = delayedOwner.contract.methods.claimOwnership().encodeABI();
-  console.log("Real Owner ", realAbi);
 };
 
-main();
+main().catch(error => {
+  console.error("Error ", error);
+});

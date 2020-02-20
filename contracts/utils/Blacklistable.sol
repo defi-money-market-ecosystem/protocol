@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 
 /**
  * @dev Allows accounts to be blacklisted by the owner of the contract.

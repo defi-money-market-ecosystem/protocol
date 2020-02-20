@@ -16,7 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../interfaces/IDelayedTransaction.sol";
 

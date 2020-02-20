@@ -16,7 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 
 
 /// @title Claimable

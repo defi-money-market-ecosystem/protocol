@@ -5,8 +5,12 @@
   "main": "index.js",
   "scripts": {
     "compile": "oz compile",
-    "encode-add-market": "DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node ./scripts/EncodeAddMarket.js",
+    "deploy": "oz compile && ENVIRONMENT=LOCAL node ./scripts/index.js",
+    "deploy-testnet": "oz compile && ENVIRONMENT=TESTNET DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node ./scripts/index.js",
+    "encode-abi": "DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node scripts/EncodeAbi.js",
     "format": "solium -d contracts/",
+    "run-playground": "DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node ./scripts/Playground.js",
+    "send-ether": "ENVIRONMENT=LOCAL RECIPIENT=0x8D7f03FdE1A626223364E592740a233b72395235 node ./scripts/SendEther.js",
     "start-chain": "ganache-cli --deterministic --port 8545 -l 10000000 -i 1337",
     "test": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/ --slow 2500",
     "test-controller": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/DmmController.test.js --slow 2500",
@@ -16,10 +20,7 @@
     "test-token-contract-interactions": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/DmmToken.ContractInteractions.test.js --slow 2500",
     "test-token-gasless-interactions": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/DmmToken.Gasless*.test.js --slow 2500",
     "test-token-user-interactions": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/DmmToken.UserInteractions.test.js --slow 2500",
-    "test-underlying-token-valuator-v1": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/UnderlyingTokenValuatorImplV1.test.js --slow 2500",
-    "deploy": "oz compile && ENVIRONMENT=LOCAL node ./scripts/index.js",
-    "deploy-testnet": "oz compile && ENVIRONMENT=TESTNET DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node ./scripts/index.js",
-    "send-ether": "ENVIRONMENT=LOCAL RECIPIENT=0x8D7f03FdE1A626223364E592740a233b72395235 node ./scripts/SendEther.js"
+    "test-underlying-token-valuator-v1": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/UnderlyingTokenValuatorImplV1.test.js --slow 2500"
   },
   "keywords": [],
   "author": "",
@@ -28,7 +29,6 @@
     "@openzeppelin/cli": "^2.7.1",
     "@openzeppelin/contract-loader": "^0.6.1",
     "@openzeppelin/contracts": "^2.4.0",
-    "@truffle/contract": "^4.1.8",
     "chainlink": "^0.8.2",
     "ganache-cli": "^6.9.0"
   },
@@ -36,9 +36,8 @@
     "@openzeppelin/test-environment": "^0.1.2",
     "@openzeppelin/test-helpers": "^0.5.4",
     "chai": "^4.2.0",
-    "mocha": "^7.0.1",
-    "mocha-parallel-tests": "^2.3.0",
     "ethereumjs-util": "latest",
-    "web3": "latest"
+    "mocha": "^7.0.1",
+    "mocha-parallel-tests": "^2.3.0"
   }
 }
