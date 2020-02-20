@@ -276,9 +276,12 @@ contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
         uint totalLiabilities = 0;
         for (uint i = 0; i < dmmTokenIds.length; i++) {
             // IDs start at 1
-            IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i + 1]]);
+            IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i]]);
             uint underlyingValue = getSupplyValue(token, IERC20(address(token)).totalSupply());
             totalLiabilities = totalLiabilities.add(underlyingValue);
+        }
+        if (totalLiabilities == 0) {
+            return 0;
         }
         uint collateralValue = collateralValuator.getCollateralValue();
         return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLiabilities);
@@ -288,9 +291,12 @@ contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
         uint totalLiabilities = 0;
         for (uint i = 0; i < dmmTokenIds.length; i++) {
             // IDs start at 1
-            IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i + 1]]);
+            IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i]]);
             uint underlyingValue = getSupplyValue(token, token.activeSupply());
             totalLiabilities = totalLiabilities.add(underlyingValue);
+        }
+        if (totalLiabilities == 0) {
+            return 0;
         }
         uint collateralValue = collateralValuator.getCollateralValue();
         return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLiabilities);
@@ -371,8 +377,17 @@ contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
 
     function getSupplyValue(IDmmToken token, uint supply) private view returns (uint) {
         uint underlyingTokenAmount = supply.mul(token.getCurrentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);
+        // The amount returned must use 18 decimal places, regardless of the # of decimals this token has.
+        uint standardizedUnderlyingTokenAmount;
+        if (token.decimals() == 18) {
+            standardizedUnderlyingTokenAmount = underlyingTokenAmount;
+        } else if (token.decimals() < 18) {
+            standardizedUnderlyingTokenAmount = underlyingTokenAmount.mul((10 ** (18 - uint256(token.decimals()))));
+        } else /* decimals > 18 */ {
+            standardizedUnderlyingTokenAmount = underlyingTokenAmount.div((10 ** (uint256(token.decimals()) - 18)));
+        }
         address underlyingToken = getUnderlyingTokenForDmm(address(token));
-        return underlyingTokenValuator.getTokenValue(underlyingToken, underlyingTokenAmount);
+        return underlyingTokenValuator.getTokenValue(underlyingToken, standardizedUnderlyingTokenAmount);
     }
 
 }
