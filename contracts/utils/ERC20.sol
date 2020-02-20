@@ -51,7 +51,7 @@ contract ERC20 is Context, IERC20, ReentrancyGuard, Ownable {
      */
 
     modifier whenNotPaused() {
-        require(!IPausable(pausable()).isPaused(), "ECOSYSTEM_PAUSED");
+        require(!IPausable(pausable()).paused(), "ECOSYSTEM_PAUSED");
         _;
     }
 

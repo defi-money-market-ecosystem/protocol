@@ -2,6 +2,6 @@ pragma solidity ^0.5.0;
 
 interface IPausable {
 
-    function isPaused() external view returns (bool);
+    function paused() external view returns (bool);
 
 }

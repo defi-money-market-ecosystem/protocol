@@ -14,8 +14,9 @@ import "../interfaces/InterestRateInterface.sol";
 import "../interfaces/IUnderlyingTokenValuator.sol";
 import "../interfaces/IDmmTokenFactory.sol";
 import "../utils/Blacklistable.sol";
+import "../interfaces/IPausable.sol";
 
-contract DmmController is Pausable, CommonConstants, IDmmController, Ownable {
+contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, Ownable {
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;

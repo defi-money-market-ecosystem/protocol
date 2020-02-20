@@ -436,9 +436,9 @@ const redeem = async (dmmToken, user, amount, expectedError) => {
 };
 
 const pauseEcosystem = async (controller, admin) => {
-  expect(await controller.isPaused()).to.equal(false);
+  expect(await controller.paused()).to.equal(false);
   await controller.pause({from: admin});
-  expect(await controller.isPaused()).to.equal(true);
+  expect(await controller.paused()).to.equal(true);
 };
 
 const disableMarkets = async (controller, admin) => {
