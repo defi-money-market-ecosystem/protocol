@@ -9,10 +9,19 @@ import "../../node_modules/chainlink/v0.5/contracts/ChainlinkClient.sol";
 
 contract ChainlinkCollateralValuator is ICollateralValuator, ChainlinkClient, Ownable, AtmLike {
 
+    /// The amount of LINK to be paid per request
     uint private _oraclePayment;
+
+    /// The job ID that's fired on the LINK nodes to fulfill this contract's need for off-chain data
     bytes32 private _collateralValueJobId;
+
+    /// The value of all off-chain collateral, as determined by Chainlink. This number has 18 decimal places of precision.
     uint private _collateralValue;
+
+    /// The timestamp (in Unix seconds) at which this contract's _collateralValue field was last updated.
     uint private _lastUpdatedTimestamp;
+
+    /// The block number at which this contract's _collateralValue field was last updated.
     uint private _lastUpdatedBlockNumber;
 
     constructor(
@@ -46,6 +55,10 @@ contract ChainlinkCollateralValuator is ICollateralValuator, ChainlinkClient, Ow
 
     function setCollateralValueJobId(bytes32 collateralValueJobId) public onlyOwner {
         _collateralValueJobId = collateralValueJobId;
+    }
+
+    function setOraclePayment(uint oraclePayment) public onlyOwner {
+        _oraclePayment = oraclePayment;
     }
 
     function getCollateralValue(
