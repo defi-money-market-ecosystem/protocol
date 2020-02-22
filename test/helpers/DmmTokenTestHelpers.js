@@ -401,7 +401,8 @@ const mint = async (underlyingToken, dmmToken, user, amount, expectedError) => {
     await expectRevert.unspecified(
       dmmToken.contract.methods.mint(amount, {from: user}),
       expectedError
-    )
+    );
+    return _0();
   } else {
     const mintReceipt = await dmmToken.mint(amount, {from: user});
     expectEvent(
@@ -409,6 +410,7 @@ const mint = async (underlyingToken, dmmToken, user, amount, expectedError) => {
       'Mint',
       {minter: user, recipient: user}
     );
+    return mintReceipt.logs.filter(value => value.event === 'Mint')[0].args['amount'];
   }
 };
 

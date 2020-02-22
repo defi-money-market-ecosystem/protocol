@@ -9,6 +9,7 @@ const {
   expectRevert,
 } = require('@openzeppelin/test-helpers');
 const {
+  _0,
   _001,
   _00625,
   _05,
@@ -46,11 +47,11 @@ describe('DmmController', async () => {
   });
 
   it('should add market', async () => {
-    await addMarket();
+    await addDaiMarket();
   });
 
   it('should enable and disable market', async () => {
-    await addMarket();
+    await addDaiMarket();
 
     await expectRevert(
       this.controller.enableMarket(defaultDmmTokenId, {from: admin}),
@@ -77,7 +78,7 @@ describe('DmmController', async () => {
   });
 
   it('should not enable and disable market if not owner', async () => {
-    await addMarket();
+    await addDaiMarket();
 
     await expectRevert(
       this.controller.disableMarket(defaultDmmTokenId, {from: user}),
@@ -186,7 +187,7 @@ describe('DmmController', async () => {
   });
 
   it('should increase total supply', async () => {
-    await addMarket();
+    await addDaiMarket();
     const receipt = await this.controller.increaseTotalSupply(defaultDmmTokenId, _100(), {from: admin});
     expectEvent(
       receipt,
@@ -196,7 +197,7 @@ describe('DmmController', async () => {
   });
 
   it('should not increase total supply if not owner', async () => {
-    await addMarket();
+    await addDaiMarket();
     await expectRevert(
       this.controller.increaseTotalSupply(defaultDmmTokenId, _100(), {from: user}),
       ownableError,
@@ -204,7 +205,7 @@ describe('DmmController', async () => {
   });
 
   it('should not increase total supply if ecosystem paused', async () => {
-    await addMarket();
+    await addDaiMarket();
     await pauseEcosystem(this.controller, admin);
     await expectRevert(
       this.controller.increaseTotalSupply(defaultDmmTokenId, _100(), {from: admin}),
@@ -213,7 +214,7 @@ describe('DmmController', async () => {
   });
 
   it('should not increase total supply if there is insufficient collateral', async () => {
-    await addMarket();
+    await addDaiMarket();
     await this.collateralValuator.setCollateralValue(_1());
     await expectRevert(
       this.controller.increaseTotalSupply(defaultDmmTokenId, _100(), {from: admin}),
@@ -222,7 +223,7 @@ describe('DmmController', async () => {
   });
 
   it('should decrease total supply', async () => {
-    await addMarket();
+    await addDaiMarket();
     const receipt = await this.controller.decreaseTotalSupply(defaultDmmTokenId, _100(), {from: admin});
     expectEvent(
       receipt,
@@ -232,7 +233,7 @@ describe('DmmController', async () => {
   });
 
   it('should not decrease total supply if not owner', async () => {
-    await addMarket();
+    await addDaiMarket();
     await expectRevert(
       this.controller.decreaseTotalSupply(defaultDmmTokenId, _100(), {from: user}),
       ownableError,
@@ -240,7 +241,7 @@ describe('DmmController', async () => {
   });
 
   it('should not decrease total supply if ecosystem is paused', async () => {
-    await addMarket();
+    await addDaiMarket();
     await pauseEcosystem(this.controller, admin);
     await expectRevert(
       this.controller.decreaseTotalSupply(defaultDmmTokenId, _100(), {from: admin}),
@@ -249,7 +250,7 @@ describe('DmmController', async () => {
   });
 
   it('should not decrease total supply if there is too much active supply', async () => {
-    await addMarket();
+    await addDaiMarket();
     await expectRevert(
       this.controller.decreaseTotalSupply(defaultDmmTokenId, _10000().add(_10000()), {from: admin}),
       "TOO_MUCH_ACTIVE_SUPPLY",
@@ -257,7 +258,7 @@ describe('DmmController', async () => {
   });
 
   it('should allow admin to withdraw underlying', async () => {
-    await addMarket();
+    await addDaiMarket();
     const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
     const dmmToken = contract.fromArtifact('DmmToken', dmmTokenAddress);
     await mint(this.dai, dmmToken, user, _100());
@@ -271,7 +272,7 @@ describe('DmmController', async () => {
   });
 
   it('should not allow admin to withdraw underlying when there is insufficient leftover reserves', async () => {
-    await addMarket();
+    await addDaiMarket();
     const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
     const dmmToken = contract.fromArtifact('DmmToken', dmmTokenAddress);
     await mint(this.dai, dmmToken, user, _1());
@@ -283,7 +284,7 @@ describe('DmmController', async () => {
   });
 
   it('should not allow non-admin to withdraw underlying', async () => {
-    await addMarket();
+    await addDaiMarket();
     const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
     const dmmToken = contract.fromArtifact('DmmToken', dmmTokenAddress);
     await mint(this.dai, dmmToken, user, _100());
@@ -296,7 +297,7 @@ describe('DmmController', async () => {
 
   it('should allow admin to deposit underlying', async () => {
     const amount = _100();
-    await addMarket();
+    await addDaiMarket();
     await setBalanceFor(this.dai, admin, amount);
     await setApproval(this.dai, admin, this.controller.address);
 
@@ -310,7 +311,7 @@ describe('DmmController', async () => {
 
   it('should not allow non-admin to deposit underlying', async () => {
     const amount = _100();
-    await addMarket();
+    await addDaiMarket();
     await setBalanceFor(this.dai, admin, amount);
     await setApproval(this.dai, admin, this.controller.address);
 
@@ -321,35 +322,35 @@ describe('DmmController', async () => {
   });
 
   it('should get interest rate using underlying token address', async () => {
-    await addMarket();
+    await addDaiMarket();
     (await this.controller.getInterestRateByUnderlyingTokenAddress(this.dai.address)).should.be.bignumber.equal(_00625());
   });
 
   it('should get interest rate using DMM token address', async () => {
-    await addMarket();
+    await addDaiMarket();
     const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
     (await this.controller.getInterestRateByDmmTokenAddress(dmmTokenAddress)).should.be.bignumber.equal(_00625());
   });
 
   it('should get interest rate using DMM token ID', async () => {
-    await addMarket();
+    await addDaiMarket();
     (await this.controller.getInterestRateByDmmTokenId(defaultDmmTokenId)).should.be.bignumber.equal(_00625());
   });
 
   it('should get exchange rate using DMM token address', async () => {
-    await addMarket();
+    await addDaiMarket();
     const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
     (await this.controller.getInterestRateByDmmTokenAddress(dmmTokenAddress)).should.be.bignumber.equal(_00625());
   });
 
   it('should get exchange rate using DMM token address', async () => {
-    await addMarket();
+    await addDaiMarket();
     const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
     (await this.controller.getExchangeRate(dmmTokenAddress)).should.be.bignumber.equal(_1());
   });
 
   it('should get is market enabled', async () => {
-    await addMarket();
+    await addDaiMarket();
     expect(await this.controller.isMarketEnabledByDmmTokenId(defaultDmmTokenId)).equals(true);
 
     const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
@@ -357,19 +358,61 @@ describe('DmmController', async () => {
   });
 
   it('should get DMM token ID from DMM token address', async () => {
-    await addMarket();
+    await addDaiMarket();
     const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
     (await this.controller.getTokenIdFromDmmTokenAddress(dmmTokenAddress)).should.be.bignumber.equals(defaultDmmTokenId);
+  });
+
+  it('should get total collateralization correctly when using tokens w/ diff precisions', async () => {
+    // This test is great because USDC and DAI have different precisions - 18 vs 6.
+    await addDaiMarket();
+    await addUsdcMarket();
+    // We added 10,000 worth of both markets, which equates $20,000 * 1e18. Our collateral's value is 10m * 1e18.
+    // (10,000,000 * 1e18 / $20,000 * 1e18)
+
+    const totalCollateralization = await this.controller.getTotalCollateralization();
+    (totalCollateralization).should.be.bignumber.equals(new BN('500').mul(_1()));
+  });
+
+  it('should get active collateralization correctly when using tokens w/ diff precisions', async () => {
+    // This test is great because USDC and DAI have different precisions - 18 vs 6.
+    await addDaiMarket();
+    await addUsdcMarket();
+    // We added 10,000 worth of both markets, which equates $20,000 * 1e18. Our collateral's value is 10m * 1e18.
+    // (10,000,000 * 1e18 / $20,000 * 1e18)
+
+    // Before we mint, the collateralization is 0.
+    const activeCollateralizationBeforeMint = await this.controller.getActiveCollateralization();
+    (activeCollateralizationBeforeMint).should.be.bignumber.equals(_0());
+
+    const dmmDaiAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(new BN('1'));
+    const dmmDai = contract.fromArtifact('DmmToken', dmmDaiAddress);
+
+    const dmmUsdcAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(new BN('2'));
+    const dmmUsdc = contract.fromArtifact('DmmToken', dmmUsdcAddress);
+
+    const rawMintAmount1 = await mint(this.dai, dmmDai, user, _100());
+    const rawMintAmount2 = await mint(this.usdc, dmmUsdc, user, new BN('100000000')); // 100
+
+    const mintAmount1 = rawMintAmount1;
+    const mintAmount2 = rawMintAmount2.mul(new BN('10').pow(new BN('12'))); // USDC is missing 12 decimals of precision
+
+    const tenMillion = new BN('10000000000000000000000000');
+    const collateralization = tenMillion.mul(_1()).div(mintAmount1.add(mintAmount2));
+
+    // Before we mint, the collateralization is 0.
+    const activeCollateralizationAfterMint = await this.controller.getActiveCollateralization();
+    (activeCollateralizationAfterMint).should.be.bignumber.equals(collateralization);
   });
 
   /**********************
    * Utility Functions
    */
 
-  const addMarket = async () => {
+  const addDaiMarket = async () => {
     const receipt = await this.controller.addMarket(
       this.dai.address,
-      "dmmDAI",
+      "mDAI",
       "DMM: DAI",
       18,
       _001(),
@@ -382,6 +425,25 @@ describe('DmmController', async () => {
       receipt,
       'MarketAdded',
       {dmmTokenId: defaultDmmTokenId, underlyingToken: this.dai.address}
+    );
+  };
+
+  const addUsdcMarket = async () => {
+    const receipt = await this.controller.addMarket(
+      this.usdc.address,
+      "mUSDC",
+      "DMM: USDC",
+      6,
+      new BN('1'),
+      new BN('1'),
+      new BN('10000000000'), // 10,000
+      {from: admin}
+    );
+
+    expectEvent(
+      receipt,
+      'MarketAdded',
+      {dmmTokenId: defaultDmmTokenId.add(new BN('1')), underlyingToken: this.usdc.address}
     );
   };
 
