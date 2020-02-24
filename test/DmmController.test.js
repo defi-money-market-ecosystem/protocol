@@ -407,13 +407,13 @@ describe('DmmController', async () => {
     const dmmUsdcAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(new BN('2'));
     const dmmUsdc = contract.fromArtifact('DmmToken', dmmUsdcAddress);
 
-    const rawMintAmount1 = await mint(this.dai, dmmDai, user, _100());
+    await mint(this.dai, dmmDai, user, _100());
     const usdc100 = new BN('100000000');
-    const rawMintAmount2 = await mint(this.usdc, dmmUsdc, user, usdc100);
+    await mint(this.usdc, dmmUsdc, user, usdc100);
 
-    const mintAmount1 = rawMintAmount1.mul(_1()).div(await dmmDai.getCurrentExchangeRate());
+    const mintAmount1 = await dmmDai.activeSupply();
     // USDC is missing 12 decimals of precision, so add it
-    const mintAmount2 = rawMintAmount2.mul(new BN('1000000000000')).mul(_1()).div(await dmmUsdc.getCurrentExchangeRate());
+    const mintAmount2 = (await dmmUsdc.activeSupply()).mul(new BN('1000000000000'));
 
     const tenMillion = new BN('10000000000000000000000000');
     const collateralization = tenMillion.mul(_1()).div(mintAmount1.add(mintAmount2));

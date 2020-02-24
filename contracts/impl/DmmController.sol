@@ -4,6 +4,7 @@ import "../../node_modules/@openzeppelin/contracts/lifecycle/Pausable.sol";
 import "../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 import "../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "../../node_modules/@openzeppelin/contracts/utils/Address.sol";
 
 import "../constants/CommonConstants.sol";
 import "../impl/DmmBlacklistable.sol";
@@ -15,11 +16,13 @@ import "../interfaces/IUnderlyingTokenValuator.sol";
 import "../interfaces/IDmmTokenFactory.sol";
 import "../utils/Blacklistable.sol";
 import "../interfaces/IPausable.sol";
+import "../interfaces/IOffChainAssetValuator.sol";
 
 contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, Ownable {
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+    using Address for address;
 
     /********************************
      * Events
@@ -43,6 +46,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
     DmmBlacklistable public dmmBlacklistable;
     InterestRateInterface public interestRateInterface;
+    IOffChainAssetValuator public offChainAssetValuator;
     ICollateralValuator public collateralValuator;
     IUnderlyingTokenValuator public underlyingTokenValuator;
     IDmmTokenFactory public dmmTokenFactory;
@@ -74,6 +78,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     constructor(
         address _interestRateInterface,
         address _collateralValuator,
+        address _offChainAssetValuator,
         address _underlyingTokenValuator,
         address _dmmEtherFactory,
         address _dmmTokenFactory,
@@ -84,6 +89,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     ) public {
         interestRateInterface = InterestRateInterface(_interestRateInterface);
         collateralValuator = ICollateralValuator(_collateralValuator);
+        offChainAssetValuator = IOffChainAssetValuator(_offChainAssetValuator);
         underlyingTokenValuator = IUnderlyingTokenValuator(_underlyingTokenValuator);
         dmmTokenFactory = IDmmTokenFactory(_dmmTokenFactory);
         dmmEtherFactory = IDmmTokenFactory(_dmmEtherFactory);
@@ -138,11 +144,8 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     ) public onlyOwner {
         require(underlyingTokenAddressToDmmTokenIdMap[underlyingToken] == 0, "TOKEN_ALREADY_EXISTS");
 
-        // Start the IDs at 1. Zero is reserved for the empty case when it doesn't exist.
-        uint dmmTokenId = dmmTokenIds.length + 1;
-        address controller = address(this);
         IDmmToken dmmToken;
-
+        address controller = address(this);
         if (underlyingToken == wethToken) {
             dmmToken = dmmEtherFactory.deployToken(
                 symbol,
@@ -165,19 +168,33 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
             );
         }
 
-        address dmmTokenAddress = address(dmmToken);
+        _addMarket(address(dmmToken), underlyingToken);
+    }
 
-        // Update the maps
-        dmmTokenIdToDmmTokenAddressMap[dmmTokenId] = dmmTokenAddress;
-        dmmTokenAddressToDmmTokenIdMap[dmmTokenAddress] = dmmTokenId;
-        underlyingTokenAddressToDmmTokenIdMap[underlyingToken] = dmmTokenId;
-        dmmTokenIdToUnderlyingTokenAddressMap[dmmTokenId] = underlyingToken;
+    function addMarketFromExistingDmmToken(
+        address dmmToken,
+        address underlyingToken
+    )
+    onlyOwner
+    public {
+        require(underlyingTokenAddressToDmmTokenIdMap[underlyingToken] == 0, "TOKEN_ALREADY_EXISTS");
+        require(Ownable(dmmToken).owner() == address(this), "INVALID_DMM_TOKEN_OWNERSHIP");
+        require(dmmToken.isContract(), "DMM_TOKEN_IS_NOT_CONTRACT");
 
-        // Misc. Structures
-        dmmTokenIdToIsDisabledMap[dmmTokenId] = false;
-        dmmTokenIds.push(dmmTokenId);
+        _addMarket(dmmToken, underlyingToken);
+    }
 
-        emit MarketAdded(dmmTokenId, dmmTokenAddress, underlyingToken);
+    function transferTokensOwnershipToNewController(
+        uint[] memory dmmTokenIds,
+        address newController
+    )
+    onlyOwner
+    public {
+        require(newController.isContract(), "NEW_CONTROLLER_IS_NOT_CONTRACT");
+        for(uint i = 0; i < dmmTokenIds.length; i++) {
+            address dmmToken = dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i]];
+            Ownable(dmmToken).transferOwnership(newController);
+        }
     }
 
     function enableMarket(uint dmmTokenId) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
@@ -281,6 +298,17 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
             uint underlyingValue = getSupplyValue(token, IERC20(address(token)).totalSupply());
             totalLiabilities = totalLiabilities.add(underlyingValue);
         }
+        // TODO - need to factor in
+        // TODO - 1) how much in underlying is in the contracts
+        // TODO - 2) off-chain collateral via the interface
+        if (totalLiabilities == 0) {
+            return 0;
+        }
+        uint collateralValue = collateralValuator.getCollateralValue();
+        return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLiabilities);
+    }
+
+    function getCollateralization(uint totalLiabilities) private view returns (uint) {
         if (totalLiabilities == 0) {
             return 0;
         }
@@ -375,6 +403,24 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     /**********************
      * Private Functions
      */
+
+    function _addMarket(address dmmToken, address underlyingToken) private {
+        // Start the IDs at 1. Zero is reserved for the empty case when it doesn't exist.
+        uint dmmTokenId = dmmTokenIds.length + 1;
+        address controller = address(this);
+
+        // Update the maps
+        dmmTokenIdToDmmTokenAddressMap[dmmTokenId] = dmmToken;
+        dmmTokenAddressToDmmTokenIdMap[dmmToken] = dmmTokenId;
+        underlyingTokenAddressToDmmTokenIdMap[underlyingToken] = dmmTokenId;
+        dmmTokenIdToUnderlyingTokenAddressMap[dmmTokenId] = underlyingToken;
+
+        // Misc. Structures
+        dmmTokenIdToIsDisabledMap[dmmTokenId] = false;
+        dmmTokenIds.push(dmmTokenId);
+
+        emit MarketAdded(dmmTokenId, dmmToken, underlyingToken);
+    }
 
     function getSupplyValue(IDmmToken token, uint supply) private view returns (uint) {
         uint underlyingTokenAmount = supply.mul(token.getCurrentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);

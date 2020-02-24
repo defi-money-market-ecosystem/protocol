@@ -14,12 +14,15 @@ interface IDmmController {
     function blacklistable() external view returns (Blacklistable);
 
     /**
-     * @dev Disables the corresponding DMMA from minting new tokens. This allows the market to close over time, since
-     *      users are only able to redeem tokens.
+     * @dev Creates a new mToken using the provided data.
      *
      * @param underlyingToken   The token that should be wrapped to create a new DMMA
-     * @param symbol            The symbol of the new DMMA, IE DAI or USDC
-     * @param decimals          The number of decimals of the underlying token, and therefore the number for this DMMA.
+     * @param symbol            The symbol of the new DMMA, IE mDAI or mUSDC
+     * @param name              The name of this token, IE `DMM: DAI`
+     * @param decimals          The number of decimals of the underlying token, and therefore the number for this DMMA
+     * @param minMintAmount     The minimum amount that can be minted for any given transaction.
+     * @param minRedeemAmount   The minimum amount that can be redeemed any given transaction.
+     * @param totalSupply       The initial total supply for this market.
      */
     function addMarket(
         address underlyingToken,
@@ -29,6 +32,26 @@ interface IDmmController {
         uint minMintAmount,
         uint minRedeemAmount,
         uint totalSupply
+    ) external;
+
+    /**
+     * @dev Creates a new mToken using the already-existing token.
+     *
+     * @param dmmToken          The token that should be added to this controller.
+     * @param underlyingToken   The token that should be wrapped to create a new DMMA.
+     */
+    function addMarketFromExistingDmmToken(
+        address dmmToken,
+        address underlyingToken
+    ) external;
+
+    /**
+     * @param dmmTokenIds   The IDs of the DMM tokens whose ownership should be transferred.
+     * @param newController The new controller who should receive ownership of the provided DMM token IDs.
+     */
+    function transferTokensOwnershipToNewController(
+        uint[] calldata dmmTokenIds,
+        address newController
     ) external;
 
     /**
