@@ -376,9 +376,15 @@ describe('DmmController', async () => {
     const dmmUsdcAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(new BN('2'));
     const dmmUsdc = contract.fromArtifact('DmmToken', dmmUsdcAddress);
 
-    let expectedCollateralization = new BN('500').mul(_1());
-    expectedCollateralization = expectedCollateralization.mul(_1()).div(await dmmDai.getCurrentExchangeRate());
-    expectedCollateralization = expectedCollateralization.mul(_1()).div(await dmmUsdc.getCurrentExchangeRate());
+    const _10m = new BN('10000000').mul(_1());
+
+    const mDaiTotalSupply = await dmmDai.totalSupply();
+    const mUsdcTotalSupply = (await dmmUsdc.totalSupply()).mul(new BN('1000000000000')); // standardize decimals
+
+    let totalValue = new BN('0');
+    totalValue = totalValue.add((mDaiTotalSupply).mul(_1()).div(await dmmDai.getCurrentExchangeRate()));
+    totalValue = totalValue.add((mUsdcTotalSupply).mul(_1()).div(await dmmUsdc.getCurrentExchangeRate()));
+    const expectedCollateralization = _10m.mul(_1()).div(totalValue);
 
     const totalCollateralization = await this.controller.getTotalCollateralization();
     (totalCollateralization).should.be.bignumber.equals(expectedCollateralization);
@@ -402,10 +408,10 @@ describe('DmmController', async () => {
     const dmmUsdc = contract.fromArtifact('DmmToken', dmmUsdcAddress);
 
     const rawMintAmount1 = await mint(this.dai, dmmDai, user, _100());
-    const mintAmount1 = rawMintAmount1.mul(_1()).div(await dmmDai.getCurrentExchangeRate());
-
     const usdc100 = new BN('100000000');
     const rawMintAmount2 = await mint(this.usdc, dmmUsdc, user, usdc100);
+
+    const mintAmount1 = rawMintAmount1.mul(_1()).div(await dmmDai.getCurrentExchangeRate());
     // USDC is missing 12 decimals of precision, so add it
     const mintAmount2 = rawMintAmount2.mul(new BN('1000000000000')).mul(_1()).div(await dmmUsdc.getCurrentExchangeRate());
 
