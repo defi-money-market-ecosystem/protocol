@@ -156,6 +156,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         uint underlyingAmount
     )
     whenNotPaused
+    nonReentrant
     isNotDisabled
     public returns (uint) {
         return _mint(_msgSender(), _msgSender(), underlyingAmount, /* shouldCheckAllowance */ false);
@@ -167,8 +168,8 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         uint underlyingAmount
     )
     whenNotPaused
-    isNotDisabled
     nonReentrant
+    isNotDisabled
     public returns (uint) {
         return _mint(owner, recipient, underlyingAmount, /* shouldCheckAllowance */ true);
     }
@@ -208,6 +209,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         bytes32 s
     )
     whenNotPaused
+    nonReentrant
     isNotDisabled
     public returns (uint) {
         checkGaslessBlacklist(_msgSender(), feeRecipient);
@@ -235,6 +237,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         uint amount
     )
     whenNotPaused
+    nonReentrant
     public returns (uint) {
         return _redeem(_msgSender(), _msgSender(), amount, /* shouldUseAllowance */ false);
     }
@@ -263,6 +266,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         bytes32 s
     )
     whenNotPaused
+    nonReentrant
     public returns (uint) {
         return _redeemFromGaslessRequest(
             owner,
@@ -291,6 +295,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         bytes32 s
     )
     whenNotPaused
+    nonReentrant
     public {
         checkGaslessBlacklist(_msgSender(), feeRecipient);
 
@@ -315,6 +320,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         bytes32 s
     )
     whenNotPaused
+    nonReentrant
     public {
         checkGaslessBlacklist(_msgSender(), feeRecipient);
 
