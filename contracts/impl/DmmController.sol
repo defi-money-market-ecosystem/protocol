@@ -184,17 +184,20 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         _addMarket(dmmToken, underlyingToken);
     }
 
-    function transferTokensOwnershipToNewController(
-        uint[] memory dmmTokenIds,
+    function transferOwnershipToNewController(
         address newController
     )
     onlyOwner
     public {
         require(newController.isContract(), "NEW_CONTROLLER_IS_NOT_CONTRACT");
+        // All of the following contracts are owned by the controller. All other ownable contracts are owned by the
+        // same owner as this controller.
         for(uint i = 0; i < dmmTokenIds.length; i++) {
             address dmmToken = dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i]];
             Ownable(dmmToken).transferOwnership(newController);
         }
+        Ownable(dmmEtherFactory).transferOwnership(newController);
+        Ownable(dmmTokenFactory).transferOwnership(newController);
     }
 
     function enableMarket(uint dmmTokenId) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {

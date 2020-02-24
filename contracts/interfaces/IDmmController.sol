@@ -46,11 +46,9 @@ interface IDmmController {
     ) external;
 
     /**
-     * @param dmmTokenIds   The IDs of the DMM tokens whose ownership should be transferred.
      * @param newController The new controller who should receive ownership of the provided DMM token IDs.
      */
-    function transferTokensOwnershipToNewController(
-        uint[] calldata dmmTokenIds,
+    function transferOwnershipToNewController(
         address newController
     ) external;
 
