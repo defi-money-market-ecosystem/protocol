@@ -158,7 +158,8 @@ contract DmmEther is DmmToken {
         address underlyingToken = controller.getUnderlyingTokenForDmm(address(this));
         if (_shouldRedeemToETH) {
             IWETH(underlyingToken).withdraw(underlyingAmount);
-            address(uint160(recipient)).call.value(underlyingAmount);
+            (bool success,) = address(uint160(recipient)).call.value(underlyingAmount)("");
+            require(success, "COULD_NOT_TRANSFER_ETH_OUT");
         } else {
             IERC20(underlyingToken).safeTransfer(recipient, underlyingAmount.sub(msg.value));
         }
