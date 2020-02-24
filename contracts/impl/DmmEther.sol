@@ -50,22 +50,7 @@ contract DmmEther is DmmToken {
         IWETH(wethToken).deposit.value(msg.value)();
         _shouldTransferIn = false;
 
-        return _mint(_msgSender(), _msgSender(), msg.value, /* shouldCheckAllowance */ false);
-    }
-
-    function mintFromViaEther(
-        address sender,
-        address recipient
-    )
-    whenNotPaused
-    nonReentrant
-    isNotDisabled
-    public payable returns (uint) {
-        require(msg.value > 0, "INSUFFICIENT_VALUE");
-        IWETH(wethToken).deposit.value(msg.value)();
-        _shouldTransferIn = false;
-
-        return _mint(sender, recipient, msg.value, /* shouldCheckAllowance */ true);
+        return _mint(_msgSender(), _msgSender(), msg.value);
     }
 
     function mint(
@@ -76,22 +61,9 @@ contract DmmEther is DmmToken {
     isNotDisabled
     public returns (uint) {
         _shouldTransferIn = true;
-        return _mint(_msgSender(), _msgSender(), underlyingAmount, /* shouldCheckAllowance */ false);
+        return _mint(_msgSender(), _msgSender(), underlyingAmount);
     }
 
-
-    function mintFrom(
-        address sender,
-        address recipient,
-        uint underlyingAmount
-    )
-    whenNotPaused
-    nonReentrant
-    isNotDisabled
-    public returns (uint) {
-        _shouldTransferIn = true;
-        return _mint(sender, recipient, underlyingAmount, /* shouldCheckAllowance */ true);
-    }
 
     function mintFromGaslessRequest(
         address owner,
@@ -144,18 +116,6 @@ contract DmmEther is DmmToken {
         return _redeem(_msgSender(), _msgSender(), amount, /* shouldUseAllowance */ false);
     }
 
-    function redeemFrom(
-        address sender,
-        address recipient,
-        uint amount
-    )
-    whenNotPaused
-    nonReentrant
-    public returns (uint) {
-        _shouldRedeemToETH = true;
-        return _redeem(sender, recipient, amount, /* shouldUseAllowance */ true);
-    }
-
     function redeemFromGaslessRequest(
         address owner,
         address recipient,
@@ -186,11 +146,11 @@ contract DmmEther is DmmToken {
         );
     }
 
-    function transferUnderlyingIn(address sender, uint underlyingAmount, bool shouldCheckAllowance) internal {
+    function transferUnderlyingIn(address sender, uint underlyingAmount) internal {
         if (!_shouldTransferIn) {
             // Do nothing. The ETH was already transferred into this contract
         } else {
-            super.transferUnderlyingIn(sender, underlyingAmount, shouldCheckAllowance);
+            super.transferUnderlyingIn(sender, underlyingAmount);
         }
     }
 
@@ -198,7 +158,7 @@ contract DmmEther is DmmToken {
         address underlyingToken = controller.getUnderlyingTokenForDmm(address(this));
         if (_shouldRedeemToETH) {
             IWETH(underlyingToken).withdraw(underlyingAmount);
-            address(uint160(recipient)).send(underlyingAmount);
+            address(uint160(recipient)).call.value(underlyingAmount);
         } else {
             IERC20(underlyingToken).safeTransfer(recipient, underlyingAmount.sub(msg.value));
         }

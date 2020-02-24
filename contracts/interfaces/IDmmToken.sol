@@ -133,19 +133,6 @@ interface IDmmToken {
     /**
      * @dev Transfers the token around which this DMMA wraps from sender to the DMMA contract. Then, sends the
      *      corresponding amount of DMM to recipient. Note, an allowance must be set for sender for the underlying
-     *      token that is at least of size `amount` / `exchangeRate`. This call reverts with INSUFFICIENT_DMM_LIQUIDITY if
-     *      there is not enough DMM available to be minted.
-     *
-     * @param owner         The address that is sending the `underlyingAmount` underlying token.
-     * @param recipient     The address the will receive the newly minted DMM.
-     * @param amount        The amount of underlying to send to this DMMA for conversion to DMM.
-     * @return The amount of DMM minted.
-     */
-    function mintFrom(address owner, address recipient, uint amount) external returns (uint);
-
-    /**
-     * @dev Transfers the token around which this DMMA wraps from sender to the DMMA contract. Then, sends the
-     *      corresponding amount of DMM to recipient. Note, an allowance must be set for sender for the underlying
      *      token that is at least of size `amount` / `exchangeRate`. This call reverts with INSUFFICIENT_DMM_LIQUIDITY
      *      if there is not enough DMM available to be minted. See #MINT_TYPE_HASH. This function gives the `owner` the
      *      illusion of committing a gasless transaction, allowing a relayer to broadcast the transaction and
@@ -189,19 +176,6 @@ interface IDmmToken {
      * @return          The amount of underlying redeemed.
      */
     function redeem(uint amount) external returns (uint);
-
-    /**
-     * @dev Transfers DMM from `sender` to this DMMA contract. Then, sends the corresponding amount of token around
-     *      which this DMMA wraps to `recipient`. Note, an allowance must be set for sender for DMM that is at least of
-     *      size `amount`. This call reverts with INSUFFICIENT_UNDERLYING_LIQUIDITY if there is not enough underlying
-     *      available to be redeemed.
-     *
-     * @param owner         The address that is sending the `underlyingAmount` underlying token.
-     * @param recipient     The address the will receive the newly redeemed DMM.
-     * @param amount        The amount of DMM token to be redeemed for the recipient.
-     * @return The amount of underlying redeemed.
-     */
-    function redeemFrom(address owner, address recipient, uint amount) external returns (uint);
 
     /**
      * @dev Transfers DMM from `owner` to the DMMA contract. Then, sends the corresponding amount of token around which

@@ -159,35 +159,11 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
     nonReentrant
     isNotDisabled
     public returns (uint) {
-        return _mint(_msgSender(), _msgSender(), underlyingAmount, /* shouldCheckAllowance */ false);
+        return _mint(_msgSender(), _msgSender(), underlyingAmount);
     }
 
-    function mintFrom(
-        address owner,
-        address recipient,
-        uint underlyingAmount
-    )
-    whenNotPaused
-    nonReentrant
-    isNotDisabled
-    public returns (uint) {
-        return _mint(owner, recipient, underlyingAmount, /* shouldCheckAllowance */ true);
-    }
-
-    function transferUnderlyingIn(address owner, uint underlyingAmount, bool shouldCheckAllowance) internal {
+    function transferUnderlyingIn(address owner, uint underlyingAmount) internal {
         address underlyingToken = controller.getUnderlyingTokenForDmm(address(this));
-        if (shouldCheckAllowance) {
-            // This is the best way to check that the owner's underlying can be spent by `msg.sender`, because the user
-            // must set an allowance for:
-            // 1) The msg_sender
-            // 2) This contract
-            // However, this contract cannot modify the user's allowance for underlying. The main negative side-effect
-            // of this is that the user must set an allowance twice before allowing a spender to initiate a call to
-            // #mintFrom
-            uint currentAllowance = _allowances[owner][_msgSender()];
-            _allowances[owner][_msgSender()] = currentAllowance.sub(underlyingAmount, "INSUFFICIENT_ALLOWANCE");
-        }
-
         IERC20(underlyingToken).safeTransferFrom(owner, address(this), underlyingAmount);
     }
 
@@ -220,7 +196,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         // Initially, we mint to this contract so we can send handle the fees.
         // We don't delegate the call for transferring the underlying in, because gasless requests are designed to
         // allow any relayer to broadcast the user's cryptographically-secure message.
-        uint amount = _mint(owner, address(this), underlyingAmount, /* shouldCheckAllowance */ false);
+        uint amount = _mint(owner, address(this), underlyingAmount);
         require(amount >= feeAmount, "FEE_TOO_LARGE");
 
         uint amountLessFee = amount.sub(feeAmount);
@@ -240,17 +216,6 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
     nonReentrant
     public returns (uint) {
         return _redeem(_msgSender(), _msgSender(), amount, /* shouldUseAllowance */ false);
-    }
-
-    function redeemFrom(
-        address owner,
-        address recipient,
-        uint amount
-    )
-    whenNotPaused
-    nonReentrant
-    public returns (uint) {
-        return _redeem(owner, recipient, amount, /* shouldUseAllowance */ true);
     }
 
     function redeemFromGaslessRequest(
@@ -335,7 +300,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
      * Private & Internal Functions
      */
 
-    function _mint(address owner, address recipient, uint underlyingAmount, bool shouldCheckAllowance) internal returns (uint) {
+    function _mint(address owner, address recipient, uint underlyingAmount) internal returns (uint) {
         blacklistable().checkNotBlacklisted(_msgSender());
 
         uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
@@ -344,7 +309,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         require(balanceOf(address(this)) >= amount, "INSUFFICIENT_DMM_LIQUIDITY");
 
         // Transfer underlying to this contract
-        transferUnderlyingIn(owner, underlyingAmount, shouldCheckAllowance);
+        transferUnderlyingIn(owner, underlyingAmount);
 
         // Transfer DMM to the recipient
         blacklistable().checkNotBlacklisted(owner);
