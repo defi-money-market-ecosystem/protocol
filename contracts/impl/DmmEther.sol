@@ -50,7 +50,7 @@ contract DmmEther is DmmToken {
         IWETH(wethToken).deposit.value(msg.value)();
         _shouldTransferIn = false;
 
-        return _mint(_msgSender(), _msgSender(), msg.value, /* shouldDelegateCall */ false);
+        return _mint(_msgSender(), _msgSender(), msg.value, /* shouldCheckAllowance */ false);
     }
 
     function mintFromViaEther(
