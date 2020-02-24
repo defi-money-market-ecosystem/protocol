@@ -1,4 +1,4 @@
-const provider = process.env.PROVIDER ? process.env.PROVIDER : 'http://localhost:8545';
+const provider = process.env.PROVIDER ? process.env.PROVIDER : new Error("NO PROVIDER GIVEN");
 const Web3 = require('web3');
 const {setupLoader} = require('@openzeppelin/contract-loader');
 const {BN} = require('ethereumjs-util');
@@ -29,6 +29,8 @@ const main = async () => {
 
   const delayedOwner = await DelayedOwner.at("0xcfD027019F9Ff28AC3db417b630c7a21881090fb");
   const dmmController = await DmmController.at("0xbb7a3f18b6732Ab21D48226339e891a88E5cd4C5");
+
+  await getChainlinkCollateralValue(delayedOwner);
 
   // console.log("Deploying DmmEtherFactory...");
   // const dmmEtherFactory = await deployContract(DmmEtherFactory, [wethAddress], deployer, 6e6, web3, 1e9);
@@ -92,6 +94,20 @@ const main = async () => {
 
   // console.log("actualAbi ", actualAbi, innerAbi);
   console.log("actualAbi ", innerAbi);
+};
+
+const getChainlinkCollateralValue = async (delayedOwner) => {
+  const ChainlinkCollateralValuator = loader.truffle.fromArtifact('ChainlinkCollateralValuator');
+  const chainlinkCollateralValuator = await ChainlinkCollateralValuator.at("0x681Ba299ee5619DC96f5d87aE0F5B19EAB3Cbe8A");
+  const oracleAddress = "0x7AFe1118Ea78C1eae84ca8feE5C65Bc76CcF879e";
+  const innerAbi = chainlinkCollateralValuator.contract.methods.getCollateralValue(oracleAddress).encodeABI();
+
+  const actualAbi = delayedOwner.contract.methods.transact(
+    chainlinkCollateralValuator.address,
+    innerAbi,
+  ).encodeABI();
+
+  console.log("getCollateralValue: ", actualAbi);
 };
 
 main().catch(error => {
