@@ -10,6 +10,7 @@ const {
 } = require('@openzeppelin/test-helpers');
 const {
   _0,
+  _1,
   _25,
   _100,
   _10000,
@@ -167,10 +168,13 @@ describe('DmmEther.UserInteractions', async () => {
     );
     const gasCost = new BN(receipt.receipt.gasUsed).mul(gasPrice);
 
+    const exchangeRate = await this.contract.getCurrentExchangeRate();
+
     (await this.contract.balanceOf(user)).should.be.bignumber.equal(_0());
     (await this.underlyingToken.balanceOf(user)).should.be.bignumber.equal(_100().sub(_25()));
     // We redeem to ETH, so the user should have more ETH
-    (await balance.current(user)).should.be.bignumber.equal(originalBalance.add(_25()).sub(gasCost));
+    const underlyingRedeemed = _25().mul(exchangeRate).div(_1());
+    (await balance.current(user)).should.be.bignumber.equal(originalBalance.add(underlyingRedeemed).sub(gasCost));
   });
 
   it('should redeem if market is disabled', async () => {
@@ -189,10 +193,13 @@ describe('DmmEther.UserInteractions', async () => {
     );
     const gasCost = new BN(receipt.receipt.gasUsed).mul(gasPrice);
 
+    const exchangeRate = await this.contract.getCurrentExchangeRate();
+
     (await this.contract.balanceOf(user)).should.be.bignumber.equal(_0());
     (await this.underlyingToken.balanceOf(user)).should.be.bignumber.equal(_100().sub(_25()));
     // We redeem to ETH, so the user should have more ETH
-    (await balance.current(user)).should.be.bignumber.equal(originalBalance.add(_25()).sub(gasCost));
+    const underlyingRedeemed = _25().mul(exchangeRate).div(_1());
+    (await balance.current(user)).should.be.bignumber.equal(originalBalance.add(underlyingRedeemed).sub(gasCost));
   });
 
   it('should not redeem if ecosystem is paused', async () => {

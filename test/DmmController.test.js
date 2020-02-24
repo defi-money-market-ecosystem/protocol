@@ -370,8 +370,18 @@ describe('DmmController', async () => {
     // We added 10,000 worth of both markets, which equates $20,000 * 1e18. Our collateral's value is 10m * 1e18.
     // (10,000,000 * 1e18 / $20,000 * 1e18)
 
+    const dmmDaiAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(new BN('1'));
+    const dmmDai = contract.fromArtifact('DmmToken', dmmDaiAddress);
+
+    const dmmUsdcAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(new BN('2'));
+    const dmmUsdc = contract.fromArtifact('DmmToken', dmmUsdcAddress);
+
+    let expectedCollateralization = new BN('500').mul(_1());
+    expectedCollateralization = expectedCollateralization.mul(_1()).div(await dmmDai.getCurrentExchangeRate());
+    expectedCollateralization = expectedCollateralization.mul(_1()).div(await dmmUsdc.getCurrentExchangeRate());
+
     const totalCollateralization = await this.controller.getTotalCollateralization();
-    (totalCollateralization).should.be.bignumber.equals(new BN('500').mul(_1()));
+    (totalCollateralization).should.be.bignumber.equals(expectedCollateralization);
   });
 
   it('should get active collateralization correctly when using tokens w/ diff precisions', async () => {
@@ -392,10 +402,12 @@ describe('DmmController', async () => {
     const dmmUsdc = contract.fromArtifact('DmmToken', dmmUsdcAddress);
 
     const rawMintAmount1 = await mint(this.dai, dmmDai, user, _100());
-    const rawMintAmount2 = await mint(this.usdc, dmmUsdc, user, new BN('100000000')); // 100
+    const mintAmount1 = rawMintAmount1.mul(_1()).div(await dmmDai.getCurrentExchangeRate());
 
-    const mintAmount1 = rawMintAmount1;
-    const mintAmount2 = rawMintAmount2.mul(new BN('10').pow(new BN('12'))); // USDC is missing 12 decimals of precision
+    const usdc100 = new BN('100000000');
+    const rawMintAmount2 = await mint(this.usdc, dmmUsdc, user, usdc100);
+    // USDC is missing 12 decimals of precision, so add it
+    const mintAmount2 = rawMintAmount2.mul(new BN('1000000000000')).mul(_1()).div(await dmmUsdc.getCurrentExchangeRate());
 
     const tenMillion = new BN('10000000000000000000000000');
     const collateralization = tenMillion.mul(_1()).div(mintAmount1.add(mintAmount2));
