@@ -192,12 +192,12 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         require(newController.isContract(), "NEW_CONTROLLER_IS_NOT_CONTRACT");
         // All of the following contracts are owned by the controller. All other ownable contracts are owned by the
         // same owner as this controller.
-        for(uint i = 0; i < dmmTokenIds.length; i++) {
+        for (uint i = 0; i < dmmTokenIds.length; i++) {
             address dmmToken = dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i]];
             Ownable(dmmToken).transferOwnership(newController);
         }
-        Ownable(dmmEtherFactory).transferOwnership(newController);
-        Ownable(dmmTokenFactory).transferOwnership(newController);
+        Ownable(address(dmmEtherFactory)).transferOwnership(newController);
+        Ownable(address(dmmTokenFactory)).transferOwnership(newController);
     }
 
     function enableMarket(uint dmmTokenId) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
@@ -295,37 +295,30 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
     function getTotalCollateralization() public view returns (uint) {
         uint totalLiabilities = 0;
+        uint totalAssetsInDmmContract = 0;
         for (uint i = 0; i < dmmTokenIds.length; i++) {
-            // IDs start at 1
             IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i]]);
-            uint underlyingValue = getSupplyValue(token, IERC20(address(token)).totalSupply());
-            totalLiabilities = totalLiabilities.add(underlyingValue);
-        }
-        // TODO - need to factor in
-        // TODO - 1) how much in underlying is in the contracts
-        // TODO - 2) off-chain collateral via the interface
-        if (totalLiabilities == 0) {
-            return 0;
-        }
-        uint collateralValue = collateralValuator.getCollateralValue();
-        return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLiabilities);
-    }
+            uint underlyingLiabilitiesValue = getDmmSupplyValue(token, IERC20(address(token)).totalSupply());
+            totalLiabilities = totalLiabilities.add(underlyingLiabilitiesValue);
 
-    function getCollateralization(uint totalLiabilities) private view returns (uint) {
-        if (totalLiabilities == 0) {
-            return 0;
+            IERC20 underlyingToken = IERC20(getUnderlyingTokenForDmm(address(token)));
+            uint underlyingAssetsValue = getUnderlyingSupplyValue(underlyingToken, underlyingToken.balanceOf(address(token)), token.decimals());
+            totalAssetsInDmmContract = totalAssetsInDmmContract.add(underlyingAssetsValue);
         }
-        uint collateralValue = collateralValuator.getCollateralValue();
-        return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLiabilities);
+        return getCollateralization(totalLiabilities, totalAssetsInDmmContract);
     }
 
     function getActiveCollateralization() public view returns (uint) {
         uint totalLiabilities = 0;
+        uint totalAssetsInDmmContract = 0;
         for (uint i = 0; i < dmmTokenIds.length; i++) {
-            // IDs start at 1
             IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i]]);
-            uint underlyingValue = getSupplyValue(token, token.activeSupply());
-            totalLiabilities = totalLiabilities.add(underlyingValue);
+            uint underlyingLiabilitiesValue = getDmmSupplyValue(token, token.activeSupply());
+            totalLiabilities = totalLiabilities.add(underlyingLiabilitiesValue);
+
+            IERC20 underlyingToken = IERC20(getUnderlyingTokenForDmm(address(token)));
+            uint underlyingAssetsValue = getUnderlyingSupplyValue(underlyingToken, underlyingToken.balanceOf(address(token)), token.decimals());
+            totalAssetsInDmmContract = totalAssetsInDmmContract.add(underlyingAssetsValue);
         }
         if (totalLiabilities == 0) {
             return 0;
@@ -425,19 +418,40 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         emit MarketAdded(dmmTokenId, dmmToken, underlyingToken);
     }
 
-    function getSupplyValue(IDmmToken token, uint supply) private view returns (uint) {
-        uint underlyingTokenAmount = supply.mul(token.getCurrentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);
+    function getCollateralization(uint totalLiabilities, uint totalAssets) private view returns (uint) {
+        if (totalLiabilities == 0) {
+            return 0;
+        }
+        uint collateralValue = collateralValuator.getCollateralValue().add(totalAssets).add(offChainAssetValuator.getOffChainAssetsValue());
+        return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLiabilities);
+    }
+
+    function getDmmSupplyValue(IDmmToken dmmToken, uint dmmSupply) private view returns (uint) {
+        uint underlyingTokenAmount = dmmSupply.mul(dmmToken.getCurrentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);
         // The amount returned must use 18 decimal places, regardless of the # of decimals this token has.
         uint standardizedUnderlyingTokenAmount;
-        if (token.decimals() == 18) {
+        if (dmmToken.decimals() == 18) {
             standardizedUnderlyingTokenAmount = underlyingTokenAmount;
-        } else if (token.decimals() < 18) {
-            standardizedUnderlyingTokenAmount = underlyingTokenAmount.mul((10 ** (18 - uint256(token.decimals()))));
+        } else if (dmmToken.decimals() < 18) {
+            standardizedUnderlyingTokenAmount = underlyingTokenAmount.mul((10 ** (18 - uint256(dmmToken.decimals()))));
         } else /* decimals > 18 */ {
-            standardizedUnderlyingTokenAmount = underlyingTokenAmount.div((10 ** (uint256(token.decimals()) - 18)));
+            standardizedUnderlyingTokenAmount = underlyingTokenAmount.div((10 ** (uint256(dmmToken.decimals()) - 18)));
         }
-        address underlyingToken = getUnderlyingTokenForDmm(address(token));
+        address underlyingToken = getUnderlyingTokenForDmm(address(dmmToken));
         return underlyingTokenValuator.getTokenValue(underlyingToken, standardizedUnderlyingTokenAmount);
+    }
+
+    function getUnderlyingSupplyValue(IERC20 underlyingToken, uint underlyingSupply, uint8 decimals) private view returns (uint) {
+        // The amount returned must use 18 decimal places, regardless of the # of decimals this token has.
+        uint standardizedUnderlyingTokenAmount;
+        if (decimals == 18) {
+            standardizedUnderlyingTokenAmount = underlyingSupply;
+        } else if (decimals < 18) {
+            standardizedUnderlyingTokenAmount = underlyingSupply.mul((10 ** (18 - uint256(decimals))));
+        } else /* decimals > 18 */ {
+            standardizedUnderlyingTokenAmount = underlyingSupply.div((10 ** (uint256(decimals) - 18)));
+        }
+        return underlyingTokenValuator.getTokenValue(address(underlyingToken), standardizedUnderlyingTokenAmount);
     }
 
 }

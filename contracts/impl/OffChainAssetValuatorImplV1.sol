@@ -5,7 +5,7 @@ import "../interfaces/IOffChainAssetValuator.sol";
 
 contract OffChainAssetValuatorImplV1 is IOffChainAssetValuator, Ownable {
 
-    function getOffChainAssetsValue() public returns (uint) {
+    function getOffChainAssetsValue() public view returns (uint) {
         return 0;
     }
 

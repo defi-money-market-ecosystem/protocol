@@ -163,6 +163,7 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
   const DmmTokenLibrary = contracts.fromArtifact('DmmTokenLibrary');
   const ERC20Mock = contracts.fromArtifact('ERC20Mock');
   const InterestRateImplV1 = contracts.fromArtifact('InterestRateImplV1');
+  const OffChainAssetValuatorImplV1 = contracts.fromArtifact('OffChainAssetValuatorImplV1');
   const SafeERC20 = contracts.fromArtifact('SafeERC20');
   const SafeMath = contracts.fromArtifact('SafeMath');
   const StringHelpers = contracts.fromArtifact('StringHelpers');
@@ -205,6 +206,7 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
 
   thisInstance.interestRateInterface = await InterestRateImplV1.new({from: thisInstance.admin});
   thisInstance.collateralValuator = await DmmCollateralValuatorMock.new({from: thisInstance.admin});
+  thisInstance.offChainCollateralValutor = await OffChainAssetValuatorImplV1.new({from: thisInstance.admin});
   thisInstance.underlyingTokenValuator = await UnderlyingTokenValuatorImplV1.new(
     thisInstance.dai.address,
     thisInstance.usdc.address,
@@ -220,6 +222,7 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
   thisInstance.controller = await DmmController.new(
     thisInstance.interestRateInterface.address,
     thisInstance.collateralValuator.address,
+    thisInstance.offChainCollateralValutor.address,
     thisInstance.underlyingTokenValuator.address,
     thisInstance.dmmEtherFactory.address,
     thisInstance.dmmTokenFactory.address,

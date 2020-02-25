@@ -133,4 +133,17 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
         revert("NOT_IMPLEMENTED");
     }
 
+    function addMarketFromExistingDmmToken(
+        address dmmToken,
+        address underlyingToken
+    ) public {
+        revert("NOT_IMPLEMENTED");
+    }
+
+    function transferOwnershipToNewController(
+        address newController
+    ) public {
+        revert("NOT_IMPLEMENTED");
+    }
+
 }

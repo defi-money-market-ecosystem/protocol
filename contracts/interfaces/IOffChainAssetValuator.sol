@@ -8,6 +8,6 @@ interface IOffChainAssetValuator {
     /**
      * @return The value of the off-chain assets. The number returned uses 18 decimal places.
      */
-    function getOffChainAssetsValue() external returns (uint);
+    function getOffChainAssetsValue() external view returns (uint);
 
 }
