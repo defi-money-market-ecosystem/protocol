@@ -4,6 +4,7 @@ const {callContract, deployContract, linkContract} = require('./ContractUtils');
 
 global.interestRateImplV1 = null;
 global.chainlinkCollateralValuator = null;
+global.offChainAssetValuatorImplV1 = null;
 global.underlyingTokenValuatorImplV1 = null;
 global.delayedOwner = null;
 global.dmmEtherFactory = null;
@@ -18,10 +19,11 @@ const _1 = new BN('1000000000000000000'); // 1.0
 const deployEcosystem = async (loader, environment, deployer) => {
   const ChainlinkCollateralValuator = loader.truffle.fromArtifact('ChainlinkCollateralValuator');
   const DmmBlacklistable = loader.truffle.fromArtifact('DmmBlacklistable');
-  const InterestRateImplV1 = loader.truffle.fromArtifact('InterestRateImplV1');
   const DmmController = loader.truffle.fromArtifact('DmmController');
   const DmmEtherFactory = loader.truffle.fromArtifact('DmmEtherFactory');
   const DmmTokenFactory = loader.truffle.fromArtifact('DmmTokenFactory');
+  const InterestRateImplV1 = loader.truffle.fromArtifact('InterestRateImplV1');
+  const OffChainAssetValuatorImplV1 = contracts.fromArtifact('OffChainAssetValuatorImplV1');
   const UnderlyingTokenValuatorImplV1 = loader.truffle.fromArtifact('UnderlyingTokenValuatorImplV1');
 
   let oracleAddress;
@@ -54,6 +56,9 @@ const deployEcosystem = async (loader, environment, deployer) => {
 
   console.log("Deploying ChainlinkCollateralValuator...");
   chainlinkCollateralValuator = await deployContract(ChainlinkCollateralValuator, [link.address, _0_1, chainlinkJobId], deployer, 4e6);
+
+  console.log("Deploying OffChainAssetValuatorImplV1...");
+  offChainAssetValuatorImplV1 = await deployContract(OffChainAssetValuatorImplV1, [], deployer, 4e6);
 
   console.log("Deploying UnderlyingTokenValuatorImplV1... ");
   underlyingTokenValuatorImplV1 = await deployContract(UnderlyingTokenValuatorImplV1, [dai.address, usdc.address], deployer, 4e6);
@@ -88,6 +93,7 @@ const deployEcosystem = async (loader, environment, deployer) => {
     [
       interestRateImplV1.address,
       chainlinkCollateralValuator.address,
+      offChainAssetValuatorImplV1.address,
       underlyingTokenValuatorImplV1.address,
       dmmEtherFactory.address,
       dmmTokenFactory.address,
@@ -104,6 +110,7 @@ const deployEcosystem = async (loader, environment, deployer) => {
 
   console.log('InterestRateImplV1: ', interestRateImplV1.address);
   console.log('ChainlinkCollateralValuator: ', chainlinkCollateralValuator.address);
+  console.log('OffChainAssetValuatorImplV1: ', offChainAssetValuatorImplV1.address);
   console.log('UnderlyingTokenValuatorImplV1: ', underlyingTokenValuatorImplV1.address);
   console.log('DmmTokenFactory: ', dmmTokenFactory.address);
   console.log('DmmBlacklistable: ', dmmBlacklist.address);
