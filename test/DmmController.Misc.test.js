@@ -26,7 +26,7 @@ const {
 // Use the different accounts, which are unlocked and funded with Ether
 const [admin, user] = accounts;
 
-describe('DmmController', async () => {
+describe('DmmController.Misc', async () => {
 
   const ownableError = 'Ownable: caller is not the owner';
   const defaultDmmTokenId = new BN('1');
@@ -361,66 +361,6 @@ describe('DmmController', async () => {
     await addDaiMarket();
     const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
     (await this.controller.getTokenIdFromDmmTokenAddress(dmmTokenAddress)).should.be.bignumber.equals(defaultDmmTokenId);
-  });
-
-  it('should get total collateralization correctly when using tokens w/ diff precisions', async () => {
-    // This test is great because USDC and DAI have different precisions - 18 vs 6.
-    await addDaiMarket();
-    await addUsdcMarket();
-    // We added 10,000 worth of both markets, which equates $20,000 * 1e18. Our collateral's value is 10m * 1e18.
-    // (10,000,000 * 1e18 / $20,000 * 1e18)
-
-    const dmmDaiAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(new BN('1'));
-    const dmmDai = contract.fromArtifact('DmmToken', dmmDaiAddress);
-
-    const dmmUsdcAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(new BN('2'));
-    const dmmUsdc = contract.fromArtifact('DmmToken', dmmUsdcAddress);
-
-    const _10m = new BN('10000000').mul(_1());
-
-    const mDaiTotalSupply = await dmmDai.totalSupply();
-    const mUsdcTotalSupply = (await dmmUsdc.totalSupply()).mul(new BN('1000000000000')); // standardize decimals
-
-    let totalValue = new BN('0');
-    totalValue = totalValue.add((mDaiTotalSupply).mul(_1()).div(await dmmDai.getCurrentExchangeRate()));
-    totalValue = totalValue.add((mUsdcTotalSupply).mul(_1()).div(await dmmUsdc.getCurrentExchangeRate()));
-    const expectedCollateralization = _10m.mul(_1()).div(totalValue);
-
-    const totalCollateralization = await this.controller.getTotalCollateralization();
-    (totalCollateralization).should.be.bignumber.equals(expectedCollateralization);
-  });
-
-  it('should get active collateralization correctly when using tokens w/ diff precisions', async () => {
-    // This test is great because USDC and DAI have different precisions - 18 vs 6.
-    await addDaiMarket();
-    await addUsdcMarket();
-    // We added 10,000 worth of both markets, which equates $20,000 * 1e18. Our collateral's value is 10m * 1e18.
-    // (10,000,000 * 1e18 / $20,000 * 1e18)
-
-    // Before we mint, the collateralization is 0.
-    const activeCollateralizationBeforeMint = await this.controller.getActiveCollateralization();
-    (activeCollateralizationBeforeMint).should.be.bignumber.equals(_0());
-
-    const dmmDaiAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(new BN('1'));
-    const dmmDai = contract.fromArtifact('DmmToken', dmmDaiAddress);
-
-    const dmmUsdcAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(new BN('2'));
-    const dmmUsdc = contract.fromArtifact('DmmToken', dmmUsdcAddress);
-
-    await mint(this.dai, dmmDai, user, _100());
-    const usdc100 = new BN('100000000');
-    await mint(this.usdc, dmmUsdc, user, usdc100);
-
-    const mintAmount1 = await dmmDai.activeSupply();
-    // USDC is missing 12 decimals of precision, so add it
-    const mintAmount2 = (await dmmUsdc.activeSupply()).mul(new BN('1000000000000'));
-
-    const tenMillion = new BN('10000000000000000000000000');
-    const collateralization = tenMillion.mul(_1()).div(mintAmount1.add(mintAmount2));
-
-    // Before we mint, the collateralization is 0.
-    const activeCollateralizationAfterMint = await this.controller.getActiveCollateralization();
-    (activeCollateralizationAfterMint).should.be.bignumber.equals(collateralization);
   });
 
   /**********************

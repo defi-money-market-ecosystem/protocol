@@ -137,8 +137,8 @@ interface IDmmController {
     function adminDepositFunds(uint dmmTokenId, uint underlyingAmount) external;
 
     /**
-     * @dev Gets the collateralization of the system by dividing the total value of all the assets by the value of the
-     *      total supplies of all the markets.
+     * @dev Gets the "theoretical" collateralization of the system by dividing the total value of all the collateralized
+     *      assets by the value of the total supplies of all the markets, assuming every `DMMA` was at maximum usage.
      *
      * @return  The total collateralization of the system, as a number with 18 decimals. For example
      *          `1010000000000000000` is 101% or 1.01.

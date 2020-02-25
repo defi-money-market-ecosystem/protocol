@@ -233,6 +233,7 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
     {from: thisInstance.admin}
   );
 
+  await thisInstance.dmmEtherFactory.transferOwnership(thisInstance.controller.address, {from: thisInstance.admin});
   await thisInstance.dmmTokenFactory.transferOwnership(thisInstance.controller.address, {from: thisInstance.admin});
 
   const setDaiBalanceReceipt = await thisInstance.dai.setBalance(thisInstance.user, _10000());

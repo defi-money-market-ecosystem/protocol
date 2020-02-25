@@ -178,8 +178,9 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     onlyOwner
     public {
         require(underlyingTokenAddressToDmmTokenIdMap[underlyingToken] == 0, "TOKEN_ALREADY_EXISTS");
-        require(Ownable(dmmToken).owner() == address(this), "INVALID_DMM_TOKEN_OWNERSHIP");
         require(dmmToken.isContract(), "DMM_TOKEN_IS_NOT_CONTRACT");
+        require(underlyingToken.isContract(), "UNDERLYING_TOKEN_IS_NOT_CONTRACT");
+        require(Ownable(dmmToken).owner() == address(this), "INVALID_DMM_TOKEN_OWNERSHIP");
 
         _addMarket(dmmToken, underlyingToken);
     }
@@ -295,17 +296,15 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
     function getTotalCollateralization() public view returns (uint) {
         uint totalLiabilities = 0;
-        uint totalAssetsInDmmContract = 0;
+        uint totalPotentialAssets = 0;
         for (uint i = 0; i < dmmTokenIds.length; i++) {
             IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i]]);
-            uint underlyingLiabilitiesValue = getDmmSupplyValue(token, IERC20(address(token)).totalSupply());
-            totalLiabilities = totalLiabilities.add(underlyingLiabilitiesValue);
+            uint underlyingTokenValueForTotalSupply = getDmmSupplyValue(token, IERC20(address(token)).totalSupply());
+            totalLiabilities = totalLiabilities.add(underlyingTokenValueForTotalSupply);
 
-            IERC20 underlyingToken = IERC20(getUnderlyingTokenForDmm(address(token)));
-            uint underlyingAssetsValue = getUnderlyingSupplyValue(underlyingToken, underlyingToken.balanceOf(address(token)), token.decimals());
-            totalAssetsInDmmContract = totalAssetsInDmmContract.add(underlyingAssetsValue);
+            totalPotentialAssets = totalPotentialAssets.add(underlyingTokenValueForTotalSupply);
         }
-        return getCollateralization(totalLiabilities, totalAssetsInDmmContract);
+        return getCollateralization(totalLiabilities, totalPotentialAssets);
     }
 
     function getActiveCollateralization() public view returns (uint) {
@@ -320,11 +319,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
             uint underlyingAssetsValue = getUnderlyingSupplyValue(underlyingToken, underlyingToken.balanceOf(address(token)), token.decimals());
             totalAssetsInDmmContract = totalAssetsInDmmContract.add(underlyingAssetsValue);
         }
-        if (totalLiabilities == 0) {
-            return 0;
-        }
-        uint collateralValue = collateralValuator.getCollateralValue();
-        return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLiabilities);
+        return getCollateralization(totalLiabilities, totalAssetsInDmmContract);
     }
 
     function getInterestRateByUnderlyingTokenAddress(address underlyingToken) public view returns (uint) {
