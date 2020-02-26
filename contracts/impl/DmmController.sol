@@ -73,6 +73,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
      */
 
     uint public constant COLLATERALIZATION_BASE_RATE = 1e18;
+    uint public constant INTEREST_RATE_BASE_RATE = 1e18;
     uint public constant MIN_RESERVE_RATIO_BASE_RATE = 1e18;
 
     constructor(
@@ -296,15 +297,25 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
     function getTotalCollateralization() public view returns (uint) {
         uint totalLiabilities = 0;
-        uint totalPotentialAssets = 0;
+        uint totalAssets = 0;
         for (uint i = 0; i < dmmTokenIds.length; i++) {
             IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i]]);
-            uint underlyingTokenValueForTotalSupply = getDmmSupplyValue(token, IERC20(address(token)).totalSupply());
-            totalLiabilities = totalLiabilities.add(underlyingTokenValueForTotalSupply);
 
-            totalPotentialAssets = totalPotentialAssets.add(underlyingTokenValueForTotalSupply);
+            uint currentExchangeRate = token.getCurrentExchangeRate();
+
+            // The interest rate is annualized, so figuring out the exchange rate 1-year from now is as simple as
+            // applying the current interest rate to the current exchange rate.
+            uint futureExchangeRate = currentExchangeRate.mul(INTEREST_RATE_BASE_RATE.add(getInterestRateByDmmTokenAddress(address(token)))).div(INTEREST_RATE_BASE_RATE);
+
+            uint totalSupply = IERC20(address(token)).totalSupply();
+
+            uint underlyingLiabilitiesForTotalSupply = getDmmSupplyValue(token, totalSupply, futureExchangeRate);
+            totalLiabilities = totalLiabilities.add(underlyingLiabilitiesForTotalSupply);
+
+            uint underlyingAssetsForTotalSupply = getDmmSupplyValue(token, totalSupply, currentExchangeRate);
+            totalAssets = totalAssets.add(underlyingAssetsForTotalSupply);
         }
-        return getCollateralization(totalLiabilities, totalPotentialAssets);
+        return getCollateralization(totalLiabilities, totalAssets);
     }
 
     function getActiveCollateralization() public view returns (uint) {
@@ -312,7 +323,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         uint totalAssetsInDmmContract = 0;
         for (uint i = 0; i < dmmTokenIds.length; i++) {
             IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenIds[i]]);
-            uint underlyingLiabilitiesValue = getDmmSupplyValue(token, token.activeSupply());
+            uint underlyingLiabilitiesValue = getDmmSupplyValue(token, token.activeSupply(), token.getCurrentExchangeRate());
             totalLiabilities = totalLiabilities.add(underlyingLiabilitiesValue);
 
             IERC20 underlyingToken = IERC20(getUnderlyingTokenForDmm(address(token)));
@@ -421,8 +432,8 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLiabilities);
     }
 
-    function getDmmSupplyValue(IDmmToken dmmToken, uint dmmSupply) private view returns (uint) {
-        uint underlyingTokenAmount = dmmSupply.mul(dmmToken.getCurrentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);
+    function getDmmSupplyValue(IDmmToken dmmToken, uint dmmSupply, uint currentExchangeRate) private view returns (uint) {
+        uint underlyingTokenAmount = dmmSupply.mul(currentExchangeRate).div(EXCHANGE_RATE_BASE_RATE);
         // The amount returned must use 18 decimal places, regardless of the # of decimals this token has.
         uint standardizedUnderlyingTokenAmount;
         if (dmmToken.decimals() == 18) {

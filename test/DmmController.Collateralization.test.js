@@ -51,16 +51,36 @@ describe('DmmController.Collateralization', async () => {
     const dmmUsdcAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(new BN('2'));
     const dmmUsdc = contract.fromArtifact('DmmToken', dmmUsdcAddress);
 
-    const _10m = new BN('10000000').mul(_1());
+    const daiExchangeRate = await dmmDai.getCurrentExchangeRate();
+    const usdcExchangeRate = await dmmUsdc.getCurrentExchangeRate();
 
-    const daiValueOfTotalSupply = (await dmmDai.totalSupply()).mul(await dmmDai.getCurrentExchangeRate()).div(_1());
-    let usdcValueOfTotalSupply = (await dmmUsdc.totalSupply()).mul(await dmmUsdc.getCurrentExchangeRate()).div(_1());
+    const mDaiTotalSupply = await dmmDai.totalSupply();
+    const mUsdcTotalSupply = await dmmUsdc.totalSupply();
+
+    const daiCurrentValueOfTotalSupply = mDaiTotalSupply.mul(daiExchangeRate).div(_1());
+    let usdcCurrentValueOfTotalSupply = mUsdcTotalSupply.mul(usdcExchangeRate).div(_1());
 
     // Standardize decimals since USDC only has 6 --> transform to have 18
-    usdcValueOfTotalSupply = usdcValueOfTotalSupply.mul(new BN('1000000000000'));
+    usdcCurrentValueOfTotalSupply = usdcCurrentValueOfTotalSupply.mul(new BN('1000000000000'));
 
-    let totalValue = daiValueOfTotalSupply.add(usdcValueOfTotalSupply);
-    const expectedCollateralization = (_10m.add(totalValue)).mul(_1()).div(totalValue);
+    const totalCurrentValue = daiCurrentValueOfTotalSupply.add(usdcCurrentValueOfTotalSupply);
+
+    const daiInterestRate = await this.controller.getInterestRateByDmmTokenAddress(dmmDai.address);
+    const usdcInterestRate = await this.controller.getInterestRateByDmmTokenAddress(dmmUsdc.address);
+
+    const futureDaiExchangeRate = daiExchangeRate.mul(daiInterestRate.add(_1())).div(_1());
+    const futureUsdcExchangeRate = usdcExchangeRate.mul(usdcInterestRate.add(_1())).div(_1());
+
+    const daiFutureValueOfTotalSupply = (mDaiTotalSupply).mul(futureDaiExchangeRate).div(_1());
+    let usdcFutureValueOfTotalSupply = (mUsdcTotalSupply).mul(futureUsdcExchangeRate).div(_1());
+
+    // Standardize decimals since USDC only has 6 --> transform to have 18
+    usdcFutureValueOfTotalSupply = usdcFutureValueOfTotalSupply.mul(new BN('1000000000000'));
+
+    const totalFutureValue = daiFutureValueOfTotalSupply.add(usdcFutureValueOfTotalSupply);
+
+    const _10m = new BN('10000000').mul(_1());
+    const expectedCollateralization = (_10m.add(totalCurrentValue)).mul(_1()).div(totalFutureValue);
 
     const totalCollateralization = await this.controller.getTotalCollateralization();
     (totalCollateralization).should.be.bignumber.equals(expectedCollateralization);

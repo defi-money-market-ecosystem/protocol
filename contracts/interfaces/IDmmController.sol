@@ -137,18 +137,19 @@ interface IDmmController {
     function adminDepositFunds(uint dmmTokenId, uint underlyingAmount) external;
 
     /**
-     * @dev Gets the "theoretical" collateralization of the system by dividing the total value of all the collateralized
-     *      assets by the value of the total supplies of all the markets, assuming every `DMMA` was at maximum usage.
+     * @dev Gets the collateralization of the system assuming 1-year's worth of interest payments are due by dividing
+     *      the total value of all the collateralized assets plus the value of the underlying tokens in each DMMA by the
+     *      aggregate interest owed (plus the principal), assuming each DMMA was at maximum usage.
      *
-     * @return  The total collateralization of the system, as a number with 18 decimals. For example
+     * @return  The 1-year collateralization of the system, as a number with 18 decimals. For example
      *          `1010000000000000000` is 101% or 1.01.
      */
     function getTotalCollateralization() external view returns (uint);
 
     /**
-     * @dev Gets the collateralization of the system by dividing the total value of all the assets by the value of the
-     *      active supplies of the DMM tokens. In this case, active supply means the number of DMM tokens that are NOT
-     *      in the contract, and therefore there is an obligation to pay interest to those token holders.
+     * @dev Gets the current collateralization of the system assuming by dividing the total value of all the
+     *      collateralized assets plus the value of the underlying tokens in each DMMA by the aggregate interest owed
+     *      (plus the principal), using the current usage of each DMMA.
      *
      * @return  The active collateralization of the system, as a number with 18 decimals. For example
      *          `1010000000000000000` is 101% or 1.01.
