@@ -15,7 +15,7 @@ const {
   _10000,
   blacklistUser,
   disableMarkets,
-  doDmmTokenBeforeEach,
+  doDmmEtherBeforeEach,
   encodePermitHashAndSign,
   expectApprove,
   expectOffChainRequestValidated,
@@ -27,7 +27,7 @@ const {
 // Use the different accounts, which are unlocked and funded with Ether
 const [admin, recipient, user, otherFeeRecipient] = accounts;
 
-describe('DmmToken.GaslessApprove', async () => {
+describe('DmmEther.GaslessApprove', async () => {
 
   beforeEach(async () => {
     this.admin = admin;
@@ -36,7 +36,7 @@ describe('DmmToken.GaslessApprove', async () => {
     const password = 'password';
     await web3.eth.personal.importRawKey(this.wallet.privateKey, password);
     await web3.eth.personal.unlockAccount(this.wallet.address, password, 600);
-    await doDmmTokenBeforeEach(this, contract, web3);
+    await doDmmEtherBeforeEach(this, contract, web3, accounts[accounts.length - 1]);
 
     this.send = send;
     await setupWallet(this, user);

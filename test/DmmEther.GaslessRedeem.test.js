@@ -5,29 +5,32 @@ const {
   BN,
   constants,
   expectRevert,
+  balance,
   send,
   time,
 } = require('@openzeppelin/test-helpers');
 const {
   _0,
   _1,
+  _24,
+  _24_99,
   _25,
-  _10000,
   blacklistUser,
   disableMarkets,
-  doDmmTokenBeforeEach,
-  encodePermitHashAndSign,
-  expectApprove,
+  doDmmEtherBeforeEach,
+  encodeHashAndSign,
+  expectRedeem,
   expectOffChainRequestValidated,
   mint,
   pauseEcosystem,
+  setApproval,
   setupWallet,
 } = require('./helpers/DmmTokenTestHelpers');
 
 // Use the different accounts, which are unlocked and funded with Ether
 const [admin, recipient, user, otherFeeRecipient] = accounts;
 
-describe('DmmToken.GaslessApprove', async () => {
+describe('DmmEther.GaslessRedeem', async () => {
 
   beforeEach(async () => {
     this.admin = admin;
@@ -36,27 +39,30 @@ describe('DmmToken.GaslessApprove', async () => {
     const password = 'password';
     await web3.eth.personal.importRawKey(this.wallet.privateKey, password);
     await web3.eth.personal.unlockAccount(this.wallet.address, password, 600);
-    await doDmmTokenBeforeEach(this, contract, web3);
+    await doDmmEtherBeforeEach(this, contract, web3, accounts[accounts.length - 1]);
 
     this.send = send;
     await setupWallet(this, user);
-    await mint(this.underlyingToken, this.contract, this.wallet.address, _25());
+    await setApproval(this.contract, this.wallet.address, this.contract.address);
   });
 
-  it('should permit using gasless request', async () => {
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
+  it('should redeem using gasless request', async () => {
+    const startingBalance = await balance.current(recipient);
+
+    const amount = _25();
+    await mint(this.underlyingToken, this.contract, this.wallet.address, amount);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
     const nonce = _0();
     const expiry = _0();
-    const approve = true;
     const feeAmount = _0();
     const feeRecipient = constants.ZERO_ADDRESS;
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
-    const receipt = await this.contract.permit(
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
+    const receipt = await this.contract.redeemFromGaslessRequest(
       this.wallet.address,
       recipient,
       nonce,
       expiry,
-      approve,
+      amount,
       feeAmount,
       feeRecipient,
       new BN(signedMessage.v),
@@ -64,27 +70,36 @@ describe('DmmToken.GaslessApprove', async () => {
       '0x' + signedMessage.s.toString('hex'),
     );
 
-    expectApprove(this, receipt, recipient, true);
+    expectRedeem(this, receipt, recipient);
     expectOffChainRequestValidated(this, receipt, feeRecipient, feeAmount, nonce, expiry);
 
-    // Nonce should be incremented
+    (await this.underlyingToken.balanceOf(recipient)).should.be.bignumber.equal(_0());
+    (await balance.current(recipient)).should.be.bignumber.equal(startingBalance.add(_25()));
+    (await this.underlyingToken.balanceOf(feeRecipient)).should.be.bignumber.equal(_0());
+
+    (await this.contract.balanceOf(recipient)).should.be.bignumber.equal(_0());
+    (await this.contract.balanceOf(feeRecipient)).should.be.bignumber.equal(_0());
+
     (await this.contract.nonceOf(this.wallet.address)).should.be.bignumber.equal(new BN(1));
   });
 
-  it('should permit using gasless request with fees', async () => {
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
+  it('should redeem using gasless request with fees', async () => {
+    const startingBalance = await balance.current(recipient);
+
+    const amount = _25();
+    await mint(this.underlyingToken, this.contract, this.wallet.address, amount);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
     const nonce = _0();
     const expiry = _0();
-    const approve = true;
     const feeAmount = _1();
     const feeRecipient = otherFeeRecipient;
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
-    const receipt = await this.contract.permit(
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
+    const receipt = await this.contract.redeemFromGaslessRequest(
       this.wallet.address,
       recipient,
       nonce,
       expiry,
-      approve,
+      amount,
       feeAmount,
       feeRecipient,
       new BN(signedMessage.v),
@@ -92,27 +107,34 @@ describe('DmmToken.GaslessApprove', async () => {
       '0x' + signedMessage.s.toString('hex'),
     );
 
-    expectApprove(this, receipt, recipient, true);
+    expectRedeem(this, receipt, recipient, _24());
     expectOffChainRequestValidated(this, receipt, feeRecipient, feeAmount, nonce, expiry);
 
+    (await this.underlyingToken.balanceOf(recipient)).should.be.bignumber.equal(_0());
+    (await balance.current(recipient)).should.be.bignumber.equal(startingBalance.add(_24()));
+    (await this.underlyingToken.balanceOf(feeRecipient)).should.be.bignumber.equal(_0());
+
+    (await this.contract.balanceOf(recipient)).should.be.bignumber.equal(_0());
     (await this.contract.balanceOf(feeRecipient)).should.be.bignumber.equal(_1());
+
     (await this.contract.nonceOf(this.wallet.address)).should.be.bignumber.equal(new BN(1));
   });
 
-  it('should permit using gasless request consecutively', async () => {
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
+  it('should redeem using gasless request consecutively', async () => {
+    const amount = _25();
+    await mint(this.underlyingToken, this.contract, this.wallet.address, amount.mul(new BN(2)));
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
     let nonce = _0();
     const expiry = _0();
-    const approve = true;
     const feeAmount = _0();
     const feeRecipient = constants.ZERO_ADDRESS;
-    let signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
-    let receipt = await this.contract.permit(
+    let signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
+    let receipt = await this.contract.redeemFromGaslessRequest(
       this.wallet.address,
       recipient,
       nonce,
       expiry,
-      approve,
+      amount,
       feeAmount,
       feeRecipient,
       new BN(signedMessage.v),
@@ -120,19 +142,19 @@ describe('DmmToken.GaslessApprove', async () => {
       '0x' + signedMessage.s.toString('hex'),
     );
 
-    expectApprove(this, receipt, recipient, true);
+    expectRedeem(this, receipt, recipient);
     expectOffChainRequestValidated(this, receipt, feeRecipient, feeAmount, nonce, expiry);
 
     // Request 2
 
     nonce = new BN(1);
-    signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
-    receipt = await this.contract.permit(
+    signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
+    receipt = await this.contract.redeemFromGaslessRequest(
       this.wallet.address,
       recipient,
       nonce,
       expiry,
-      approve,
+      amount,
       feeAmount,
       feeRecipient,
       new BN(signedMessage.v),
@@ -140,29 +162,31 @@ describe('DmmToken.GaslessApprove', async () => {
       '0x' + signedMessage.s.toString('hex'),
     );
 
-    expectApprove(this, receipt, recipient, true);
+    expectRedeem(this, receipt, recipient);
     expectOffChainRequestValidated(this, receipt, feeRecipient, feeAmount, nonce, expiry);
 
     // Nonce should be incremented twice
     (await this.contract.nonceOf(this.wallet.address)).should.be.bignumber.equal(new BN(2));
   });
 
-  it('should permit using gasless request when market is disabled', async () => {
+  it('should redeem using gasless request when market is disabled', async () => {
+    const amount = _25();
+    await mint(this.underlyingToken, this.contract, this.wallet.address, amount);
+
     await disableMarkets(this.controller, admin);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
     const nonce = _0();
     const expiry = _0();
-    const approve = true;
-    const feeAmount = _1();
-    const feeRecipient = otherFeeRecipient;
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
+    const feeAmount = _0();
+    const feeRecipient = constants.ZERO_ADDRESS;
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
 
-    const receipt = await this.contract.permit(
+    const receipt = await this.contract.redeemFromGaslessRequest(
       this.wallet.address,
       recipient,
       nonce,
       expiry,
-      approve,
+      amount,
       feeAmount,
       feeRecipient,
       new BN(signedMessage.v),
@@ -171,29 +195,30 @@ describe('DmmToken.GaslessApprove', async () => {
       {from: user}
     );
 
-    expectApprove(this, receipt, recipient, true);
+    expectRedeem(this, receipt, recipient);
     expectOffChainRequestValidated(this, receipt, feeRecipient, feeAmount, nonce, expiry);
 
-    (await this.contract.balanceOf(feeRecipient)).should.be.bignumber.equal(_1());
+    // Nonce should be incremented twice
     (await this.contract.nonceOf(this.wallet.address)).should.be.bignumber.equal(new BN(1));
   });
 
-  it('should not permit using gasless request when msg.sender blacklisted', async () => {
+
+  it('should not redeem using gasless request when msg.sender blacklisted', async () => {
     await blacklistUser(this.blacklistable, user, admin);
     const nonce = _0();
     const expiry = _0();
-    const approve = true;
+    const amount = _25();
     const feeAmount = _0();
     const feeRecipient = constants.ZERO_ADDRESS;
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
     await expectRevert(
-      this.contract.permit(
+      this.contract.redeemFromGaslessRequest(
         this.wallet.address,
         recipient,
         nonce,
         expiry,
-        approve,
+        amount,
         feeAmount,
         feeRecipient,
         new BN(signedMessage.v),
@@ -205,22 +230,24 @@ describe('DmmToken.GaslessApprove', async () => {
     );
   });
 
-  it('should not permit using gasless request when owner blacklisted', async () => {
+  it('should not redeem using gasless request when owner blacklisted', async () => {
+    const amount = _25();
+    await mint(this.underlyingToken, this.contract, this.wallet.address, amount);
+
     await blacklistUser(this.blacklistable, this.wallet.address, admin);
     const nonce = _0();
     const expiry = _0();
-    const approve = true;
     const feeAmount = _0();
     const feeRecipient = constants.ZERO_ADDRESS;
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
     await expectRevert(
-      this.contract.permit(
+      this.contract.redeemFromGaslessRequest(
         this.wallet.address,
         recipient,
         nonce,
         expiry,
-        approve,
+        amount,
         feeAmount,
         feeRecipient,
         new BN(signedMessage.v),
@@ -232,22 +259,22 @@ describe('DmmToken.GaslessApprove', async () => {
     );
   });
 
-  it('should not permit using gasless request when fee recipient blacklisted', async () => {
+  it('should not redeem using gasless request when fee recipient blacklisted', async () => {
     await blacklistUser(this.blacklistable, otherFeeRecipient, admin);
     const nonce = _0();
     const expiry = _0();
-    const approve = true;
+    const amount = _25();
     const feeAmount = _0();
     const feeRecipient = otherFeeRecipient;
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
     await expectRevert(
-      this.contract.permit(
+      this.contract.redeemFromGaslessRequest(
         this.wallet.address,
         recipient,
         nonce,
         expiry,
-        approve,
+        amount,
         feeAmount,
         feeRecipient,
         new BN(signedMessage.v),
@@ -259,22 +286,22 @@ describe('DmmToken.GaslessApprove', async () => {
     );
   });
 
-  it('should not permit using gasless request when ecosystem is paused', async () => {
+  it('should not redeem using gasless request when ecosystem is paused', async () => {
     await pauseEcosystem(this.controller, admin);
     const nonce = _0();
     const expiry = _0();
-    const approve = true;
+    const amount = _25();
     const feeAmount = _0();
     const feeRecipient = otherFeeRecipient;
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
     await expectRevert(
-      this.contract.permit(
+      this.contract.redeemFromGaslessRequest(
         this.wallet.address,
         recipient,
         nonce,
         expiry,
-        approve,
+        amount,
         feeAmount,
         feeRecipient,
         new BN(signedMessage.v),
@@ -286,21 +313,21 @@ describe('DmmToken.GaslessApprove', async () => {
     );
   });
 
-  it('should not permit using gasless request when fee is too large', async () => {
+  it('should not redeem using gasless request when actual redeem amount is too small', async () => {
     const nonce = _0();
     const expiry = _0();
-    const approve = true;
-    const feeAmount = _10000();
+    const amount = _25();
+    const feeAmount = _24_99();
     const feeRecipient = otherFeeRecipient;
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
     await expectRevert(
-      this.contract.permit(
+      this.contract.redeemFromGaslessRequest(
         this.wallet.address,
         recipient,
         nonce,
         expiry,
-        approve,
+        amount,
         feeAmount,
         feeRecipient,
         new BN(signedMessage.v),
@@ -308,25 +335,51 @@ describe('DmmToken.GaslessApprove', async () => {
         '0x' + signedMessage.s.toString('hex'),
         {from: user}
       ),
-      'INSUFFICIENT_BALANCE_FOR_FEE'
+      'INSUFFICIENT_REDEEM_AMOUNT'
     );
   });
 
-  it('should not permit using gasless request when fee recipient is 0x0 address', async () => {
+  it('should not redeem using gasless request when fee is too large', async () => {
     const nonce = _0();
     const expiry = _0();
-    const approve = true;
-    const feeAmount = _1();
-    const feeRecipient = constants.ZERO_ADDRESS;
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
+    const amount = _1();
+    const feeAmount = _25();
+    const feeRecipient = otherFeeRecipient;
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
     await expectRevert(
-      this.contract.permit(
+      this.contract.redeemFromGaslessRequest(
         this.wallet.address,
         recipient,
         nonce,
         expiry,
-        approve,
+        amount,
+        feeAmount,
+        feeRecipient,
+        new BN(signedMessage.v),
+        '0x' + signedMessage.r.toString('hex'),
+        '0x' + signedMessage.s.toString('hex'),
+        {from: user}
+      ),
+      'FEE_TOO_LARGE'
+    );
+  });
+
+  it('should not redeem using gasless request when fee recipient is 0x0 address', async () => {
+    const nonce = _0();
+    const expiry = _0();
+    const amount = _25();
+    const feeAmount = _1();
+    const feeRecipient = constants.ZERO_ADDRESS;
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
+    await expectRevert(
+      this.contract.redeemFromGaslessRequest(
+        this.wallet.address,
+        recipient,
+        nonce,
+        expiry,
+        amount,
         feeAmount,
         feeRecipient,
         new BN(signedMessage.v),
@@ -338,21 +391,21 @@ describe('DmmToken.GaslessApprove', async () => {
     );
   });
 
-  it('should not permit using gasless request when signature is invalid', async () => {
+  it('should not redeem using gasless request when signature is invalid', async () => {
     const nonce = _0();
     const expiry = _0();
-    const approve = true;
+    const amount = _25();
     const feeAmount = _1();
     const feeRecipient = constants.ZERO_ADDRESS;
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
     await expectRevert(
-      this.contract.permit(
+      this.contract.redeemFromGaslessRequest(
         this.wallet.address,
         recipient,
         nonce,
         expiry,
-        approve,
+        amount,
         feeAmount,
         feeRecipient,
         new BN(signedMessage.v),
@@ -364,22 +417,22 @@ describe('DmmToken.GaslessApprove', async () => {
     );
   });
 
-  it('should not permit using gasless request when signature is expired', async () => {
+  it('should not redeem using gasless request when signature is expired', async () => {
     const latestTimestamp = await time.latest();
     const nonce = _0();
     const expiry = latestTimestamp.sub(new BN(100));
-    const approve = true;
+    const amount = _25();
     const feeAmount = _1();
     const feeRecipient = constants.ZERO_ADDRESS;
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
     await expectRevert(
-      this.contract.permit(
+      this.contract.redeemFromGaslessRequest(
         this.wallet.address,
         recipient,
         nonce,
         expiry,
-        approve,
+        amount,
         feeAmount,
         feeRecipient,
         new BN(signedMessage.v),
@@ -391,21 +444,21 @@ describe('DmmToken.GaslessApprove', async () => {
     );
   });
 
-  it('should not permit using gasless request when nonce is invalid', async () => {
+  it('should not redeem using gasless request when nonce is invalid', async () => {
     const nonce = new BN('24832');
     const expiry = _0();
-    const approve = true;
+    const amount = _25();
     const feeAmount = _1();
     const feeRecipient = constants.ZERO_ADDRESS;
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
     await expectRevert(
-      this.contract.permit(
+      this.contract.redeemFromGaslessRequest(
         this.wallet.address,
         recipient,
         nonce,
         expiry,
-        approve,
+        amount,
         feeAmount,
         feeRecipient,
         new BN(signedMessage.v),
@@ -417,21 +470,21 @@ describe('DmmToken.GaslessApprove', async () => {
     );
   });
 
-  it('should not permit using gasless request when owner is 0x0 address', async () => {
+  it('should not redeem using gasless request when owner is 0x0 address', async () => {
     const nonce = _0();
     const expiry = _0();
-    const approve = true;
+    const amount = _25();
     const feeAmount = _1();
     const feeRecipient = constants.ZERO_ADDRESS;
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
     await expectRevert(
-      this.contract.permit(
+      this.contract.redeemFromGaslessRequest(
         constants.ZERO_ADDRESS,
         recipient,
         nonce,
         expiry,
-        approve,
+        amount,
         feeAmount,
         feeRecipient,
         new BN(signedMessage.v),
@@ -439,25 +492,25 @@ describe('DmmToken.GaslessApprove', async () => {
         '0x' + signedMessage.s.toString('hex'),
         {from: user}
       ),
-      'CANNOT_APPROVE_FROM_ZERO_ADDRESS'
+      'CANNOT_REDEEM_FROM_ZERO_ADDRESS'
     );
   });
 
-  it('should not permit using gasless request when recipient is 0x0 address', async () => {
+  it('should not redeem using gasless request when recipient is 0x0 address', async () => {
     const nonce = _0();
     const expiry = _0();
-    const approve = true;
+    const amount = _25();
     const feeAmount = _1();
     const feeRecipient = constants.ZERO_ADDRESS;
-    const typeHash = await this.contract.PERMIT_TYPE_HASH();
-    const signedMessage = await encodePermitHashAndSign(this, typeHash, recipient, nonce, expiry, approve, feeAmount, feeRecipient);
+    const typeHash = await this.contract.REDEEM_TYPE_HASH();
+    const signedMessage = await encodeHashAndSign(this, typeHash, recipient, nonce, expiry, amount, feeAmount, feeRecipient);
     await expectRevert(
-      this.contract.permit(
+      this.contract.redeemFromGaslessRequest(
         this.wallet.address,
         constants.ZERO_ADDRESS,
         nonce,
         expiry,
-        approve,
+        amount,
         feeAmount,
         feeRecipient,
         new BN(signedMessage.v),
@@ -465,7 +518,7 @@ describe('DmmToken.GaslessApprove', async () => {
         '0x' + signedMessage.s.toString('hex'),
         {from: user}
       ),
-      'CANNOT_APPROVE_TO_ZERO_ADDRESS'
+      'CANNOT_REDEEM_TO_ZERO_ADDRESS'
     );
   });
 

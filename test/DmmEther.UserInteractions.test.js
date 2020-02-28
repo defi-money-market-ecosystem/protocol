@@ -13,7 +13,6 @@ const {
   _1,
   _25,
   _100,
-  _10000,
   _1000000,
   doDmmEtherBeforeEach,
   mint,

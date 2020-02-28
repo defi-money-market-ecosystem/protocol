@@ -8,8 +8,8 @@ interface IDmmController {
     event TotalSupplyIncreased(uint oldTotalSupply, uint newTotalSupply);
     event TotalSupplyDecreased(uint oldTotalSupply, uint newTotalSupply);
 
-    event AdminDeposit(address indexed admin, uint amount);
-    event AdminWithdraw(address indexed admin, uint amount);
+    event AdminDeposit(address indexed sender, uint amount);
+    event AdminWithdraw(address indexed receiver, uint amount);
 
     function blacklistable() external view returns (Blacklistable);
 
@@ -122,19 +122,22 @@ interface IDmmController {
      * @dev Allows the owners of the DMM Ecosystem to withdraw funds from a DMMA. These withdrawn funds are then
      *      allocated to real-world assets that will be used to pay interest into the DMMA.
      *
-     * @param dmmTokenId The ID of the DMM token whose underlying will be funded.
+     * @param recipient         The address to which the funds will be sent.
+     * @param dmmTokenId        The ID of the DMM token whose underlying will be funded.
      * @param underlyingAmount  The amount underlying the DMM token that will be deposited into the DMMA.
      */
-    function adminWithdrawFunds(uint dmmTokenId, uint underlyingAmount) external;
+    function adminWithdrawFunds(address recipient, uint dmmTokenId, uint underlyingAmount) external;
 
     /**
      * @dev Allows the owners of the DMM Ecosystem to deposit funds into a DMMA. These funds are used to disburse
      *      interest payments and add more liquidity to the specific market.
      *
-     * @param dmmTokenId The ID of the DMM token whose underlying will be funded.
+     * @param sender            The address of the sender of the funds. This is the address from where the funds will
+     *                          be pulled.
+     * @param dmmTokenId        The ID of the DMM token whose underlying will be funded.
      * @param underlyingAmount  The amount underlying the DMM token that will be deposited into the DMMA.
      */
-    function adminDepositFunds(uint dmmTokenId, uint underlyingAmount) external;
+    function adminDepositFunds(address sender, uint dmmTokenId, uint underlyingAmount) external;
 
     /**
      * @dev Gets the collateralization of the system assuming 1-year's worth of interest payments are due by dividing

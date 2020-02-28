@@ -188,25 +188,18 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
     nonReentrant
     isNotDisabled
     public returns (uint) {
-        checkGaslessBlacklist(_msgSender(), feeRecipient);
-
-        // To avoid stack too deep issues, splitting the call into 2 parts is essential.
-        _storage.validateOffChainMint(domainSeparator, MINT_TYPE_HASH, owner, recipient, nonce, expiry, underlyingAmount, feeAmount, feeRecipient, v, r, s);
-
-        // Initially, we mint to this contract so we can send handle the fees.
-        // We don't delegate the call for transferring the underlying in, because gasless requests are designed to
-        // allow any relayer to broadcast the user's cryptographically-secure message.
-        uint amount = _mint(owner, address(this), underlyingAmount);
-        require(amount >= feeAmount, "FEE_TOO_LARGE");
-
-        uint amountLessFee = amount.sub(feeAmount);
-        require(amountLessFee >= minMintAmount, "INSUFFICIENT_MINT_AMOUNT");
-
-        _transfer(address(this), recipient, amountLessFee);
-
-        doFeeTransferForDmmIfNecessary(address(this), feeRecipient, feeAmount);
-
-        return amountLessFee;
+        return _mintFromGaslessRequest(
+            owner,
+            recipient,
+            nonce,
+            expiry,
+            underlyingAmount,
+            feeAmount,
+            feeRecipient,
+            v,
+            r,
+            s
+        );
     }
 
     function redeem(
@@ -322,6 +315,12 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         return amount;
     }
 
+    /**
+     * @dev Note, right now all invocations of this function set `shouldUseAllowance` to `false`. Reason being, all
+     *      calls are either done via explicit off-chain signatures (and therefore the owner and recipient are explicit;
+     *      anyone can call the function), OR the msgSender is both the owner and recipient, in which case no allowance
+     *      should be needed to redeem funds if the user is the spender of the same user's funds.
+     */
     function _redeem(address owner, address recipient, uint amount, bool shouldUseAllowance) internal returns (uint) {
         blacklistable().checkNotBlacklisted(_msgSender());
         blacklistable().checkNotBlacklisted(recipient);
@@ -346,6 +345,39 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         require(amount >= minRedeemAmount, "INSUFFICIENT_REDEEM_AMOUNT");
 
         return underlyingAmount;
+    }
+
+    function _mintFromGaslessRequest(
+        address owner,
+        address recipient,
+        uint nonce,
+        uint expiry,
+        uint underlyingAmount,
+        uint feeAmount,
+        address feeRecipient,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal returns (uint) {
+        checkGaslessBlacklist(_msgSender(), feeRecipient);
+
+        // To avoid stack too deep issues, splitting the call into 2 parts is essential.
+        _storage.validateOffChainMint(domainSeparator, MINT_TYPE_HASH, owner, recipient, nonce, expiry, underlyingAmount, feeAmount, feeRecipient, v, r, s);
+
+        // Initially, we mint to this contract so we can send handle the fees.
+        // We don't delegate the call for transferring the underlying in, because gasless requests are designed to
+        // allow any relayer to broadcast the user's cryptographically-secure message.
+        uint amount = _mint(owner, address(this), underlyingAmount);
+        require(amount >= feeAmount, "FEE_TOO_LARGE");
+
+        uint amountLessFee = amount.sub(feeAmount);
+        require(amountLessFee >= minMintAmount, "INSUFFICIENT_MINT_AMOUNT");
+
+        _transfer(address(this), recipient, amountLessFee);
+
+        doFeeTransferForDmmIfNecessary(address(this), feeRecipient, feeAmount);
+
+        return amountLessFee;
     }
 
     function _redeemFromGaslessRequest(

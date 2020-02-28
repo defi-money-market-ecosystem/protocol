@@ -82,7 +82,7 @@ contract DmmEther is DmmToken {
     isNotDisabled
     public returns (uint) {
         _shouldTransferIn = true;
-        return super.mintFromGaslessRequest(
+        return _mintFromGaslessRequest(
             owner,
             recipient,
             nonce,

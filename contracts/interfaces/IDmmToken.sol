@@ -152,7 +152,8 @@ interface IDmmToken {
      * @param v             The ECDSA V parameter.
      * @param r             The ECDSA R parameter.
      * @param s             The ECDSA S parameter.
-     * @return  The amount of DMM minted.
+     * @return  The amount of DMM minted, minus the fees paid. To get the total amount minted, add the `feeAmount` to
+     *          the returned amount from this function call.
      */
     function mintFromGaslessRequest(
         address owner,

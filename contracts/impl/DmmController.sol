@@ -260,6 +260,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     }
 
     function adminWithdrawFunds(
+        address receiver,
         uint dmmTokenId,
         uint256 underlyingAmount
     ) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
@@ -278,21 +279,22 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
         require(actualReserveRatio >= minReserveRatio, "INSUFFICIENT_LEFTOVER_RESERVES");
 
-        emit AdminWithdraw(_msgSender(), underlyingAmount);
+        emit AdminWithdraw(receiver, underlyingAmount);
     }
 
     function adminDepositFunds(
+        address sender,
         uint dmmTokenId,
         uint256 underlyingAmount
     ) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
         // Attempt to pull from the sender into this contract, then have the DMM token pull from here.
         IERC20 underlyingToken = IERC20(dmmTokenIdToUnderlyingTokenAddressMap[dmmTokenId]);
-        underlyingToken.safeTransferFrom(_msgSender(), address(this), underlyingAmount);
+        underlyingToken.safeTransferFrom(sender, address(this), underlyingAmount);
 
         address dmmTokenAddress = dmmTokenIdToDmmTokenAddressMap[dmmTokenId];
         underlyingToken.approve(dmmTokenAddress, underlyingAmount);
         IDmmToken(dmmTokenAddress).depositUnderlying(underlyingAmount);
-        emit AdminDeposit(_msgSender(), underlyingAmount);
+        emit AdminDeposit(sender, underlyingAmount);
     }
 
     function getTotalCollateralization() public view returns (uint) {

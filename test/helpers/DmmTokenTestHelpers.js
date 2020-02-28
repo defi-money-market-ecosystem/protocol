@@ -132,7 +132,7 @@ const doDmmEtherBeforeEach = async (thisInstance, contracts, web3, lastUser) => 
     'Deposit'
   );
 
-  thisInstance.symbol = "dmmETH";
+  thisInstance.symbol = "mETH";
   thisInstance.name = "DMM: ETH";
   thisInstance.decimals = new BN(18);
   thisInstance.minMintAmount = _001();
