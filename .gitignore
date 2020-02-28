@@ -7,3 +7,5 @@ node_modules
 .openzeppelin/.session
 
 ethereum-nodes.txt
+
+deployment/

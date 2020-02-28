@@ -23,7 +23,7 @@ const deployEcosystem = async (loader, environment, deployer) => {
   const DmmEtherFactory = loader.truffle.fromArtifact('DmmEtherFactory');
   const DmmTokenFactory = loader.truffle.fromArtifact('DmmTokenFactory');
   const InterestRateImplV1 = loader.truffle.fromArtifact('InterestRateImplV1');
-  const OffChainAssetValuatorImplV1 = contracts.fromArtifact('OffChainAssetValuatorImplV1');
+  const OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
   const UnderlyingTokenValuatorImplV1 = loader.truffle.fromArtifact('UnderlyingTokenValuatorImplV1');
 
   let oracleAddress;

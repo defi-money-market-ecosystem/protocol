@@ -33,7 +33,7 @@ const deployTokens = async (loader, environment, deployer) => {
     await callContract(dai, 'setBalance', [recipient, new BN('100000000000000000000')], deployer, 3e5);
     await callContract(usdc, 'setBalance', [recipient, new BN('100000000')], deployer, 3e5);
     await callContract(weth, 'setBalance', [recipient, new BN('1000000000000000000')], deployer, 3e5);
-    await callContract(weth, 'deposit', [], deployer, 3e5, new BN('1000000000000000000'));
+    await callContract(weth, 'deposit', [], deployer, 3e5, new BN('100000000000000000'));
   } else if (environment === 'PRODUCTION') {
     dai = loader.truffle.fromArtifact('ERC20', '0x6b175474e89094c44da98b954eedeac495271d0f');
     link = loader.truffle.fromArtifact('ERC20', '0x514910771af9ca656af840dff83e8264ecf986ca');

@@ -24,7 +24,7 @@ const main = async () => {
     web3.eth.defaultAccount = account.address;
     deployer = account.address;
   } else {
-    deployer = (await web3.eth.getAccounts())[0];
+    throw Error("Invalid deployer, found nothing");
   }
 
   let multiSigWallet;
