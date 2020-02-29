@@ -4,7 +4,7 @@ const {callContract, deployContract, linkContract} = require('./ContractUtils');
 
 global.interestRateImplV1 = null;
 global.OffChainAssetValuatorImplV1 = null;
-global.offChainAssetValuatorImplV1 = null;
+global.offChainCurrencyValuatorImplV1 = null;
 global.underlyingTokenValuatorImplV1 = null;
 global.delayedOwner = null;
 global.dmmEtherFactory = null;
@@ -76,7 +76,7 @@ const deployEcosystem = async (loader, environment, deployer) => {
   if (environment === 'TESTNET' || environment === 'PRODUCTION') {
     console.log("Sending 10 LINK to collateral valuator");
     const _10 = _1.mul(new BN('10'));
-    await callContract(link, 'transfer', [OffChainAssetValuatorImplV1.address, _10], deployer, 3e5);
+    await callContract(link, 'transfer', [offChainAssetValuatorImplV1.address, _10], deployer, 3e5);
 
     if(oracleAddress !== '0x0000000000000000000000000000000000000000') {
       console.log("Sending chainlinkRequest using oracle ", oracleAddress);
@@ -97,8 +97,8 @@ const deployEcosystem = async (loader, environment, deployer) => {
     DmmController,
     [
       interestRateImplV1.address,
-      OffChainAssetValuatorImplV1.address,
       offChainAssetValuatorImplV1.address,
+      offChainCurrencyValuatorImplV1.address,
       underlyingTokenValuatorImplV1.address,
       dmmEtherFactory.address,
       dmmTokenFactory.address,
@@ -114,8 +114,8 @@ const deployEcosystem = async (loader, environment, deployer) => {
   await addMarketsIfLocal(environment, deployer);
 
   console.log('InterestRateImplV1: ', interestRateImplV1.address);
-  console.log('OffChainAssetValuatorImplV1: ', OffChainAssetValuatorImplV1.address);
   console.log('OffChainAssetValuatorImplV1: ', offChainAssetValuatorImplV1.address);
+  console.log('OffChainCurrencyValuatorImplV1: ', offChainCurrencyValuatorImplV1.address);
   console.log('UnderlyingTokenValuatorImplV1: ', underlyingTokenValuatorImplV1.address);
   console.log('DmmTokenFactory: ', dmmTokenFactory.address);
   console.log('DmmBlacklistable: ', dmmBlacklist.address);

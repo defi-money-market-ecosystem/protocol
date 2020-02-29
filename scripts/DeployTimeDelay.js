@@ -83,6 +83,19 @@ const deployTimeDelay = async (loader, environment, deployer) => {
     3e5,
   );
 
+  console.log('Adding time delay for DmmController#setOffChainCurrencyValuator...');
+  await callContract(
+    delayedOwner,
+    'addDelay',
+    [
+      dmmController.address,
+      dmmController.methods.setOffChainCurrencyValuator(defaultAddress).encodeABI().slice(0, 10),
+      delay,
+    ],
+    deployer,
+    3e5,
+  );
+
   console.log('Adding time delay for DmmController#setUnderlyingTokenValuator...');
   await callContract(
     delayedOwner,
