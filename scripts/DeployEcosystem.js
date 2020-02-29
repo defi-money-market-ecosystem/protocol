@@ -3,7 +3,7 @@ const {BN} = require('ethereumjs-util');
 const {callContract, deployContract, linkContract} = require('./ContractUtils');
 
 global.interestRateImplV1 = null;
-global.OffChainAssetValuatorImplV1 = null;
+global.offChainAssetValuatorImplV1 = null;
 global.offChainCurrencyValuatorImplV1 = null;
 global.underlyingTokenValuatorImplV1 = null;
 global.delayedOwner = null;
@@ -17,7 +17,7 @@ const _0_5 = new BN('500000000000000000'); // 0.5
 const _1 = new BN('1000000000000000000'); // 1.0
 
 const deployEcosystem = async (loader, environment, deployer) => {
-  let OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
+  const OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
   const DmmBlacklistable = loader.truffle.fromArtifact('DmmBlacklistable');
   const DmmController = loader.truffle.fromArtifact('DmmController');
   const DmmEtherFactory = loader.truffle.fromArtifact('DmmEtherFactory');
@@ -164,7 +164,8 @@ const addMarketsIfLocal = async (environment, deployer) => {
 
 module.exports = {
   interestRateImplV1,
-  OffChainAssetValuatorImplV1,
+  offChainAssetValuatorImplV1,
+  offChainCurrencyValuatorImplV1,
   underlyingTokenValuatorImplV1,
   dmmTokenFactory,
   dmmBlacklist,
