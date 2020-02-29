@@ -81,7 +81,7 @@ const deployEcosystem = async (loader, environment, deployer) => {
     if(oracleAddress !== '0x0000000000000000000000000000000000000000') {
       console.log("Sending chainlinkRequest using oracle ", oracleAddress);
       await callContract(
-        OffChainAssetValuatorImplV1,
+        offChainAssetValuatorImplV1,
         'submitGetOffChainAssetsValueRequest',
         [oracleAddress],
         deployer,
