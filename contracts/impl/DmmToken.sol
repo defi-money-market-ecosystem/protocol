@@ -255,7 +255,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
     whenNotPaused
     nonReentrant
     public {
-        checkGaslessBlacklist(_msgSender(), feeRecipient);
+        checkGaslessBlacklist(feeRecipient);
 
         _storage.validateOffChainPermit(domainSeparator, PERMIT_TYPE_HASH, owner, spender, nonce, expiry, allowed, feeAmount, feeRecipient, v, r, s);
 
@@ -280,7 +280,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
     whenNotPaused
     nonReentrant
     public {
-        checkGaslessBlacklist(_msgSender(), feeRecipient);
+        checkGaslessBlacklist(feeRecipient);
 
         _storage.validateOffChainTransfer(domainSeparator, TRANSFER_TYPE_HASH, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient, v, r, s);
 
@@ -294,7 +294,8 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
      */
 
     function _mint(address owner, address recipient, uint underlyingAmount) internal returns (uint) {
-        blacklistable().checkNotBlacklisted(_msgSender());
+        // No need to check if recipient or msgSender are blacklisted because `_transfer` checks it.
+        blacklistable().checkNotBlacklisted(owner);
 
         uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
         uint amount = underlyingAmount.underlyingToAmount(currentExchangeRate, EXCHANGE_RATE_BASE_RATE);
@@ -305,7 +306,6 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         transferUnderlyingIn(owner, underlyingAmount);
 
         // Transfer DMM to the recipient
-        blacklistable().checkNotBlacklisted(owner);
         _transfer(address(this), recipient, amount);
 
         emit Mint(owner, recipient, amount);
@@ -322,7 +322,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
      *      should be needed to redeem funds if the user is the spender of the same user's funds.
      */
     function _redeem(address owner, address recipient, uint amount, bool shouldUseAllowance) internal returns (uint) {
-        blacklistable().checkNotBlacklisted(_msgSender());
+        // No need to check owner or msgSender for blacklist because `_transfer` covers them.
         blacklistable().checkNotBlacklisted(recipient);
 
         uint currentExchangeRate = this.updateExchangeRateIfNecessaryAndGet(_storage);
@@ -359,7 +359,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         bytes32 r,
         bytes32 s
     ) internal returns (uint) {
-        checkGaslessBlacklist(_msgSender(), feeRecipient);
+        checkGaslessBlacklist(feeRecipient);
 
         // To avoid stack too deep issues, splitting the call into 2 parts is essential.
         _storage.validateOffChainMint(domainSeparator, MINT_TYPE_HASH, owner, recipient, nonce, expiry, underlyingAmount, feeAmount, feeRecipient, v, r, s);
@@ -392,7 +392,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         bytes32 r,
         bytes32 s
     ) internal returns (uint) {
-        checkGaslessBlacklist(_msgSender(), feeRecipient);
+        checkGaslessBlacklist(feeRecipient);
 
         // To avoid stack too deep issues, splitting the call into 2 parts is essential.
         _storage.validateOffChainRedeem(domainSeparator, REDEEM_TYPE_HASH, owner, recipient, nonce, expiry, amount, feeAmount, feeRecipient, v, r, s);
@@ -406,8 +406,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         return underlyingAmount;
     }
 
-    function checkGaslessBlacklist(address msgSender, address feeRecipient) private view {
-        blacklistable().checkNotBlacklisted(msgSender);
+    function checkGaslessBlacklist(address feeRecipient) private view {
         if (feeRecipient != address(0x0)) {
             blacklistable().checkNotBlacklisted(feeRecipient);
         }

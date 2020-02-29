@@ -204,10 +204,12 @@ describe('DmmEther.GaslessRedeem', async () => {
 
 
   it('should not redeem using gasless request when msg.sender blacklisted', async () => {
+    const amount = _25();
+    await mint(this.underlyingToken, this.contract, this.wallet.address, amount);
+
     await blacklistUser(this.blacklistable, user, admin);
     const nonce = _0();
     const expiry = _0();
-    const amount = _25();
     const feeAmount = _0();
     const feeRecipient = constants.ZERO_ADDRESS;
     const typeHash = await this.contract.REDEEM_TYPE_HASH();
