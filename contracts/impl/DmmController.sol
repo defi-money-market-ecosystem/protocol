@@ -274,7 +274,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         uint totalOwedAmount = token.activeSupply().mul(token.getCurrentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);
         uint underlyingBalance = IERC20(dmmTokenIdToUnderlyingTokenAddressMap[dmmTokenId]).balanceOf(address(token));
 
-        if(totalOwedAmount > 0) {
+        if (totalOwedAmount > 0) {
             // IE if we owe 100 and have an underlying balance of 10 --> reserve ratio is 0.1
             uint actualReserveRatio = underlyingBalance.mul(MIN_RESERVE_RATIO_BASE_RATE).div(totalOwedAmount);
             require(actualReserveRatio >= minReserveRatio, "INSUFFICIENT_LEFTOVER_RESERVES");

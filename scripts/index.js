@@ -10,7 +10,7 @@ const {deployTimeDelay} = require('./DeployTimeDelay');
 const {deployTokens} = require('./DeployTokens');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 8e9;
+const defaultGasPrice = 6e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
