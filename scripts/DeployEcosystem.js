@@ -108,7 +108,7 @@ const deployEcosystem = async (loader, environment, deployer) => {
       weth.address,
     ],
     deployer,
-    4e6,
+    5e6,
   );
 
   await addMarketsIfLocal(environment, deployer);
