@@ -222,9 +222,9 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     }
 
     function setOffChainAssetValuator(address newOffChainAssetValuator) public whenNotPaused onlyOwner {
-        address oldCollateralValuator = address(offChainAssetsValuator);
+        address oldOffChainAssetValuator = address(offChainAssetsValuator);
         offChainAssetsValuator = IOffChainAssetValuator(newOffChainAssetValuator);
-        emit OffChainAssetValuatorChanged(oldCollateralValuator, address(offChainAssetsValuator));
+        emit OffChainAssetValuatorChanged(oldOffChainAssetValuator, address(offChainAssetsValuator));
     }
 
     function setOffChainCurrencyValuator(address newOffChainCurrencyValuator) public whenNotPaused onlyOwner {

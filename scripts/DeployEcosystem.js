@@ -36,7 +36,7 @@ const deployEcosystem = async (loader, environment, deployer) => {
     oracleAddress = '0x7AFe1118Ea78C1eae84ca8feE5C65Bc76CcF879e';
     chainlinkJobId = '0xd4b380b30cb64722b8843ead232985c300000000000000000000000000000000';
   } else if (environment === 'PRODUCTION') {
-    oracleAddress = '0x0000000000000000000000000000000000000000';
+    oracleAddress = '0x0563fC575D5219C48E2Dfc20368FA4179cDF320D';
     chainlinkJobId = '0x0000000000000000000000000000000000000000000000000000000000000000';
   } else {
     new Error('Invalid environment, found ' + environment);

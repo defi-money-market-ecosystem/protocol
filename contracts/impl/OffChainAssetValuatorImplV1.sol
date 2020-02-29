@@ -13,27 +13,27 @@ contract OffChainAssetValuatorImplV1 is IOffChainAssetValuator, ChainlinkClient,
     uint private _oraclePayment;
 
     /// The job ID that's fired on the LINK nodes to fulfill this contract's need for off-chain data
-    bytes32 private _collateralValueJobId;
+    bytes32 private _offChainAssetsValueJobId;
 
     /// The value of all off-chain collateral, as determined by Chainlink. This number has 18 decimal places of precision.
-    uint private _collateralValue;
+    uint private _offChainAssetsValue;
 
-    /// The timestamp (in Unix seconds) at which this contract's _collateralValue field was last updated.
+    /// The timestamp (in Unix seconds) at which this contract's _offChainAssetsValue field was last updated.
     uint private _lastUpdatedTimestamp;
 
-    /// The block number at which this contract's _collateralValue field was last updated.
+    /// The block number at which this contract's _offChainAssetsValue field was last updated.
     uint private _lastUpdatedBlockNumber;
 
     constructor(
         address linkToken,
         uint oraclePayment,
-        uint collateralValue,
-        bytes32 collateralValueJobId
+        uint offChainAssetsValue,
+        bytes32 offChainAssetsValueJobId
     ) public {
         setChainlinkToken(linkToken);
         _oraclePayment = oraclePayment;
-        _collateralValueJobId = collateralValueJobId;
-        _collateralValue = collateralValue;
+        _offChainAssetsValueJobId = offChainAssetsValueJobId;
+        _offChainAssetsValue = offChainAssetsValue;
         _lastUpdatedTimestamp = block.timestamp;
         _lastUpdatedBlockNumber = block.number;
     }
@@ -47,15 +47,15 @@ contract OffChainAssetValuatorImplV1 is IOffChainAssetValuator, ChainlinkClient,
     }
 
     function getOffChainAssetsValue() public view returns (uint) {
-        return _collateralValue;
+        return _offChainAssetsValue;
     }
 
     function getOffChainAssetsValueJobId() public view returns (bytes32) {
-        return _collateralValueJobId;
+        return _offChainAssetsValueJobId;
     }
 
-    function setCollateralValueJobId(bytes32 collateralValueJobId) public onlyOwner {
-        _collateralValueJobId = collateralValueJobId;
+    function setCollateralValueJobId(bytes32 offChainAssetsValueJobId) public onlyOwner {
+        _offChainAssetsValueJobId = offChainAssetsValueJobId;
     }
 
     function setOraclePayment(uint oraclePayment) public onlyOwner {
@@ -66,7 +66,7 @@ contract OffChainAssetValuatorImplV1 is IOffChainAssetValuator, ChainlinkClient,
         address oracle
     ) public onlyOwner {
         Chainlink.Request memory request = buildChainlinkRequest(
-            _collateralValueJobId,
+            _offChainAssetsValueJobId,
             address(this),
             this.fulfillGetOffChainAssetsValueRequest.selector
         );
@@ -76,13 +76,13 @@ contract OffChainAssetValuatorImplV1 is IOffChainAssetValuator, ChainlinkClient,
 
     function fulfillGetOffChainAssetsValueRequest(
         bytes32 requestId,
-        uint collateralValue
+        uint offChainAssetsValue
     ) public recordChainlinkFulfillment(requestId) {
-        _collateralValue = collateralValue;
+        _offChainAssetsValue = offChainAssetsValue;
         _lastUpdatedTimestamp = block.timestamp;
         _lastUpdatedBlockNumber = block.number;
 
-        emit AssetsValueUpdated(collateralValue);
+        emit AssetsValueUpdated(offChainAssetsValue);
     }
 
 }
