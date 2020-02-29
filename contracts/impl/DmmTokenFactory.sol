@@ -27,22 +27,6 @@ contract DmmTokenFactory is Context, IDmmTokenFactory, Ownable {
             totalSupply,
             controller
         );
-//        if (underlyingToken == wethToken) {
-//            token = new DmmEther(
-//                wethToken,
-//                symbol,
-//                name,
-//                decimals,
-//                minMintAmount,
-//                minRedeemAmount,
-//                totalSupply,
-//                controller
-//            );
-//        } else {
-
-//        }
-
-
         token.transferOwnership(_msgSender());
         return token;
     }

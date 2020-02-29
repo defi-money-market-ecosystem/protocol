@@ -20,7 +20,7 @@ import "../interfaces/IOffChainAssetValuator.sol";
 
 contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, Ownable {
 
-    using SafeMath for uint256;
+    using SafeMath for uint;
     using SafeERC20 for IERC20;
     using Address for address;
 
@@ -84,8 +84,8 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         address _dmmEtherFactory,
         address _dmmTokenFactory,
         address _dmmBlacklistable,
-        uint256 _minCollateralization,
-        uint256 _minReserveRatio,
+        uint _minCollateralization,
+        uint _minReserveRatio,
         address _wethToken
     ) public {
         interestRateInterface = InterestRateInterface(_interestRateInterface);
@@ -262,7 +262,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     function adminWithdrawFunds(
         address receiver,
         uint dmmTokenId,
-        uint256 underlyingAmount
+        uint underlyingAmount
     ) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
         // Attempt to pull from the DMM contract into this contract, then send from this contract to sender.
         IDmmToken token = IDmmToken(dmmTokenIdToDmmTokenAddressMap[dmmTokenId]);
@@ -274,10 +274,11 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         uint totalOwedAmount = token.activeSupply().mul(token.getCurrentExchangeRate()).div(EXCHANGE_RATE_BASE_RATE);
         uint underlyingBalance = IERC20(dmmTokenIdToUnderlyingTokenAddressMap[dmmTokenId]).balanceOf(address(token));
 
-        // IE if we owe 100 and have an underlying balance of 10 --> reserve ratio is 0.1
-        uint actualReserveRatio = underlyingBalance.mul(MIN_RESERVE_RATIO_BASE_RATE).div(totalOwedAmount);
-
-        require(actualReserveRatio >= minReserveRatio, "INSUFFICIENT_LEFTOVER_RESERVES");
+        if(totalOwedAmount > 0) {
+            // IE if we owe 100 and have an underlying balance of 10 --> reserve ratio is 0.1
+            uint actualReserveRatio = underlyingBalance.mul(MIN_RESERVE_RATIO_BASE_RATE).div(totalOwedAmount);
+            require(actualReserveRatio >= minReserveRatio, "INSUFFICIENT_LEFTOVER_RESERVES");
+        }
 
         emit AdminWithdraw(receiver, underlyingAmount);
     }
@@ -285,7 +286,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     function adminDepositFunds(
         address sender,
         uint dmmTokenId,
-        uint256 underlyingAmount
+        uint underlyingAmount
     ) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
         // Attempt to pull from the sender into this contract, then have the DMM token pull from here.
         IERC20 underlyingToken = IERC20(dmmTokenIdToUnderlyingTokenAddressMap[dmmTokenId]);
@@ -411,7 +412,6 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     function _addMarket(address dmmToken, address underlyingToken) private {
         // Start the IDs at 1. Zero is reserved for the empty case when it doesn't exist.
         uint dmmTokenId = dmmTokenIds.length + 1;
-        address controller = address(this);
 
         // Update the maps
         dmmTokenIdToDmmTokenAddressMap[dmmTokenId] = dmmToken;
@@ -441,9 +441,9 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         if (dmmToken.decimals() == 18) {
             standardizedUnderlyingTokenAmount = underlyingTokenAmount;
         } else if (dmmToken.decimals() < 18) {
-            standardizedUnderlyingTokenAmount = underlyingTokenAmount.mul((10 ** (18 - uint256(dmmToken.decimals()))));
+            standardizedUnderlyingTokenAmount = underlyingTokenAmount.mul((10 ** (18 - uint(dmmToken.decimals()))));
         } else /* decimals > 18 */ {
-            standardizedUnderlyingTokenAmount = underlyingTokenAmount.div((10 ** (uint256(dmmToken.decimals()) - 18)));
+            standardizedUnderlyingTokenAmount = underlyingTokenAmount.div((10 ** (uint(dmmToken.decimals()) - 18)));
         }
         address underlyingToken = getUnderlyingTokenForDmm(address(dmmToken));
         return underlyingTokenValuator.getTokenValue(underlyingToken, standardizedUnderlyingTokenAmount);
@@ -455,9 +455,9 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         if (decimals == 18) {
             standardizedUnderlyingTokenAmount = underlyingSupply;
         } else if (decimals < 18) {
-            standardizedUnderlyingTokenAmount = underlyingSupply.mul((10 ** (18 - uint256(decimals))));
+            standardizedUnderlyingTokenAmount = underlyingSupply.mul((10 ** (18 - uint(decimals))));
         } else /* decimals > 18 */ {
-            standardizedUnderlyingTokenAmount = underlyingSupply.div((10 ** (uint256(decimals) - 18)));
+            standardizedUnderlyingTokenAmount = underlyingSupply.div((10 ** (uint(decimals) - 18)));
         }
         return underlyingTokenValuator.getTokenValue(address(underlyingToken), standardizedUnderlyingTokenAmount);
     }

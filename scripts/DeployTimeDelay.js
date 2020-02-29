@@ -4,6 +4,7 @@ const {BN} = require('ethereumjs-util');
 global.delayedOwner = null;
 
 const tenMinutesInSeconds = new BN('600');
+const oneHourInSeconds = new BN('3600');
 const sixHoursInSeconds = new BN('21600');
 const oneMinuteInSeconds = new BN('60');
 
@@ -23,7 +24,7 @@ const deployTimeDelay = async (loader, environment, deployer) => {
 
   let delay;
   if (environment === 'PRODUCTION') {
-    delay = sixHoursInSeconds;
+    delay = oneHourInSeconds;
   } else {
     delay = oneMinuteInSeconds;
   }
@@ -153,7 +154,7 @@ const deployTimeDelay = async (loader, environment, deployer) => {
     'addDelay',
     [
       dmmController.address,
-      dmmController.methods.adminWithdrawFunds(defaultUint, defaultUint).encodeABI().slice(0, 10),
+      dmmController.methods.adminWithdrawFunds(defaultAddress, defaultUint, defaultUint).encodeABI().slice(0, 10),
       delay,
     ],
     deployer,
@@ -166,7 +167,7 @@ const deployTimeDelay = async (loader, environment, deployer) => {
     'addDelay',
     [
       dmmController.address,
-      dmmController.methods.adminDepositFunds(defaultUint, defaultUint).encodeABI().slice(0, 10),
+      dmmController.methods.adminDepositFunds(defaultAddress, defaultUint, defaultUint).encodeABI().slice(0, 10),
       delay,
     ],
     deployer,

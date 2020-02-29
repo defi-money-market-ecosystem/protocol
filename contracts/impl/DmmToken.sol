@@ -407,7 +407,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
     }
 
     function checkGaslessBlacklist(address msgSender, address feeRecipient) private view {
-        blacklistable().checkNotBlacklisted(_msgSender());
+        blacklistable().checkNotBlacklisted(msgSender);
         if (feeRecipient != address(0x0)) {
             blacklistable().checkNotBlacklisted(feeRecipient);
         }

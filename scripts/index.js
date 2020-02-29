@@ -31,11 +31,11 @@ const main = async () => {
   if (environment === 'LOCAL') {
     multiSigWallet = deployer;
   } else if (environment === 'TESTNET') {
-    multiSigWallet = "0x2392fded262d6F5A408462faeD1AF81406eA041c";
+    multiSigWallet = "0x0323cE501DD42Ed46a409D86e4EB6a9745FCA9EC";
   } else if (environment === 'PRODUCTION') {
     multiSigWallet = ""; // TODO
   } else {
-    new Error("Invalid environment, found: " + environment);
+    throw new Error("Invalid environment, found: " + environment);
   }
 
   const loader = setupLoader({provider: web3, defaultSender: deployer, defaultGasPrice: 8e9});

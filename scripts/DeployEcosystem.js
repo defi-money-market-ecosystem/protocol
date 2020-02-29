@@ -13,7 +13,7 @@ global.dmmBlacklist = null;
 global.dmmController = null;
 
 const _0_1 = new BN('100000000000000000'); // 0.1
-const _05 = new BN('500000000000000000'); // 0.5
+const _0_5 = new BN('500000000000000000'); // 0.5
 const _1 = new BN('1000000000000000000'); // 1.0
 
 const deployEcosystem = async (loader, environment, deployer) => {
@@ -77,14 +77,18 @@ const deployEcosystem = async (loader, environment, deployer) => {
     const _10 = _1.mul(new BN('10'));
     await callContract(link, 'transfer', [chainlinkCollateralValuator.address, _10], deployer, 3e5);
 
-    console.log("Sending chainlinkRequest using oracle ", oracleAddress);
-    await callContract(
-      chainlinkCollateralValuator,
-      'getCollateralValue',
-      [oracleAddress],
-      deployer,
-      1e6,
-    )
+    if(oracleAddress !== '0x0000000000000000000000000000000000000000') {
+      console.log("Sending chainlinkRequest using oracle ", oracleAddress);
+      await callContract(
+        chainlinkCollateralValuator,
+        'getCollateralValue',
+        [oracleAddress],
+        deployer,
+        1e6,
+      );
+    } else {
+      console.log("Skipping chainlinkRequest because oracle address is not set", oracleAddress);
+    }
   }
 
   console.log("Deploying DmmController...");
@@ -99,7 +103,7 @@ const deployEcosystem = async (loader, environment, deployer) => {
       dmmTokenFactory.address,
       dmmBlacklist.address,
       /* minCollateralization */ _1,
-      /* minReserveRatio */ _05,
+      /* minReserveRatio */ _0_5,
       weth.address,
     ],
     deployer,

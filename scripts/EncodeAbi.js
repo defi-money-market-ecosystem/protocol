@@ -19,81 +19,143 @@ const main = async () => {
   web3.eth.defaultAccount = account.address;
   const deployer = account.address;
 
-  const wethAddress = "0x5AE1948b45D61917452Af4208e3b2Fef1bc70e12";
+  const wethAddress = "0x444DFd30CC223205269fDC249D8439EF4fF6109C";
 
   const DelayedOwner = loader.truffle.fromArtifact('DelayedOwner');
   const DmmController = loader.truffle.fromArtifact('DmmController');
   const DmmTokenFactory = loader.truffle.fromArtifact('DmmTokenFactory');
   const DmmEtherFactory = loader.truffle.fromArtifact('DmmEtherFactory');
   const DmmToken = loader.truffle.fromArtifact('DmmToken');
+  const ERC20Mock = loader.truffle.fromArtifact('ERC20Mock');
 
-  const delayedOwner = await DelayedOwner.at("0xcfD027019F9Ff28AC3db417b630c7a21881090fb");
-  const dmmController = await DmmController.at("0xbb7a3f18b6732Ab21D48226339e891a88E5cd4C5");
+  const delayedOwner = await DelayedOwner.at("0x9037E67a050F84362Bfc2baA95b006688FF7AB26");
+  const dmmController = await DmmController.at("0x07e6f395Ff9CbA9FB48Be5e5031FD76d02634af2");
+  const daiMock = await ERC20Mock.at("0xa020c81602fbB8031b400C0d033fE111CeBdDd93");
 
-  await getChainlinkCollateralValue(delayedOwner);
+  const gnosisSafeAddress = "0x0323cE501DD42Ed46a409D86e4EB6a9745FCA9EC";
 
-  // console.log("Deploying DmmEtherFactory...");
-  // const dmmEtherFactory = await deployContract(DmmEtherFactory, [wethAddress], deployer, 6e6, web3, 1e9);
-  //
-  // console.log("Deploying DmmTokenFactory...");
-  // const dmmTokenFactory = await deployContract(DmmTokenFactory, [], deployer, 6e6, web3, 1e9);
-  //
-  // const params = [
-  //   '0x7a01313ED513F13ACc35536Cb66FEb5362e6C3C3',
-  //   '0x681Ba299ee5619DC96f5d87aE0F5B19EAB3Cbe8A',
-  //   '0xccA971a0d728f138C96a0E14b20040832EA55053',
-  //   dmmEtherFactory.address,
-  //   dmmTokenFactory.address,
-  //   '0xbB2706d18b5Def6F66b1f97ee47b42eA6A45F73a',
-  //   '100000000000000000', // 10% or 0.10,
-  //   '500000000000000000', // 50%
-  //   '0x5AE1948b45D61917452Af4208e3b2Fef1bc70e12',
-  // ];
-  // const dmmController = await deployContract(DmmController, params, deployer, 6e6, web3, 1e9);
-  // await callContract(dmmController, 'transferOwnership', ['0xcfD027019F9Ff28AC3db417b630c7a21881090fb'], deployer, 1e6, undefined, web3, 1e9);
-  // await callContract(dmmEtherFactory, 'transferOwnership', [dmmController.address], deployer, 1e6, undefined, web3, 1e9);
-  // await callContract(dmmTokenFactory, 'transferOwnership', [dmmController.address], deployer, 1e6, undefined, web3, 1e9);
+  await adminDepositFunds(delayedOwner, dmmController, gnosisSafeAddress);
+  await adminWithdrawFunds(delayedOwner, dmmController, gnosisSafeAddress);
+  await executeDelayedTransaction(delayedOwner, new BN(3));
+  await executeDelayedTransaction(delayedOwner, new BN(4));
 
-  // const constructorArgumentsDai = web3.eth.abi.encodeParameters(
-  //   ['string', 'string', 'uint', 'uint', 'uint', 'uint', 'address'],
-  //   ['DMM: DAI',
-  //     'mDAI',
-  //     18,
-  //     '10000000000',
-  //     '10000000000',
-  //     '5000000000000000000000000',
-  //     dmmController.address]
-  // );
-  // const innerAbi = dmmController.contract.methods.addMarket(
-  //   '0x298bB14DFB95bBb2aC0Fd5AD4644D6f80dCAd7c7',
-  //   'mDAI',
-  //   'DMM: DAI',
-  //   18,
-  //   '10000000000',
-  //   '10000000000',
-  //   '5000000000000000000000000',
-  // ).encodeABI();
-  // const innerAbi = dmmController.contract.methods.addMarket(
-  //   '0xbA901EeC621E8a3d77cd2e43aB78Ce96528B4496',
-  //   'mUSDC',
-  //   'DMM: USDC',
-  //   6,
-  //   '1',
-  //   '1',
-  //   '5000000000000',
-  // ).encodeABI();
-  //
-  // const actualAbi = delayedOwner.contract.methods.transact(
-  //   dmmController.address,
-  //   innerAbi,
-  // ).encodeABI();
+  // await claimOwnershipForDelayedOwner(delayedOwner);
+  // await approveController(daiMock, dmmController, new BN(2).pow(new BN(255)));
+  // await setBalance(daiMock, gnosisSafeAddress, new BN('2400000000000000000000'));
+  // await getChainlinkCollateralValue(delayedOwner);
 
-  // const actualAbi = delayedOwner.contract.methods.executeTransaction(
-  //   0,
-  // ).encodeABI();
+  await addMarket(
+    dmmController,
+    delayedOwner,
+    "0xa020c81602fbB8031b400C0d033fE111CeBdDd93",
+    "mDAI",
+    "DMM: DAI",
+    18,
+    '10000000000',
+    '10000000000',
+    '5000000000000000000000000',
+  );
 
-  // console.log("actualAbi ", actualAbi, innerAbi);
-  console.log("actualAbi ", innerAbi);
+  await addMarket(
+    dmmController,
+    delayedOwner,
+    "0x500079e692360452c24014C0b7258C04228038FF",
+    "mUSDC",
+    "DMM: USDC",
+    6,
+    '1',
+    '1',
+    '5000000000000',
+  );
+
+  await addMarket(
+    dmmController,
+    delayedOwner,
+    "0x444DFd30CC223205269fDC249D8439EF4fF6109C",
+    "mETH",
+    "DMM: ETH",
+    18,
+    '10000000000',
+    '10000000000',
+    '20000000000000000000000', // 20,000 ETH
+  );
+
+  await encodeDmmEtherConstructor(
+    web3,
+    "0x444DFd30CC223205269fDC249D8439EF4fF6109C",
+    "mETH",
+    "DMM: ETH",
+    18,
+    '10000000000',
+    '10000000000',
+    '20000000000000000000000', // 20,000 ETH
+  );
+  await encodeDmmTokenConstructor(
+    web3,
+    "mUSDC",
+    "DMM: USDC",
+    6,
+    '1',
+    '1',
+    '5000000000000',
+  )
+};
+
+const encodeDmmTokenConstructor = async (web3, symbol, name, decimals, minMint, minRedeem, totalSupply) => {
+  const params = web3.eth.abi.encodeParameters(
+    ['string', 'string', 'uint8', 'uint', 'uint', 'uint'],
+    [symbol, name, decimals, minMint, minRedeem, totalSupply.toString()],
+  );
+
+  console.log(`DmmToken Constructor `, params)
+};
+
+const encodeDmmEtherConstructor = async (web3, wethAddress, symbol, name, decimals, minMint, minRedeem, totalSupply) => {
+  const params = web3.eth.abi.encodeParameters(
+    ['address', 'string', 'string', 'uint8', 'uint', 'uint', 'uint'],
+    [wethAddress, symbol, name, decimals, minMint, minRedeem, totalSupply.toString()],
+  );
+
+  console.log(`DmmEther Constructor `, params)
+};
+
+const addMarket = async (dmmController, delayedOwner, underlyingAddress, symbol, name, decimals, minMint, minRedeem, totalSupply) => {
+  const innerAbi = dmmController.contract.methods.addMarket(
+    underlyingAddress,
+    symbol,
+    name,
+    decimals,
+    minMint,
+    minRedeem,
+    totalSupply.toString(),
+  ).encodeABI();
+
+  const actualAbi = delayedOwner.contract.methods.transact(
+    dmmController.address,
+    innerAbi,
+  ).encodeABI();
+
+  console.log(`Add market for ${symbol}: `, actualAbi)
+};
+
+const setBalance = async (token, recipient, amount) => {
+  const actualAbi = token.contract.methods.setBalance(recipient, amount.toString()).encodeABI();
+  console.log("setBalance: ", actualAbi);
+};
+
+const approveController = async (token, controller, amount) => {
+  const actualAbi = token.contract.methods.approve(
+    controller.address,
+    amount.toString(),
+  ).encodeABI();
+
+  console.log("approveController: ", actualAbi);
+};
+
+const claimOwnershipForDelayedOwner = async (delayedOwner) => {
+  const innerAbi = delayedOwner.contract.methods.claimOwnership().encodeABI();
+
+  console.log("claimOwnership: ", innerAbi);
 };
 
 const getChainlinkCollateralValue = async (delayedOwner) => {
@@ -108,6 +170,38 @@ const getChainlinkCollateralValue = async (delayedOwner) => {
   ).encodeABI();
 
   console.log("getCollateralValue: ", actualAbi);
+};
+
+const _2000 = new BN('2000000000000000000000').toString();
+
+const adminDepositFunds = async (delayedOwner, controller, gnosisSafeAddress) => {
+  const innerAbi = controller.contract.methods.adminDepositFunds(gnosisSafeAddress, new BN(1).toString(), _2000).encodeABI();
+
+  const actualAbi = delayedOwner.contract.methods.transact(
+    controller.address,
+    innerAbi,
+  ).encodeABI();
+
+  console.log("adminDepositFunds: ", actualAbi);
+};
+
+const adminWithdrawFunds = async (delayedOwner, controller, gnosisSafeAddress) => {
+  const innerAbi = controller.contract.methods.adminWithdrawFunds(gnosisSafeAddress, new BN(1).toString(), _2000).encodeABI();
+
+  const actualAbi = delayedOwner.contract.methods.transact(
+    controller.address,
+    innerAbi,
+  ).encodeABI();
+
+  console.log("adminWithdrawFunds: ", actualAbi);
+};
+
+const executeDelayedTransaction = async (delayedOwner, transactionId) => {
+  const actualAbi = delayedOwner.contract.methods.executeTransaction(
+    transactionId.toString()
+  ).encodeABI();
+
+  console.log(`delayedTransaction with ID ${transactionId.toString()}: `, actualAbi);
 };
 
 main().catch(error => {

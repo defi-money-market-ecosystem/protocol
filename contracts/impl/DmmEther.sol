@@ -161,7 +161,7 @@ contract DmmEther is DmmToken {
             (bool success,) = address(uint160(recipient)).call.value(underlyingAmount)("");
             require(success, "COULD_NOT_TRANSFER_ETH_OUT");
         } else {
-            IERC20(underlyingToken).safeTransfer(recipient, underlyingAmount.sub(msg.value));
+            IERC20(underlyingToken).safeTransfer(recipient, underlyingAmount);
         }
     }
 
