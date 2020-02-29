@@ -27,14 +27,14 @@ const main = async () => {
   const chainlinkJobId = '0xd4b380b30cb64722b8843ead232985c300000000000000000000000000000000';
 
   console.log("Deploying contract...");
-  const ChainlinkCollateralValuator = loader.truffle.fromArtifact('ChainlinkCollateralValuator');
-  const chainlinkCollateralValuator = await deployContract(ChainlinkCollateralValuator, [linkAddress, payment, chainlinkJobId], deployer, 4e6, web3, 1e9);
+  const OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
+  const OffChainAssetValuatorImplV1 = await deployContract(OffChainAssetValuatorImplV1, [linkAddress, payment, chainlinkJobId], deployer, 4e6, web3, 1e9);
 
   console.log("Sending 10 LINK to collateral valuator");
   const _10 = new BN('10000000000000000000');
-  await callContract(link, 'transfer', [chainlinkCollateralValuator.address, _10], deployer, 3e5, 0, web3, 1e9);
+  await callContract(link, 'transfer', [OffChainAssetValuatorImplV1.address, _10], deployer, 3e5, 0, web3, 1e9);
 
-  await callContract(chainlinkCollateralValuator, 'getCollateralValue', [oracleAddress], deployer, 1e6, 0, web3, 1e9);
+  await callContract(OffChainAssetValuatorImplV1, 'getOffChainAssetsValue', [oracleAddress], deployer, 1e6, 0, web3, 1e9);
 };
 
 main();

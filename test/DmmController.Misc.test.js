@@ -1,6 +1,6 @@
 const {accounts, contract, web3} = require('@openzeppelin/test-environment');
-const {expect} = require('chai');
 require('@openzeppelin/test-helpers/src/config/web3').getWeb3 = () => web3;
+const {expect} = require('chai');
 require('chai').should();
 const {
   BN,
@@ -110,21 +110,40 @@ describe('DmmController.Misc', async () => {
     );
   });
 
-  it('should set new collateral valuator', async () => {
-    const receipt = await this.controller.setCollateralValuator(constants.ZERO_ADDRESS, {from: admin});
+  it('should set new asset valuator', async () => {
+    const receipt = await this.controller.setOffChainAssetValuator(constants.ZERO_ADDRESS, {from: admin});
     expectEvent(
       receipt,
-      'CollateralValuatorChanged',
+      'OffChainAssetValuatorChanged',
       {
-        previousCollateralValuator: this.collateralValuator.address,
-        newCollateralValuator: constants.ZERO_ADDRESS
+        previousOffChainAssetValuator: this.offChainAssetValuator.address,
+        newOffChainAssetValuator: constants.ZERO_ADDRESS
       },
     );
   });
 
-  it('should not set new collateral valuator if not owner', async () => {
+  it('should not set new asset valuator if not owner', async () => {
     await expectRevert(
-      this.controller.setCollateralValuator(constants.ZERO_ADDRESS, {from: user}),
+      this.controller.setOffChainAssetValuator(constants.ZERO_ADDRESS, {from: user}),
+      ownableError
+    );
+  });
+
+  it('should set new currency valuator', async () => {
+    const receipt = await this.controller.setOffChainCurrencyValuator(constants.ZERO_ADDRESS, {from: admin});
+    expectEvent(
+      receipt,
+      'OffChainCurrencyValuatorChanged',
+      {
+        previousOffChainCurrencyValuator: this.offChainCurrencyValuator.address,
+        newOffChainCurrencyValuator: constants.ZERO_ADDRESS
+      },
+    );
+  });
+
+  it('should not set new currency valuator if not owner', async () => {
+    await expectRevert(
+      this.controller.setOffChainCurrencyValuator(constants.ZERO_ADDRESS, {from: user}),
       ownableError
     );
   });

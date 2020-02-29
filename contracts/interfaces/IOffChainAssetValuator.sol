@@ -1,12 +1,13 @@
 pragma solidity ^0.5.0;
 
-/**
- * Gets the value of any assets that are residing off-chain, but are NOT yet allocated to a revenue-producing asset.
- */
 interface IOffChainAssetValuator {
 
+    event AssetsValueUpdated(uint newAssetsValue);
+
     /**
-     * @return The value of the off-chain assets. The number returned uses 18 decimal places.
+     * @dev Gets the DMM ecosystem's collateral's value from Chainlink's on-chain data feed.
+     *
+     * @return The value of the ecosystem's collateral, as a number with 18 decimals
      */
     function getOffChainAssetsValue() external view returns (uint);
 

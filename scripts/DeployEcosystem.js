@@ -3,7 +3,7 @@ const {BN} = require('ethereumjs-util');
 const {callContract, deployContract, linkContract} = require('./ContractUtils');
 
 global.interestRateImplV1 = null;
-global.chainlinkCollateralValuator = null;
+global.OffChainAssetValuatorImplV1 = null;
 global.offChainAssetValuatorImplV1 = null;
 global.underlyingTokenValuatorImplV1 = null;
 global.delayedOwner = null;
@@ -17,13 +17,13 @@ const _0_5 = new BN('500000000000000000'); // 0.5
 const _1 = new BN('1000000000000000000'); // 1.0
 
 const deployEcosystem = async (loader, environment, deployer) => {
-  const ChainlinkCollateralValuator = loader.truffle.fromArtifact('ChainlinkCollateralValuator');
+  let OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
   const DmmBlacklistable = loader.truffle.fromArtifact('DmmBlacklistable');
   const DmmController = loader.truffle.fromArtifact('DmmController');
   const DmmEtherFactory = loader.truffle.fromArtifact('DmmEtherFactory');
   const DmmTokenFactory = loader.truffle.fromArtifact('DmmTokenFactory');
   const InterestRateImplV1 = loader.truffle.fromArtifact('InterestRateImplV1');
-  const OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
+  const OffChainCurrencyValuatorImplV1 = loader.truffle.fromArtifact('OffChainCurrencyValuatorImplV1');
   const UnderlyingTokenValuatorImplV1 = loader.truffle.fromArtifact('UnderlyingTokenValuatorImplV1');
 
   let oracleAddress;
@@ -54,11 +54,12 @@ const deployEcosystem = async (loader, environment, deployer) => {
   console.log("Deploying InterestRateImplV1...");
   interestRateImplV1 = await deployContract(InterestRateImplV1, [], deployer, 4e6);
 
-  console.log("Deploying ChainlinkCollateralValuator...");
-  chainlinkCollateralValuator = await deployContract(ChainlinkCollateralValuator, [link.address, _0_1, chainlinkJobId], deployer, 4e6);
-
   console.log("Deploying OffChainAssetValuatorImplV1...");
-  offChainAssetValuatorImplV1 = await deployContract(OffChainAssetValuatorImplV1, [], deployer, 4e6);
+  const initialCollateralValue = new BN('8557754000000000000000000');
+  offChainAssetValuatorImplV1 = await deployContract(OffChainAssetValuatorImplV1, [link.address, _0_1, initialCollateralValue, chainlinkJobId], deployer, 4e6);
+
+  console.log("Deploying OffChainCurrencyValuatorImplV1...");
+  offChainCurrencyValuatorImplV1 = await deployContract(OffChainCurrencyValuatorImplV1, [], deployer, 4e6);
 
   console.log("Deploying UnderlyingTokenValuatorImplV1... ");
   underlyingTokenValuatorImplV1 = await deployContract(UnderlyingTokenValuatorImplV1, [dai.address, usdc.address], deployer, 4e6);
@@ -75,13 +76,13 @@ const deployEcosystem = async (loader, environment, deployer) => {
   if (environment === 'TESTNET' || environment === 'PRODUCTION') {
     console.log("Sending 10 LINK to collateral valuator");
     const _10 = _1.mul(new BN('10'));
-    await callContract(link, 'transfer', [chainlinkCollateralValuator.address, _10], deployer, 3e5);
+    await callContract(link, 'transfer', [OffChainAssetValuatorImplV1.address, _10], deployer, 3e5);
 
     if(oracleAddress !== '0x0000000000000000000000000000000000000000') {
       console.log("Sending chainlinkRequest using oracle ", oracleAddress);
       await callContract(
-        chainlinkCollateralValuator,
-        'getCollateralValue',
+        OffChainAssetValuatorImplV1,
+        'submitGetOffChainAssetsValueRequest',
         [oracleAddress],
         deployer,
         1e6,
@@ -96,7 +97,7 @@ const deployEcosystem = async (loader, environment, deployer) => {
     DmmController,
     [
       interestRateImplV1.address,
-      chainlinkCollateralValuator.address,
+      OffChainAssetValuatorImplV1.address,
       offChainAssetValuatorImplV1.address,
       underlyingTokenValuatorImplV1.address,
       dmmEtherFactory.address,
@@ -113,7 +114,7 @@ const deployEcosystem = async (loader, environment, deployer) => {
   await addMarketsIfLocal(environment, deployer);
 
   console.log('InterestRateImplV1: ', interestRateImplV1.address);
-  console.log('ChainlinkCollateralValuator: ', chainlinkCollateralValuator.address);
+  console.log('OffChainAssetValuatorImplV1: ', OffChainAssetValuatorImplV1.address);
   console.log('OffChainAssetValuatorImplV1: ', offChainAssetValuatorImplV1.address);
   console.log('UnderlyingTokenValuatorImplV1: ', underlyingTokenValuatorImplV1.address);
   console.log('DmmTokenFactory: ', dmmTokenFactory.address);
@@ -163,7 +164,7 @@ const addMarketsIfLocal = async (environment, deployer) => {
 
 module.exports = {
   interestRateImplV1,
-  chainlinkCollateralValuator,
+  OffChainAssetValuatorImplV1,
   underlyingTokenValuatorImplV1,
   dmmTokenFactory,
   dmmBlacklist,

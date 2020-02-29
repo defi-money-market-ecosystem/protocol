@@ -75,11 +75,18 @@ interface IDmmController {
     function setInterestRateInterface(address newInterestRateInterface) external;
 
     /**
-     * @dev Sets a new contract that implements the `ICollateralizationGetter` interface.
+     * @dev Sets a new contract that implements the `IOffChainAssetValuator` interface.
      *
-     * @param newCollateralValuator The new contract that implements the `ICollateralValuator` interface.
+     * @param newOffChainAssetValuator The new contract that implements the `IOffChainAssetValuator` interface.
      */
-    function setCollateralValuator(address newCollateralValuator) external;
+    function setOffChainAssetValuator(address newOffChainAssetValuator) external;
+
+    /**
+     * @dev Sets a new contract that implements the `IOffChainAssetValuator` interface.
+     *
+     * @param newOffChainCurrencyValuator The new contract that implements the `IOffChainAssetValuator` interface.
+     */
+    function setOffChainCurrencyValuator(address newOffChainCurrencyValuator) external;
 
     /**
      * @dev Sets a new contract that implements the `UnderlyingTokenValuator` interface
@@ -122,22 +129,19 @@ interface IDmmController {
      * @dev Allows the owners of the DMM Ecosystem to withdraw funds from a DMMA. These withdrawn funds are then
      *      allocated to real-world assets that will be used to pay interest into the DMMA.
      *
-     * @param recipient         The address to which the funds will be sent.
      * @param dmmTokenId        The ID of the DMM token whose underlying will be funded.
      * @param underlyingAmount  The amount underlying the DMM token that will be deposited into the DMMA.
      */
-    function adminWithdrawFunds(address recipient, uint dmmTokenId, uint underlyingAmount) external;
+    function adminWithdrawFunds(uint dmmTokenId, uint underlyingAmount) external;
 
     /**
      * @dev Allows the owners of the DMM Ecosystem to deposit funds into a DMMA. These funds are used to disburse
      *      interest payments and add more liquidity to the specific market.
      *
-     * @param sender            The address of the sender of the funds. This is the address from where the funds will
-     *                          be pulled.
      * @param dmmTokenId        The ID of the DMM token whose underlying will be funded.
      * @param underlyingAmount  The amount underlying the DMM token that will be deposited into the DMMA.
      */
-    function adminDepositFunds(address sender, uint dmmTokenId, uint underlyingAmount) external;
+    function adminDepositFunds(uint dmmTokenId, uint underlyingAmount) external;
 
     /**
      * @dev Gets the collateralization of the system assuming 1-year's worth of interest payments are due by dividing

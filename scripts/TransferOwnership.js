@@ -1,7 +1,7 @@
 const {callContract} = require('./ContractUtils');
 
 const deployOwnershipChanges = async (environment, deployer, multiSigWallet) => {
-  await transferOwnership('ChainlinkCollateralValuator', chainlinkCollateralValuator, delayedOwner.address, deployer);
+  await transferOwnership('OffChainAssetValuatorImplV1', OffChainAssetValuatorImplV1, delayedOwner.address, deployer);
   await transferOwnership('OffChainAssetValuatorImplV1', offChainAssetValuatorImplV1, delayedOwner.address, deployer);
   await transferOwnership('DmmEtherFactory', dmmEtherFactory, dmmController.address, deployer);
   if (environment !== 'LOCAL') {

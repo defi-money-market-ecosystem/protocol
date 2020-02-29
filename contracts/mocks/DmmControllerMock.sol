@@ -69,7 +69,10 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
     function setInterestRateInterface(address unused) public {
     }
 
-    function setCollateralValuator(address unused) public {
+    function setOffChainAssetValuator(address unused) public {
+    }
+
+    function setOffChainCurrencyValuator(address unused) public {
     }
 
     function setUnderlyingTokenValuator(address unused) public {

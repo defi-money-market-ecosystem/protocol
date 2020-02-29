@@ -70,13 +70,13 @@ const deployTimeDelay = async (loader, environment, deployer) => {
     3e5,
   );
 
-  console.log('Adding time delay for DmmController#setCollateralValuator...');
+  console.log('Adding time delay for DmmController#setOffChainAssetValuator...');
   await callContract(
     delayedOwner,
     'addDelay',
     [
       dmmController.address,
-      dmmController.methods.setCollateralValuator(defaultAddress).encodeABI().slice(0, 10),
+      dmmController.methods.setOffChainAssetValuator(defaultAddress).encodeABI().slice(0, 10),
       delay,
     ],
     deployer,
@@ -154,7 +154,7 @@ const deployTimeDelay = async (loader, environment, deployer) => {
     'addDelay',
     [
       dmmController.address,
-      dmmController.methods.adminWithdrawFunds(defaultAddress, defaultUint, defaultUint).encodeABI().slice(0, 10),
+      dmmController.methods.adminWithdrawFunds(defaultUint, defaultUint).encodeABI().slice(0, 10),
       delay,
     ],
     deployer,
@@ -167,7 +167,7 @@ const deployTimeDelay = async (loader, environment, deployer) => {
     'addDelay',
     [
       dmmController.address,
-      dmmController.methods.adminDepositFunds(defaultAddress, defaultUint, defaultUint).encodeABI().slice(0, 10),
+      dmmController.methods.adminDepositFunds(defaultUint, defaultUint).encodeABI().slice(0, 10),
       delay,
     ],
     deployer,

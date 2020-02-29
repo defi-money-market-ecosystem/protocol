@@ -23,7 +23,7 @@ const {
 } = require('./helpers/DmmTokenTestHelpers');
 
 // Use the different accounts, which are unlocked and funded with Ether
-const [admin, user, adminRecipient] = accounts;
+const [admin, user] = accounts;
 
 describe('DmmController.AdminReserves', async () => {
 
@@ -65,7 +65,7 @@ describe('DmmController.AdminReserves', async () => {
 
   it('should not increase total supply if there is insufficient collateral', async () => {
     await addDaiMarket();
-    await this.collateralValuator.setCollateralValue(_1());
+    await this.offChainAssetValuator.setCollateralValue(_1());
     await expectRevert(
       this.controller.increaseTotalSupply(defaultDmmTokenId, _100(), {from: admin}),
       "INSUFFICIENT_COLLATERAL",
@@ -113,12 +113,14 @@ describe('DmmController.AdminReserves', async () => {
     const dmmToken = contract.fromArtifact('DmmToken', dmmTokenAddress);
     await mint(this.dai, dmmToken, user, _100());
 
-    const receipt = await this.controller.adminWithdrawFunds(adminRecipient, defaultDmmTokenId, _1(), {from: admin});
+    const receipt = await this.controller.adminWithdrawFunds(defaultDmmTokenId, _1(), {from: admin});
     expectEvent(
       receipt,
       'AdminWithdraw',
-      {receiver: adminRecipient, amount: _1()} // the controller is the admin of the token
+      {receiver: admin, amount: _1()} // the controller is the admin of the token
     );
+
+    (await this.dai.balanceOf(admin)).should.be.bignumber.equals(_1());
   });
 
   it('should not allow admin to withdraw underlying when there is insufficient leftover reserves', async () => {
@@ -128,7 +130,7 @@ describe('DmmController.AdminReserves', async () => {
     await mint(this.dai, dmmToken, user, _1());
 
     await expectRevert(
-      this.controller.adminWithdrawFunds(adminRecipient, defaultDmmTokenId, _1(), {from: admin}),
+      this.controller.adminWithdrawFunds(defaultDmmTokenId, _1(), {from: admin}),
       'INSUFFICIENT_LEFTOVER_RESERVES',
     );
   });
@@ -140,7 +142,7 @@ describe('DmmController.AdminReserves', async () => {
     await mint(this.dai, dmmToken, user, _100());
 
     await expectRevert(
-      this.controller.adminWithdrawFunds(adminRecipient, defaultDmmTokenId, _1(), {from: user}),
+      this.controller.adminWithdrawFunds(defaultDmmTokenId, _1(), {from: user}),
       ownableError,
     );
   });
@@ -148,15 +150,20 @@ describe('DmmController.AdminReserves', async () => {
   it('should allow admin to deposit underlying', async () => {
     const amount = _100();
     await addDaiMarket();
-    await setBalanceFor(this.dai, adminRecipient, amount);
-    await setApproval(this.dai, adminRecipient, this.controller.address);
+    await setBalanceFor(this.dai, admin, amount);
+    await setApproval(this.dai, admin, this.controller.address);
 
-    const receipt = await this.controller.adminDepositFunds(adminRecipient, defaultDmmTokenId, amount, {from: admin});
+    const receipt = await this.controller.adminDepositFunds(defaultDmmTokenId, amount, {from: admin});
     expectEvent(
       receipt,
       'AdminDeposit',
-      {sender: adminRecipient, amount: amount}
+      {sender: admin, amount: amount}
     );
+
+    const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
+
+    (await this.dai.balanceOf(admin)).should.be.bignumber.equals(_0());
+    (await this.dai.balanceOf(dmmTokenAddress)).should.be.bignumber.equals(amount);
   });
 
   it('should not allow non-admin to deposit underlying', async () => {
@@ -166,7 +173,7 @@ describe('DmmController.AdminReserves', async () => {
     await setApproval(this.dai, admin, this.controller.address);
 
     await expectRevert(
-      this.controller.adminDepositFunds(adminRecipient, defaultDmmTokenId, amount, {from: user}),
+      this.controller.adminDepositFunds(defaultDmmTokenId, amount, {from: user}),
       ownableError,
     );
   });

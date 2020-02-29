@@ -42,7 +42,7 @@ const main = async () => {
   // await claimOwnershipForDelayedOwner(delayedOwner);
   // await approveController(daiMock, dmmController, new BN(2).pow(new BN(255)));
   // await setBalance(daiMock, gnosisSafeAddress, new BN('2400000000000000000000'));
-  // await getChainlinkCollateralValue(delayedOwner);
+  // await getOffChainAssetsValue(delayedOwner);
 
   await addMarket(
     dmmController,
@@ -158,18 +158,18 @@ const claimOwnershipForDelayedOwner = async (delayedOwner) => {
   console.log("claimOwnership: ", innerAbi);
 };
 
-const getChainlinkCollateralValue = async (delayedOwner) => {
-  const ChainlinkCollateralValuator = loader.truffle.fromArtifact('ChainlinkCollateralValuator');
-  const chainlinkCollateralValuator = await ChainlinkCollateralValuator.at("0x681Ba299ee5619DC96f5d87aE0F5B19EAB3Cbe8A");
+const getOffChainAssetsValue = async (delayedOwner) => {
+  const OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
+  const offChainAssetValuatorImplV1 = await OffChainAssetValuatorImplV1.at("0x681Ba299ee5619DC96f5d87aE0F5B19EAB3Cbe8A");
   const oracleAddress = "0x7AFe1118Ea78C1eae84ca8feE5C65Bc76CcF879e";
-  const innerAbi = chainlinkCollateralValuator.contract.methods.getCollateralValue(oracleAddress).encodeABI();
+  const innerAbi = offChainAssetValuatorImplV1.contract.methods.submitGetOffChainAssetsValueRequest(oracleAddress).encodeABI();
 
   const actualAbi = delayedOwner.contract.methods.transact(
-    chainlinkCollateralValuator.address,
+    offChainAssetValuatorImplV1.address,
     innerAbi,
   ).encodeABI();
 
-  console.log("getCollateralValue: ", actualAbi);
+  console.log("getOffChainAssetsValue: ", actualAbi);
 };
 
 const _2000 = new BN('2000000000000000000000').toString();

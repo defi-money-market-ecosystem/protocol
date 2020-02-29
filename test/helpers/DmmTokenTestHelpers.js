@@ -156,14 +156,14 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
   web3Config.getWeb3 = () => web3;
 
   const DmmBlacklistable = contracts.fromArtifact('DmmBlacklistable');
-  const DmmCollateralValuatorMock = contracts.fromArtifact('DmmCollateralValuatorMock');
+  const DmmOffChainAssetValuatorMock = contracts.fromArtifact('DmmOffChainAssetValuatorMock');
   const DmmController = contracts.fromArtifact('DmmController');
   const DmmEtherFactory = contracts.fromArtifact('DmmEtherFactory');
   const DmmTokenFactory = contracts.fromArtifact('DmmTokenFactory');
   const DmmTokenLibrary = contracts.fromArtifact('DmmTokenLibrary');
   const ERC20Mock = contracts.fromArtifact('ERC20Mock');
   const InterestRateImplV1 = contracts.fromArtifact('InterestRateImplV1');
-  const OffChainAssetValuatorImplV1 = contracts.fromArtifact('OffChainAssetValuatorImplV1');
+  const OffChainCurrencyValuatorImplV1 = contracts.fromArtifact('OffChainCurrencyValuatorImplV1');
   const SafeERC20 = contracts.fromArtifact('SafeERC20');
   const SafeMath = contracts.fromArtifact('SafeMath');
   const StringHelpers = contracts.fromArtifact('StringHelpers');
@@ -205,8 +205,8 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
   thisInstance.weth = await WETHMock.new({from: thisInstance.admin});
 
   thisInstance.interestRateInterface = await InterestRateImplV1.new({from: thisInstance.admin});
-  thisInstance.collateralValuator = await DmmCollateralValuatorMock.new({from: thisInstance.admin});
-  thisInstance.offChainCollateralValutor = await OffChainAssetValuatorImplV1.new({from: thisInstance.admin});
+  thisInstance.offChainAssetValuator = await DmmOffChainAssetValuatorMock.new({from: thisInstance.admin});
+  thisInstance.offChainCurrencyValuator = await OffChainCurrencyValuatorImplV1.new({from: thisInstance.admin});
   thisInstance.underlyingTokenValuator = await UnderlyingTokenValuatorImplV1.new(
     thisInstance.dai.address,
     thisInstance.usdc.address,
@@ -221,8 +221,8 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
 
   thisInstance.controller = await DmmController.new(
     thisInstance.interestRateInterface.address,
-    thisInstance.collateralValuator.address,
-    thisInstance.offChainCollateralValutor.address,
+    thisInstance.offChainAssetValuator.address,
+    thisInstance.offChainCurrencyValuator.address,
     thisInstance.underlyingTokenValuator.address,
     thisInstance.dmmEtherFactory.address,
     thisInstance.dmmTokenFactory.address,

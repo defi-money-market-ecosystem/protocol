@@ -1,15 +1,15 @@
 pragma solidity ^0.5.0;
 
-import "../interfaces/ICollateralValuator.sol";
+import "../interfaces/IOffChainAssetValuator.sol";
 
-contract DmmCollateralValuatorMock is ICollateralValuator {
+contract DmmOffChainAssetValuatorMock is IOffChainAssetValuator {
 
     uint private _collateralValue = 1e25;
 
     constructor() public {
     }
 
-    function getCollateralValue() public view returns (uint) {
+    function getOffChainAssetsValue() public view returns (uint) {
         return _collateralValue;
     }
 

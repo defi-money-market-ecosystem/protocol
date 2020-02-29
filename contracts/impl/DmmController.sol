@@ -8,7 +8,7 @@ import "../../node_modules/@openzeppelin/contracts/utils/Address.sol";
 
 import "../constants/CommonConstants.sol";
 import "../impl/DmmBlacklistable.sol";
-import "../interfaces/ICollateralValuator.sol";
+import "../interfaces/IOffChainAssetValuator.sol";
 import "../interfaces/IDmmController.sol";
 import "../interfaces/IDmmToken.sol";
 import "../interfaces/InterestRateInterface.sol";
@@ -16,7 +16,7 @@ import "../interfaces/IUnderlyingTokenValuator.sol";
 import "../interfaces/IDmmTokenFactory.sol";
 import "../utils/Blacklistable.sol";
 import "../interfaces/IPausable.sol";
-import "../interfaces/IOffChainAssetValuator.sol";
+import "../interfaces/IOffChainCurrencyValuator.sol";
 
 contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, Ownable {
 
@@ -29,7 +29,8 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
      */
 
     event InterestRateInterfaceChanged(address previousInterestRateInterface, address newInterestRateInterface);
-    event CollateralValuatorChanged(address previousCollateralValuator, address newCollateralValuator);
+    event OffChainAssetValuatorChanged(address previousOffChainAssetValuator, address newOffChainAssetValuator);
+    event OffChainCurrencyValuatorChanged(address previousOffChainCurrencyValuator, address newOffChainCurrencyValuator);
     event UnderlyingTokenValuatorChanged(address previousUnderlyingTokenValuator, address newUnderlyingTokenValuator);
 
     event MarketAdded(uint indexed dmmTokenId, address indexed dmmToken, address indexed underlyingToken);
@@ -46,8 +47,8 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
     DmmBlacklistable public dmmBlacklistable;
     InterestRateInterface public interestRateInterface;
-    IOffChainAssetValuator public offChainAssetValuator;
-    ICollateralValuator public collateralValuator;
+    IOffChainCurrencyValuator public offChainCurrencyValuator;
+    IOffChainAssetValuator public offChainAssetsValuator;
     IUnderlyingTokenValuator public underlyingTokenValuator;
     IDmmTokenFactory public dmmTokenFactory;
     IDmmTokenFactory public dmmEtherFactory;
@@ -78,8 +79,8 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
     constructor(
         address _interestRateInterface,
-        address _collateralValuator,
-        address _offChainAssetValuator,
+        address _offChainAssetsValuator,
+        address _offChainCurrencyValuator,
         address _underlyingTokenValuator,
         address _dmmEtherFactory,
         address _dmmTokenFactory,
@@ -89,8 +90,8 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         address _wethToken
     ) public {
         interestRateInterface = InterestRateInterface(_interestRateInterface);
-        collateralValuator = ICollateralValuator(_collateralValuator);
-        offChainAssetValuator = IOffChainAssetValuator(_offChainAssetValuator);
+        offChainAssetsValuator = IOffChainAssetValuator(_offChainAssetsValuator);
+        offChainCurrencyValuator = IOffChainCurrencyValuator(_offChainCurrencyValuator);
         underlyingTokenValuator = IUnderlyingTokenValuator(_underlyingTokenValuator);
         dmmTokenFactory = IDmmTokenFactory(_dmmTokenFactory);
         dmmEtherFactory = IDmmTokenFactory(_dmmEtherFactory);
@@ -220,10 +221,16 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         emit InterestRateInterfaceChanged(oldInterestRateInterface, address(interestRateInterface));
     }
 
-    function setCollateralValuator(address newCollateralValuator) public whenNotPaused onlyOwner {
-        address oldCollateralValuator = address(collateralValuator);
-        collateralValuator = ICollateralValuator(newCollateralValuator);
-        emit CollateralValuatorChanged(oldCollateralValuator, address(collateralValuator));
+    function setOffChainAssetValuator(address newOffChainAssetValuator) public whenNotPaused onlyOwner {
+        address oldCollateralValuator = address(offChainAssetsValuator);
+        offChainAssetsValuator = IOffChainAssetValuator(newOffChainAssetValuator);
+        emit OffChainAssetValuatorChanged(oldCollateralValuator, address(offChainAssetsValuator));
+    }
+
+    function setOffChainCurrencyValuator(address newOffChainCurrencyValuator) public whenNotPaused onlyOwner {
+        address oldOffChainCurrencyValuator = address(offChainCurrencyValuator);
+        offChainCurrencyValuator = IOffChainCurrencyValuator(newOffChainCurrencyValuator);
+        emit OffChainCurrencyValuatorChanged(oldOffChainCurrencyValuator, address(offChainCurrencyValuator));
     }
 
     function setUnderlyingTokenValuator(address newUnderlyingTokenValuator) public whenNotPaused onlyOwner {
@@ -260,7 +267,6 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     }
 
     function adminWithdrawFunds(
-        address receiver,
         uint dmmTokenId,
         uint underlyingAmount
     ) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
@@ -280,22 +286,21 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
             require(actualReserveRatio >= minReserveRatio, "INSUFFICIENT_LEFTOVER_RESERVES");
         }
 
-        emit AdminWithdraw(receiver, underlyingAmount);
+        emit AdminWithdraw(_msgSender(), underlyingAmount);
     }
 
     function adminDepositFunds(
-        address sender,
         uint dmmTokenId,
         uint underlyingAmount
     ) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
         // Attempt to pull from the sender into this contract, then have the DMM token pull from here.
         IERC20 underlyingToken = IERC20(dmmTokenIdToUnderlyingTokenAddressMap[dmmTokenId]);
-        underlyingToken.safeTransferFrom(sender, address(this), underlyingAmount);
+        underlyingToken.safeTransferFrom(_msgSender(), address(this), underlyingAmount);
 
         address dmmTokenAddress = dmmTokenIdToDmmTokenAddressMap[dmmTokenId];
         underlyingToken.approve(dmmTokenAddress, underlyingAmount);
         IDmmToken(dmmTokenAddress).depositUnderlying(underlyingAmount);
-        emit AdminDeposit(sender, underlyingAmount);
+        emit AdminDeposit(_msgSender(), underlyingAmount);
     }
 
     function getTotalCollateralization() public view returns (uint) {
@@ -430,7 +435,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         if (totalLiabilities == 0) {
             return 0;
         }
-        uint collateralValue = collateralValuator.getCollateralValue().add(totalAssets).add(offChainAssetValuator.getOffChainAssetsValue());
+        uint collateralValue = offChainAssetsValuator.getOffChainAssetsValue().add(totalAssets).add(offChainCurrencyValuator.getOffChainCurrenciesValue());
         return collateralValue.mul(COLLATERALIZATION_BASE_RATE).div(totalLiabilities);
     }
 
