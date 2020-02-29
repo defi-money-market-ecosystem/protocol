@@ -33,7 +33,7 @@ const main = async () => {
   } else if (environment === 'TESTNET') {
     multiSigWallet = "0x0323cE501DD42Ed46a409D86e4EB6a9745FCA9EC";
   } else if (environment === 'PRODUCTION') {
-    multiSigWallet = ""; // TODO
+    multiSigWallet = "0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF";
   } else {
     throw new Error("Invalid environment, found: " + environment);
   }
