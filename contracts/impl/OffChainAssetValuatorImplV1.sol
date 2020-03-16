@@ -71,6 +71,7 @@ contract OffChainAssetValuatorImplV1 is IOffChainAssetValuator, ChainlinkClient,
             this.fulfillGetOffChainAssetsValueRequest.selector
         );
         request.add("action", "sumActive");
+        request.addInt("times", 1 ether);
         sendChainlinkRequestTo(oracle, request, _oraclePayment);
     }
 

@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "compile": "oz compile",
-    "deploy": "oz compile && ENVIRONMENT=LOCAL node ./scripts/index.js",
-    "deploy-mainnet": "oz compile && ENVIRONMENT=PRODUCTION node ./scripts/index.js",
-    "deploy-testnet": "oz compile && ENVIRONMENT=TESTNET DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node ./scripts/index.js",
+    "deploy": "oz compile && ENVIRONMENT=LOCAL node scripts/initial_deployment/index.js",
+    "deploy-mainnet": "oz compile && ENVIRONMENT=PRODUCTION node scripts/initial_deployment/index.js",
+    "deploy-mainnet-off-chain-asset-valuator": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_off_chain_asset_valuator/DeployOffChainAssetValuator.js",
+    "deploy-testnet": "oz compile && ENVIRONMENT=TESTNET DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node scripts/initial_deployment/index.js",
     "encode-abi": "DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node scripts/EncodeAbi.js",
     "format": "solium -d contracts/",
     "run-playground": "DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node ./scripts/Playground.js",

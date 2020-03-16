@@ -5,7 +5,7 @@ const linkContract = (artifact, libraryName, address) => {
 };
 
 const deployContract = async (artifact, params, deployer, gasLimit, web3, gasPrice) => {
-  web3 = !!web3 ? web3 : require("./index").web3;
+  web3 = !!web3 ? web3 : require("./initial_deployment").web3;
   const contract = new web3.eth.Contract(artifact.abi, null, {data: '0x' + artifact.bytecode});
   const mappedParams = params.map(param => {
     if (BN.isBN(param)) {
@@ -22,7 +22,7 @@ const deployContract = async (artifact, params, deployer, gasLimit, web3, gasPri
     .send({
       from: deployer,
       gas: gasLimit,
-      gasPrice: gasPrice || require("./index").defaultGasPrice,
+      gasPrice: gasPrice || require("./initial_deployment").defaultGasPrice,
     })
     .on('receipt', receipt => {
       console.log(`Contract Deployed at address ${receipt.contractAddress} with TransactionHash: ${receipt.transactionHash}`);
@@ -35,7 +35,7 @@ const deployContract = async (artifact, params, deployer, gasLimit, web3, gasPri
 };
 
 const callContract = async (artifact, methodName, params, sender, gasLimit, value, web3, gasPrice) => {
-  web3 = !!web3 ? web3 : require("./index").web3;
+  web3 = !!web3 ? web3 : require("./initial_deployment").web3;
 
   console.log(`Calling ${methodName} at ${artifact.address}...`);
   const mappedParams = params.map(param => {
@@ -62,7 +62,7 @@ const callContract = async (artifact, methodName, params, sender, gasLimit, valu
     .send({
       from: sender,
       gas: gasLimit,
-      gasPrice: gasPrice || require('./index').defaultGasPrice,
+      gasPrice: gasPrice || require('./initial_deployment').defaultGasPrice,
       value: value ? value : undefined,
     })
     .then((receipt) => {

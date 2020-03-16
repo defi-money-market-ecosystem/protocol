@@ -1,5 +1,5 @@
 const {BN} = require('ethereumjs-util');
-const {deployContract, callContract} = require('./ContractUtils');
+const {deployContract, callContract} = require('../ContractUtils');
 
 global.dai = null;
 global.link = null;

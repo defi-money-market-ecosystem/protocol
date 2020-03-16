@@ -1,4 +1,4 @@
-const {callContract, deployContract} = require('./ContractUtils');
+const {callContract, deployContract} = require('../ContractUtils');
 const {BN} = require('ethereumjs-util');
 
 global.delayedOwner = null;
@@ -14,14 +14,6 @@ const defaultAddress = '0x0000000000000000000000000000000000000000';
 const deployTimeDelay = async (loader, environment, deployer) => {
   const DelayedOwner = loader.truffle.fromArtifact('DelayedOwner');
 
-  console.log("Deploying delayed owner...");
-  delayedOwner = await deployContract(
-    DelayedOwner,
-    [dmmController.address, tenMinutesInSeconds],
-    deployer,
-    5e6,
-  );
-
   let delay;
   if (environment === 'PRODUCTION') {
     delay = oneHourInSeconds;
@@ -30,6 +22,21 @@ const deployTimeDelay = async (loader, environment, deployer) => {
   }
 
   console.log(`Using time delay of ${delay.div(new BN('60')).toString()} minutes`);
+
+  if (environment !== 'PRODUCTION') {
+    console.log("Deploying delayed owner...");
+    delayedOwner = await deployContract(
+      DelayedOwner,
+      [dmmController.address, tenMinutesInSeconds],
+      deployer,
+      5e6,
+    );
+  } else {
+    delayedOwner = loader.truffle.fromArtifact('DelayedOwner', '0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD');
+    delayedOwner.methods = delayedOwner.contract.methods;
+  }
+
+  console.log("Delayed owner: ", delayedOwner.address);
 
   console.log('Adding time delay for DmmController#enableMarket...');
   await callContract(
@@ -161,31 +168,31 @@ const deployTimeDelay = async (loader, environment, deployer) => {
     3e5,
   );
 
-  console.log('Adding time delay for DmmController#adminWithdrawFunds...');
-  await callContract(
-    delayedOwner,
-    'addDelay',
-    [
-      dmmController.address,
-      dmmController.methods.adminWithdrawFunds(defaultUint, defaultUint).encodeABI().slice(0, 10),
-      delay,
-    ],
-    deployer,
-    3e5,
-  );
-
-  console.log('Adding time delay for DmmController#adminDepositFunds...');
-  await callContract(
-    delayedOwner,
-    'addDelay',
-    [
-      dmmController.address,
-      dmmController.methods.adminDepositFunds(defaultUint, defaultUint).encodeABI().slice(0, 10),
-      delay,
-    ],
-    deployer,
-    3e5,
-  );
+  // console.log('Adding time delay for DmmController#adminWithdrawFunds...');
+  // await callContract(
+  //   delayedOwner,
+  //   'addDelay',
+  //   [
+  //     dmmController.address,
+  //     dmmController.methods.adminWithdrawFunds(defaultUint, defaultUint).encodeABI().slice(0, 10),
+  //     delay,
+  //   ],
+  //   deployer,
+  //   3e5,
+  // );
+  //
+  // console.log('Adding time delay for DmmController#adminDepositFunds...');
+  // await callContract(
+  //   delayedOwner,
+  //   'addDelay',
+  //   [
+  //     dmmController.address,
+  //     dmmController.methods.adminDepositFunds(defaultUint, defaultUint).encodeABI().slice(0, 10),
+  //     delay,
+  //   ],
+  //   deployer,
+  //   3e5,
+  // );
 };
 
 module.exports = {

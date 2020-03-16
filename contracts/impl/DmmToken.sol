@@ -338,7 +338,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
         _transfer(owner, address(this), amount);
 
         // Transfer underlying to the recipient from this contract
-        transferUnderlyingOut(recipient, amount);
+        transferUnderlyingOut(recipient, underlyingAmount);
 
         emit Redeem(owner, recipient, amount);
 
