@@ -6,7 +6,8 @@ const linkContract = (artifact, libraryName, address) => {
 
 const deployContract = async (artifact, params, deployer, gasLimit, web3, gasPrice) => {
   web3 = !!web3 ? web3 : require("./initial_deployment").web3;
-  const contract = new web3.eth.Contract(artifact.abi, null, {data: '0x' + artifact.bytecode});
+  const bytecode = artifact.bytecode.includes('0x') ? artifact.bytecode : `0x${artifact.bytecode}`;
+  const contract = new web3.eth.Contract(artifact.abi, null, {data: bytecode});
   const mappedParams = params.map(param => {
     if (BN.isBN(param)) {
       return '0x' + param.toString(16);
@@ -16,8 +17,8 @@ const deployContract = async (artifact, params, deployer, gasLimit, web3, gasPri
   });
   return contract
     .deploy({
-      data: artifact.bytecode,
-      arguments: mappedParams.length > 0 ? mappedParams : undefined
+      data: bytecode,
+      arguments: mappedParams.length > 0 ? mappedParams : null
     })
     .send({
       from: deployer,

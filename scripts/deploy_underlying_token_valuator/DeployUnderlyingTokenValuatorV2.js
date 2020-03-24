@@ -1,12 +1,12 @@
+const {linkContract} = require('../ContractUtils');
 const provider = process.env.PROVIDER ? process.env.PROVIDER : 'http://localhost:8545';
 const environment = process.env.ENVIRONMENT ? process.env.ENVIRONMENT : new Error('No ENVIRONMENT specified!');
 const Web3 = require('web3');
 const {setupLoader} = require('@openzeppelin/contract-loader');
 const {callContract, deployContract} = require('../ContractUtils');
-const {BN} = require('ethereumjs-util');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 5e9;
+const defaultGasPrice = 8e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
@@ -36,17 +36,20 @@ const main = async () => {
 
   const loader = setupLoader({provider: web3, defaultSender: deployer, defaultGasPrice: 8e9});
 
-  delayedOwner = loader.truffle.fromArtifact('DelayedOwner', '0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD');
+  const delayedOwner = loader.truffle.fromArtifact('DelayedOwner', '0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD');
   delayedOwner.methods = delayedOwner.contract.methods;
 
-  const linkAddress = '0x514910771af9ca656af840dff83e8264ecf986ca';
-  const _0_5 = new BN('500000000000000000');
-  const initialCollateralValue = new BN('1000000000000000000');
-  const chainlinkJobId = '0x11cdfd87ac17f6fc2aea9ca5c77544f33decb571339a31f546c2b6a36a406f15';
+  const daiAddress = '0x6b175474e89094c44da98b954eedeac495271d0f';
+  const usdcAddress = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+  const wethAddress = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
+  const ethUsdAggregatorAddress = '0x79fEbF6B9F76853EDBcBc913e6aAE8232cFB9De9';
 
-  const OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
-  const offChainAssetValuatorImplV1 = await deployContract(OffChainAssetValuatorImplV1, [linkAddress, _0_5, initialCollateralValue, chainlinkJobId], deployer, 4e6, web3, defaultGasPrice);
-  await callContract(offChainAssetValuatorImplV1, 'transferOwnership', delayedOwner.address, deployer, 4e5, 0, web3, defaultGasPrice)
+  const UnderlyingTokenValuatorImplV2 = loader.truffle.fromArtifact('UnderlyingTokenValuatorImplV2');
+  await UnderlyingTokenValuatorImplV2.detectNetwork();
+  await linkContract(UnderlyingTokenValuatorImplV2, 'StringHelpers', '0x50adD802Bbe45d06ac5d52bF3CDAC40f8648cf95');
+
+  const underlyingTokenValuatorImplV2 = await deployContract(UnderlyingTokenValuatorImplV2, [daiAddress, usdcAddress, wethAddress, ethUsdAggregatorAddress], deployer, 3e6, web3, defaultGasPrice);
+  await callContract(underlyingTokenValuatorImplV2, 'transferOwnership', [delayedOwner.address], deployer, 4e5, 0, web3, defaultGasPrice)
 };
 
 main()

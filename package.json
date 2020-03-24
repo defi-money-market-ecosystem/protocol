@@ -8,6 +8,7 @@
     "deploy": "oz compile && ENVIRONMENT=LOCAL node scripts/initial_deployment/index.js",
     "deploy-mainnet": "oz compile && ENVIRONMENT=PRODUCTION node scripts/initial_deployment/index.js",
     "deploy-mainnet-off-chain-asset-valuator": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_off_chain_asset_valuator/DeployOffChainAssetValuator.js",
+    "deploy-mainnet-underlying-token-valuator": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_underlying_token_valuator/DeployUnderlyingTokenValuatorV2.js",
     "deploy-testnet": "oz compile && ENVIRONMENT=TESTNET DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node scripts/initial_deployment/index.js",
     "encode-abi": "DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node scripts/EncodeAbi.js",
     "format": "solium -d contracts/",
@@ -27,7 +28,8 @@
     "test-token": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/DmmToken*.test.js --slow 2500",
     "test-token-gasless-interactions": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/DmmToken.Gasless*.test.js --slow 2500",
     "test-token-user-interactions": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/DmmToken.UserInteractions.test.js --slow 2500",
-    "test-underlying-token-valuator-v1": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/UnderlyingTokenValuatorImplV1.test.js --slow 2500"
+    "test-underlying-token-valuator-v1": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/UnderlyingTokenValuatorImplV1.test.js --slow 2500",
+    "test-underlying-token-valuator-v2": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/UnderlyingTokenValuatorImplV2.test.js --slow 2500"
   },
   "keywords": [],
   "author": "",
