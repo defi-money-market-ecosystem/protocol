@@ -6,9 +6,10 @@ import "../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 import "../../node_modules/@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+import "../protocol/interfaces/IOwnable.sol";
+import "../protocol/interfaces/IPausable.sol";
+
 import "./Blacklistable.sol";
-import "../interfaces/IOwnable.sol";
-import "../interfaces/IPausable.sol";
 
 /**
  * @dev Implementation of the {IERC20} interface.

@@ -50,6 +50,8 @@ const doDmmTokenBeforeEach = async (thisInstance, contracts, web3) => {
   thisInstance.blacklistable = await DmmBlacklistable.new({from: thisInstance.admin});
 
   thisInstance.underlyingToken = await ERC20Mock.new({from: thisInstance.admin});
+  thisInstance.dai = thisInstance.underlyingToken;
+
   thisInstance.interestRate = _0();
   thisInstance.controller = await DmmControllerMock.new(
     thisInstance.blacklistable.address,
@@ -81,6 +83,8 @@ const doDmmTokenBeforeEach = async (thisInstance, contracts, web3) => {
     thisInstance.controller.address,
     {from: thisInstance.admin}
   );
+
+  thisInstance.mDAI = thisInstance.contract;
 };
 
 const doDmmEtherBeforeEach = async (thisInstance, contracts, web3, lastUser) => {
@@ -150,6 +154,8 @@ const doDmmEtherBeforeEach = async (thisInstance, contracts, web3, lastUser) => 
     thisInstance.controller.address,
     {from: thisInstance.admin}
   );
+
+  thisInstance.mETH = thisInstance.contract;
 };
 
 const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
