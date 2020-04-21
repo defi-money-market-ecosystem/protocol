@@ -170,7 +170,7 @@ contract DmmToken is ERC20, IDmmToken, CommonConstants {
 
     function transferUnderlyingOut(address recipient, uint underlyingAmount) internal {
         address underlyingToken = controller.getUnderlyingTokenForDmm(address(this));
-        IERC20(underlyingToken).transfer(recipient, underlyingAmount);
+        IERC20(underlyingToken).safeTransfer(recipient, underlyingAmount);
     }
 
     function mintFromGaslessRequest(
