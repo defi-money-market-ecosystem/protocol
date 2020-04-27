@@ -2,11 +2,14 @@ pragma solidity ^0.5.0;
 
 import "./DmmToken.sol";
 import "../interfaces/IWETH.sol";
+import "../libs/SafeEther.sol";
 
 /**
  * @dev A wrapper around Ether and WETH for minting DMM.
  */
 contract DmmEther is DmmToken {
+
+    using SafeEther for address;
 
     address public wethToken;
 
@@ -158,8 +161,7 @@ contract DmmEther is DmmToken {
         address underlyingToken = controller.getUnderlyingTokenForDmm(address(this));
         if (_shouldRedeemToETH) {
             IWETH(underlyingToken).withdraw(underlyingAmount);
-            (bool success,) = address(uint160(recipient)).call.value(underlyingAmount)("");
-            require(success, "COULD_NOT_TRANSFER_ETH_OUT");
+            recipient.sendEther(underlyingAmount, "COULD_NOT_TRANSFER_ETH_OUT");
         } else {
             IERC20(underlyingToken).safeTransfer(recipient, underlyingAmount);
         }
