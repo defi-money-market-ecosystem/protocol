@@ -72,8 +72,8 @@ contract DMGToken is IERC20 {
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
 
     /**
-     * @notice Construct a new Comp token
-     * @param account The initial account to grant all the tokens
+     * @notice Construct the DMG token
+     * @param account The initial account to receive all of the tokens
      */
     constructor(address account) public {
         totalSupply = 100000000e18;
@@ -160,7 +160,7 @@ contract DMGToken is IERC20 {
     function transferFrom(address src, address dst, uint rawAmount) external returns (bool) {
         address spender = msg.sender;
         uint128 spenderAllowance = allowances[src][spender];
-        uint128 amount = SafeBitMath.safe128(rawAmount, "DMG::approve: amount exceeds 128 bits");
+        uint128 amount = SafeBitMath.safe128(rawAmount, "DMG::allowances: amount exceeds 128 bits");
 
         if (spender != src && spenderAllowance != uint128(- 1)) {
             uint128 newAllowance = SafeBitMath.sub128(spenderAllowance, amount, "DMG::transferFrom: transfer amount exceeds spender allowance");
