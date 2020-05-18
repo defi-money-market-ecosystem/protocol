@@ -58,9 +58,15 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 
 #### Mainnet
 
-| Contract  	                | Address   	                                | Link   	                                                                |
-|---	                        |---	                                        |
+ **Contract**  	                | **Address**   	                            | Link   	                                                             
+--------------------------------|-----------------------------------------------|------------------------------------------------------------------------
 | Delayed Owner  	            | 0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD    | https://etherscan.io/address/0x9e97ee8631da9e96bc36a6bf39d332c38d9834dd
 | DMM Controller  	            | 0x4CB120Dd1D33C9A3De8Bc15620C7Cd43418d77E2    | https://etherscan.io/address/0x4cb120dd1d33c9a3de8bc15620c7cd43418d77e2
 | Referral Program Proxy        | 0x926ebD23E6d5fD38dC6A4FD79C58B6A2b543e9aC    | https://etherscan.io/address/0x926ebd23e6d5fd38dc6a4fd79c58b6a2b543e9ac
 | Underlying Token Valuator V3  | 0x9CFa15A1a8BDA741D41A6B8de8b2B04E693c9eA5    | https://etherscan.io/address/0x9cfa15a1a8bda741d41a6b8de8b2b04e693c9ea5
+
+Contract,Address,Link
+Delayed Owner,0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD,https://etherscan.io/address/0x9e97ee8631da9e96bc36a6bf39d332c38d9834dd
+DMM Controller,0x4CB120Dd1D33C9A3De8Bc15620C7Cd43418d77E2,https://etherscan.io/address/0x4cb120dd1d33c9a3de8bc15620c7cd43418d77e2
+Referral Program Proxy,0x926ebD23E6d5fD38dC6A4FD79C58B6A2b543e9aC,https://etherscan.io/address/0x926ebd23e6d5fd38dc6a4fd79c58b6a2b543e9ac
+Underlying Token Valuator V3,0x9CFa15A1a8BDA741D41A6B8de8b2B04E693c9eA5,https://etherscan.io/address/0x9cfa15a1a8bda741d41a6b8de8b2b04e693c9ea5
