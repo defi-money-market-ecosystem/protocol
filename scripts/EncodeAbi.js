@@ -35,6 +35,7 @@ const delayedOwnerAddress = "0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD";
 const gnosisSafeAddress = "0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF";
 const offChainAssetValuatorImplV1Address = "0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4";
 const underlyingTokenValuatorImplV2Address = "0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d";
+const underlyingTokenValuatorImplV3Address = "0x9CFa15A1a8BDA741D41A6B8de8b2B04E693c9eA5";
 
 const jobId = '0x11cdfd87ac17f6fc2aea9ca5c77544f33decb571339a31f546c2b6a36a406f15';
 const oracleAddress = '0x0563fC575D5219C48E2Dfc20368FA4179cDF320D';
@@ -91,11 +92,11 @@ const main = async () => {
   // await decreaseTotalSupply(delayedOwner, dmmController, daiTokenId, new BN('1500000000000000000000000'));
   // await decreaseTotalSupply(delayedOwner, dmmController, usdcTokenId, new BN('1500000000000'));
 
-  await executeDelayedTransaction(delayedOwner, new BN(5));
-  await executeDelayedTransaction(delayedOwner, new BN(6));
-  await executeDelayedTransaction(delayedOwner, new BN(7));
-  await executeDelayedTransaction(delayedOwner, new BN(8));
-  await executeDelayedTransaction(delayedOwner, new BN(9));
+  await executeDelayedTransaction(delayedOwner, new BN(10));
+  await executeDelayedTransaction(delayedOwner, new BN(11));
+  await executeDelayedTransaction(delayedOwner, new BN(12));
+  await executeDelayedTransaction(delayedOwner, new BN(13));
+  await executeDelayedTransaction(delayedOwner, new BN(14));
 
   // await claimOwnershipForDelayedOwner(delayedOwner);
   //
@@ -207,7 +208,7 @@ const main = async () => {
   // await submitGetOffChainAssetsValueRequest(delayedOwner, offChainAssetValuatorImplV1, oracleAddress);
   //
   // await setOffChainAssetValuator(delayedOwner, dmmController, offChainAssetValuatorImplV1Address);
-  await setUnderlyingTokenValuator(delayedOwner, dmmController, underlyingTokenValuatorImplV2Address);
+  await setUnderlyingTokenValuator(delayedOwner, dmmController, underlyingTokenValuatorImplV3Address);
   //
   // await addMarket(
   //   dmmController,
@@ -381,9 +382,9 @@ const setOffChainAssetValuator = async (delayedOwner, dmmController, offChainAss
 
 const setUnderlyingTokenValuator = async (delayedOwner, dmmController, underlyingTokenValuatorAddress) => {
   const innerAbi = dmmController.contract.methods.setUnderlyingTokenValuator(underlyingTokenValuatorAddress).encodeABI();
-  const actualAbi = delayedOwner.contract.methods.transact(dmmController.address, innerAbi).encodeABI();
+  // const actualAbi = delayedOwner.contract.methods.transact(dmmController.address, innerAbi).encodeABI();
 
-  console.log(`setUnderlyingTokenValuator: `, actualAbi);
+  console.log(`setUnderlyingTokenValuator: `, dmmController.address, ' ', innerAbi);
 };
 
 const changeFunctionDelay = async (delayedOwner, contractAddress, fnCall, fnName) => {
