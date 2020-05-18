@@ -75,4 +75,4 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | Referral Program Proxy Factory                | 0x926ebD23E6d5fD38dC6A4FD79C58B6A2b543e9aC    | [Etherscan](https://etherscan.io/address/0x926ebd23e6d5fd38dc6a4fd79c58b6a2b543e9ac)
 | ~~Underlying Token Valuator V1~~ DEPRECATED   | 0xe8B313e7BfdC0eCB23e4BE47062dB0A65AE5705c    | [Etherscan](https://etherscan.io/address/0xe8b313e7bfdc0ecb23e4be47062db0a65ae5705c)
 | ~~Underlying Token Valuator V2~~ DEPRECATED   | 0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d    | [Etherscan](https://etherscan.io/address/0x693aa8ead81d2f88a45e870fa7e25f84ca93ca4d)
-| Underlying Token Valuator V3                  | 0x9CFa15A1a8BDA741D41A6B8de8b2B04E693c9eA5    | [Etherscan](https://etherscan.io/address/0x9cfa15a1a8bda741d41a6b8de8b2b04e693c9ea5)
+| Underlying Token Valuator V3                  | 0xE9390E80D1E9833710412C3a14F6f2f7888aAaE1    | [Etherscan](https://etherscan.io/address/0xe9390e80d1e9833710412c3a14f6f2f7888aaae1)

@@ -4,7 +4,7 @@ import "../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 
 import "../interfaces/IUnderlyingTokenValuator.sol";
-import "../interfaces/IUsdAggregator.sol";
+import "../interfaces/IUsdAggregatorV1.sol";
 
 import "../../utils/StringHelpers.sol";
 
@@ -19,7 +19,7 @@ contract UnderlyingTokenValuatorImplV2 is IUnderlyingTokenValuator, Ownable {
     address public usdc;
     address public weth;
 
-    IUsdAggregator public ethUsdAggregator;
+    IUsdAggregatorV1 public ethUsdAggregator;
 
     uint public constant USD_AGGREGATOR_BASE = 100000000;
 
@@ -33,12 +33,12 @@ contract UnderlyingTokenValuatorImplV2 is IUnderlyingTokenValuator, Ownable {
         usdc = _usdc;
         weth = _weth;
 
-        ethUsdAggregator = IUsdAggregator(_ethUsdAggregator);
+        ethUsdAggregator = IUsdAggregatorV1(_ethUsdAggregator);
     }
 
     function setEthUsdAggregator(address _ethUsdAggregator) public onlyOwner {
         address oldAggregator = address(ethUsdAggregator);
-        ethUsdAggregator = IUsdAggregator(_ethUsdAggregator);
+        ethUsdAggregator = IUsdAggregatorV1(_ethUsdAggregator);
 
         emit EthUsdAggregatorChanged(oldAggregator, _ethUsdAggregator);
     }

@@ -35,7 +35,7 @@ const delayedOwnerAddress = "0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD";
 const gnosisSafeAddress = "0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF";
 const offChainAssetValuatorImplV1Address = "0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4";
 const underlyingTokenValuatorImplV2Address = "0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d";
-const underlyingTokenValuatorImplV3Address = "0x9CFa15A1a8BDA741D41A6B8de8b2B04E693c9eA5";
+const underlyingTokenValuatorImplV3Address = "0xE9390E80D1E9833710412C3a14F6f2f7888aAaE1";
 
 const jobId = '0x11cdfd87ac17f6fc2aea9ca5c77544f33decb571339a31f546c2b6a36a406f15';
 const oracleAddress = '0x0563fC575D5219C48E2Dfc20368FA4179cDF320D';
@@ -78,15 +78,15 @@ const main = async () => {
   //
   // await claimOwnershipForDelayedOwner(delayedOwner);
 
-  await adminDepositFunds(delayedOwner, dmmController, wethTokenId, new BN('14548721724500000000'));
+  // await adminDepositFunds(delayedOwner, dmmController, wethTokenId, new BN('14548721724500000000'));
 
-  const _1000_DAI = new BN('1000000000000000000000');
-  const _1000_USDC = new BN('1000000000');
+  // const _1000_DAI = new BN('1000000000000000000000');
+  // const _1000_USDC = new BN('1000000000');
   // await adminWithdrawFunds(delayedOwner, dmmController, daiTokenId, _1000_DAI);
   // await adminWithdrawFunds(delayedOwner, dmmController, usdcTokenId, _1000_USDC);
 
-  await sendTokensFromDelayedOwnerToRecipient(dai, delayedOwner, gnosisSafeAddress, _1000_DAI);
-  await sendTokensFromDelayedOwnerToRecipient(usdc, delayedOwner, gnosisSafeAddress, _1000_USDC);
+  // await sendTokensFromDelayedOwnerToRecipient(dai, delayedOwner, gnosisSafeAddress, _1000_DAI);
+  // await sendTokensFromDelayedOwnerToRecipient(usdc, delayedOwner, gnosisSafeAddress, _1000_USDC);
 
   // 1.5m each
   // await decreaseTotalSupply(delayedOwner, dmmController, daiTokenId, new BN('1500000000000000000000000'));
