@@ -4,6 +4,7 @@ import "../../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 import "../../../node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
+import "../../protocol/interfaces/IDmmEther.sol";
 import "../../protocol/interfaces/IDmmToken.sol";
 
 /**
@@ -13,26 +14,70 @@ contract ReferralTrackerProxy is Ownable {
 
     using SafeERC20 for IERC20;
 
-    event ProxyMint(address indexed minter, uint amount, uint underlyingAmount);
-    event ProxyRedeem(address indexed redeemer, uint amount, uint underlyingAmount);
+    address public weth;
 
-    constructor () public {
+    event ProxyMint(address indexed minter, address indexed receiver, uint amount, uint underlyingAmount);
+    event ProxyRedeem(address indexed redeemer, address indexed receiver, uint amount, uint underlyingAmount);
+
+    constructor (address _weth) public {
+        weth = _weth;
     }
 
     function() external {
         revert("NO_DEFAULT");
     }
 
+    function mintViaEther(address mETH) public payable returns (uint) {
+        require(
+            IDmmEther(mETH).wethToken() == weth,
+            "INVALID_TOKEN"
+        );
+        uint amount = IDmmEther(mETH).mintViaEther.value(msg.value)();
+        IERC20(mETH).safeTransfer(msg.sender, amount);
+        emit ProxyMint(msg.sender, msg.sender, amount, msg.value);
+        return amount;
+    }
+
     function mint(address mToken, uint underlyingAmount) public {
         address underlyingToken = IDmmToken(mToken).controller().getUnderlyingTokenForDmm(mToken);
         IERC20(underlyingToken).safeTransferFrom(_msgSender(), address(this), underlyingAmount);
 
-        checkApprovalAndIncrementIfNecessary(underlyingToken, mToken);
+        _checkApprovalAndIncrementIfNecessary(underlyingToken, mToken);
 
         uint amountMinted = IDmmToken(mToken).mint(underlyingAmount);
         IERC20(mToken).safeTransfer(_msgSender(), amountMinted);
 
-        emit ProxyMint(_msgSender(), amountMinted, underlyingAmount);
+        emit ProxyMint(_msgSender(), _msgSender(), amountMinted, underlyingAmount);
+    }
+
+    function mintFromGaslessRequest(
+        address mToken,
+        address owner,
+        address recipient,
+        uint nonce,
+        uint expiry,
+        uint amount,
+        uint feeAmount,
+        address feeRecipient,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint) {
+        uint dmmAmount = IDmmToken(mToken).mintFromGaslessRequest(
+            owner,
+            recipient,
+            nonce,
+            expiry,
+            amount,
+            feeAmount,
+            feeRecipient,
+            v,
+            r,
+            s
+        );
+
+        emit ProxyMint(owner, recipient, dmmAmount, amount);
+        return dmmAmount;
     }
 
     function redeem(address mToken, uint amount) public {
@@ -44,10 +89,40 @@ contract ReferralTrackerProxy is Ownable {
         address underlyingToken = IDmmToken(mToken).controller().getUnderlyingTokenForDmm(mToken);
         IERC20(underlyingToken).safeTransfer(_msgSender(), underlyingAmountRedeemed);
 
-        emit ProxyRedeem(_msgSender(), amount, underlyingAmountRedeemed);
+        emit ProxyRedeem(_msgSender(), _msgSender(), amount, underlyingAmountRedeemed);
     }
 
-    function checkApprovalAndIncrementIfNecessary(address token, address mToken) private {
+    function redeemFromGaslessRequest(
+        address mToken,
+        address owner,
+        address recipient,
+        uint nonce,
+        uint expiry,
+        uint amount,
+        uint feeAmount,
+        address feeRecipient,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint) {
+        uint underlyingAmount = IDmmToken(mToken).redeemFromGaslessRequest(
+            owner,
+            recipient,
+            nonce,
+            expiry,
+            amount,
+            feeAmount,
+            feeRecipient,
+            v,
+            r,
+            s
+        );
+
+        emit ProxyRedeem(owner, recipient, amount, underlyingAmount);
+        return underlyingAmount;
+    }
+
+    function _checkApprovalAndIncrementIfNecessary(address token, address mToken) internal {
         uint allowance = IERC20(token).allowance(address(this), mToken);
         if (allowance != uint(- 1)) {
             IERC20(token).safeApprove(mToken, uint(- 1));

@@ -6,11 +6,13 @@ import "./ReferralTrackerProxy.sol";
 
 contract ReferralTrackerProxyFactory is Ownable {
 
+    address public weth;
     address[] public proxyContracts;
 
     event ProxyContractDeployed(address indexed proxyAddress);
 
-    constructor() public {
+    constructor(address _weth) public {
+        weth = _weth;
     }
 
     function getProxyContracts() public view returns (address[] memory) {
@@ -18,7 +20,7 @@ contract ReferralTrackerProxyFactory is Ownable {
     }
 
     function deployProxy() public onlyOwner returns (address) {
-        ReferralTrackerProxy proxy = new ReferralTrackerProxy();
+        ReferralTrackerProxy proxy = new ReferralTrackerProxy(weth);
 
         proxyContracts.push(address(proxy));
         proxy.transferOwnership(owner());

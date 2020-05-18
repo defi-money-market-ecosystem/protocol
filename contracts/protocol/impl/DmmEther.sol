@@ -2,22 +2,23 @@ pragma solidity ^0.5.0;
 
 import "./DmmToken.sol";
 import "../interfaces/IWETH.sol";
+import "../interfaces/IDmmEther.sol";
 import "../libs/SafeEther.sol";
 
 /**
  * @dev A wrapper around Ether and WETH for minting DMM.
  */
-contract DmmEther is DmmToken {
+contract DmmEther is DmmToken, IDmmEther {
 
     using SafeEther for address;
 
-    address public wethToken;
+    address public weth;
 
     bool private _shouldTransferIn = true;
     bool private _shouldRedeemToETH = true;
 
     constructor(
-        address _wethToken,
+        address _weth,
         string memory _symbol,
         string memory _name,
         uint8 _decimals,
@@ -34,14 +35,18 @@ contract DmmEther is DmmToken {
         _totalSupply,
         _controller
     ) {
-        wethToken = _wethToken;
+        weth = _weth;
     }
 
     function() payable external {
         // If ETH is sent by the WETH contract, do nothing - this means we're unwrapping
-        if (_msgSender() != wethToken) {
+        if (_msgSender() != weth) {
             mintViaEther();
         }
+    }
+
+    function wethToken() public view returns (address) {
+        return weth;
     }
 
     function mintViaEther()
@@ -50,7 +55,7 @@ contract DmmEther is DmmToken {
     isNotDisabled
     public payable returns (uint) {
         require(msg.value > 0, "INSUFFICIENT_VALUE");
-        IWETH(wethToken).deposit.value(msg.value)();
+        IWETH(weth).deposit.value(msg.value)();
         _shouldTransferIn = false;
 
         return _mint(_msgSender(), _msgSender(), msg.value);
