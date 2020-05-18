@@ -70,7 +70,6 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | DMM: USDC  	                                | 0x3564ad35b9E95340E5Ace2D6251dbfC76098669B    | [Etherscan](https://etherscan.io/address/0x3564ad35b9e95340e5ace2d6251dbfc76098669b)
 | Interest Rate Setter V1  	                    | 0x6F2A3b2EFa07D264EA79Ce0b96d3173a8feAcD35    | [Etherscan](https://etherscan.io/address/0x6f2a3b2efa07d264ea79ce0b96d3173a8feacd35)
 | Off-Chain Assets Valuator V1  	            | 0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4    | [Etherscan](https://etherscan.io/address/0xace9112efe78d9e5018fd12164d30366ca629ab4)
-| Off-Chain Assets Valuator V1  	            | 0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4    | [Etherscan](https://etherscan.io/address/0xace9112efe78d9e5018fd12164d30366ca629ab4)
 | Off-Chain Currency Valuator V1  	            | 0x35cceb6ED6EB90d0c89a8F8b28E00aE23545312b    | [Etherscan](https://etherscan.io/address/0x35cceb6ed6eb90d0c89a8f8b28e00ae23545312b)
 | Referral Program Proxy                        | 0x926ebD23E6d5fD38dC6A4FD79C58B6A2b543e9aC    | [Etherscan](https://etherscan.io/address/0x926ebd23e6d5fd38dc6a4fd79c58b6a2b543e9ac)
 | ~~Underlying Token Valuator V1~~ DEPRECATED   | 0xe8B313e7BfdC0eCB23e4BE47062dB0A65AE5705c    | [Etherscan](https://etherscan.io/address/0xe8b313e7bfdc0ecb23e4be47062db0a65ae5705c)
