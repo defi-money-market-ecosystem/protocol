@@ -15,7 +15,7 @@ import "../../utils/EvmUtil.sol";
  *
  * Changes made to the token contract include modifying internal storage of balances/allowances to use 128 bits instead
  * of 96, increasing the number of bits for a checkpoint to 64, adding a burn function, and creating an initial
- * totalSupply of 100mm.
+ * totalSupply of 250mm.
  */
 contract DMGToken is IERC20 {
 
@@ -25,7 +25,7 @@ contract DMGToken is IERC20 {
 
     uint8 public constant decimals = 18;
 
-    uint public totalSupply; // 100 million DMG
+    uint public totalSupply;
 
     /// @notice Allowance amounts on behalf of others
     mapping(address => mapping(address => uint128)) internal allowances;
@@ -76,8 +76,8 @@ contract DMGToken is IERC20 {
      * @param account The initial account to receive all of the tokens
      */
     constructor(address account) public {
-        totalSupply = 100000000e18;
-        // 100m
+        // 250mm
+        totalSupply = 250000000e18;
         require(totalSupply == uint128(totalSupply), "DMG: total supply exceeds 128 bits");
 
         domainSeparator = keccak256(

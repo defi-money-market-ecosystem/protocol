@@ -12,7 +12,7 @@ const {
   _0,
   _1,
   _100,
-  _100000000,
+  _250000000,
   doDmgTokenBeforeEach,
   signMessage,
 } = require('../../helpers/DmmTokenTestHelpers');
@@ -39,14 +39,14 @@ describe('DMG.UserInteractions', async () => {
     await expectEvent.inConstruction(
       this.dmgToken,
       'Transfer',
-      {from: constants.ZERO_ADDRESS, to: admin, value: _100000000()}
+      {from: constants.ZERO_ADDRESS, to: admin, value: _250000000()}
     );
 
     const totalSupply = await this.dmgToken.totalSupply();
-    (totalSupply).should.be.bignumber.equal(_100000000());
+    (totalSupply).should.be.bignumber.equal(_250000000());
 
     const adminBalance = await this.dmgToken.balanceOf(admin);
-    (adminBalance).should.be.bignumber.equal(_100000000());
+    (adminBalance).should.be.bignumber.equal(_250000000());
   });
 
   it('should transfer funds properly', async () => {
@@ -58,7 +58,7 @@ describe('DMG.UserInteractions', async () => {
     );
 
     const adminBalance = await this.dmgToken.balanceOf(admin);
-    (adminBalance).should.be.bignumber.equal(_100000000().sub(_100()));
+    (adminBalance).should.be.bignumber.equal(_250000000().sub(_100()));
 
     const userBalance = await this.dmgToken.balanceOf(user);
     (userBalance).should.be.bignumber.equal(_100());

@@ -22,7 +22,7 @@ const _75 = () => new BN('75000000000000000000');
 const _100 = () => new BN('100000000000000000000');
 const _10000 = () => new BN('10000000000000000000000');
 const _1000000 = () => new BN('1000000000000000000000000');
-const _100000000 = () => new BN('100000000000000000000000000');
+const _250000000 = () => new BN('250000000000000000000000000');
 
 const doDmgTokenBeforeEach = async (thisInstance, contracts, web3) => {
   web3Config.getWeb3 = () => web3;
@@ -524,7 +524,7 @@ module.exports = {
   _100,
   _10000,
   _1000000,
-  _100000000,
+  _250000000,
   doDmgTokenBeforeEach,
   doDmmControllerBeforeEach,
   doDmmEtherBeforeEach,

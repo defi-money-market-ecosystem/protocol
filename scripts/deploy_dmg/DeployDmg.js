@@ -5,7 +5,7 @@ const {setupLoader} = require('@openzeppelin/contract-loader');
 const {deployContract} = require('../ContractUtils');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 8e9;
+const defaultGasPrice = 18e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
