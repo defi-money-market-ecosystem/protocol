@@ -4,7 +4,7 @@ import "../interfaces/IOffChainAssetValuator.sol";
 
 contract DmmOffChainAssetValuatorMock is IOffChainAssetValuator {
 
-    uint private _collateralValue = 1e25;
+    uint private _collateralValue = 10000000e18;
 
     constructor() public {
     }

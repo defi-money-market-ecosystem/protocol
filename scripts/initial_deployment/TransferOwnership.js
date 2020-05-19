@@ -7,7 +7,7 @@ const deployOwnershipChanges = async (environment, deployer, multiSigWallet) => 
   if (await offChainCurrencyValuatorImplV1.owner() !== delayedOwner.address) {
     await transferOwnership('OffChainCurrencyValuatorImplV1', offChainCurrencyValuatorImplV1, delayedOwner.address, deployer);
   }
-  if (await dmmEtherFactory.owner() !== dmmController.address) {
+  if (environment !== 'LOCAL' && (await dmmEtherFactory.owner() !== dmmController.address)) {
     await transferOwnership('DmmEtherFactory', dmmEtherFactory, dmmController.address, deployer);
   }
 

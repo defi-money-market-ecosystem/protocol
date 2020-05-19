@@ -56,7 +56,7 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 
 ### Deployed Addresses
 
-#### Mainnet
+#### Ethereum Mainnet
 
  **Contract Name**  	                        | **Contract Address**   	                    | Link   	                                                             
 ------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------
@@ -76,3 +76,29 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | ~~Underlying Token Valuator V1~~ DEPRECATED   | 0xe8B313e7BfdC0eCB23e4BE47062dB0A65AE5705c    | [Etherscan](https://etherscan.io/address/0xe8b313e7bfdc0ecb23e4be47062db0a65ae5705c)
 | ~~Underlying Token Valuator V2~~ DEPRECATED   | 0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d    | [Etherscan](https://etherscan.io/address/0x693aa8ead81d2f88a45e870fa7e25f84ca93ca4d)
 | Underlying Token Valuator V3                  | 0x7812e0F5Da2F0917BD9054951415EDFF571964dB    | [Etherscan](https://etherscan.io/address/0x7812e0f5da2f0917bd9054951415edff571964db)
+
+#### Ropsten Testnet
+
+ **Contract Name**  	                        | **Contract Address**   	                    | Link   	                                                             
+------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------
+| DAI  	                                        | 0xf15a6519b099A8eb7ffA9f12AF0D878B0f85a918    | [Etherscan](https://ropsten.etherscan.io/address/0xf15a6519b099A8eb7ffA9f12AF0D878B0f85a918)
+| USDC  	                                    | 0x54db15edFb7552f0314e89966afa6C89ff157386    | [Etherscan](https://ropsten.etherscan.io/address/0x54db15edFb7552f0314e89966afa6C89ff157386)
+| WETH  	                                    | 0x893178fBD1b3eb77cB85Ab39Bb3b3EDF2609a478    | [Etherscan](https://ropsten.etherscan.io/address/0x893178fbd1b3eb77cb85ab39bb3b3edf2609a478)
+| Delayed Owner  	                            | 0x6C8C010354A010bee5E8b563eC457614B9Db8eFf    | [Etherscan](https://ropsten.etherscan.io/address/0x6c8c010354a010bee5e8b563ec457614b9db8eff)
+| DMM Blacklist  	                            | 0x048cb15f882feA832B7513ed1Bd0Ed66504d0343    | [Etherscan](https://ropsten.etherscan.io/address/0x048cb15f882fea832b7513ed1bd0ed66504d0343)
+| DMM Controller  	                            | 0x5Ac111AeD2B53F2b43B60d5f4729CF1076d48391    | [Etherscan](https://ropsten.etherscan.io/address/0x5Ac111AeD2B53F2b43B60d5f4729CF1076d48391)
+| DMM Ether Factory  	                        | 0x96Dcf92C4eFBec5Cd83f36944b729C146FBe13B6    | [Etherscan](https://ropsten.etherscan.io/address/0x96Dcf92C4eFBec5Cd83f36944b729C146FBe13B6)
+| DMM Token Factory  	                        | 0x500cD65Bd10c00907ED2B9AC0282baC412A482e8    | [Etherscan](https://ropsten.etherscan.io/address/0x500cD65Bd10c00907ED2B9AC0282baC412A482e8)
+| DMM: DAI  	                                | 0xC1d81D71b703f387A82510615b367928BD74C819    | [Etherscan](https://ropsten.etherscan.io/address/0xC1d81D71b703f387A82510615b367928BD74C819)
+| DMM: ETH  	                                | 0xF3516dC84E0322542320690818E292aBCCD954f2    | [Etherscan](https://ropsten.etherscan.io/address/0xF3516dC84E0322542320690818E292aBCCD954f2)
+| DMM: USDC  	                                | 0x402f9c5Dadb4D9E5cbf74A99693A379F875dBc25    | [Etherscan](https://ropsten.etherscan.io/address/0x402f9c5Dadb4D9E5cbf74A99693A379F875dBc25)
+| Interest Rate Setter V1  	                    | 0x32df47ab270a1ec1450fa4b7abdfa94ee6b5f2fa    | [Etherscan](https://ropsten.etherscan.io/address/0x32df47ab270a1ec1450fa4b7abdfa94ee6b5f2fa)
+| Off-Chain Assets Valuator V1  	            | 0x4f665be185c3ce125a7c81b2c6b26be6fd58c780    | [Etherscan](https://ropsten.etherscan.io/address/0x4f665be185c3ce125a7c81b2c6b26be6fd58c780)
+| Off-Chain Currency Valuator V1  	            | 0x105808e0f32cf9b51567cf2dfce6403ca962fc0c    | [Etherscan](https://ropsten.etherscan.io/address/0x105808e0f32cf9b51567cf2dfce6403ca962fc0c)
+| Underlying Token Valuator V3                  | 0xadeC704f3ce4498cAE4547F20152d58944aCd2D9    | [Etherscan](https://ropsten.etherscan.io/address/0xadeC704f3ce4498cAE4547F20152d58944aCd2D9)
+
+In order to mint DAI or USDC for yourself on Ropsten, visit the corresponding Etherscan link and call the `write` 
+function `setBalance`, passing in your address as the recipient. The `amount` must be encoded in `wei` format, with
+the correct number of zeroes to account for decimal padding. Meaning, `1000000` is `1.0` for USDC and
+`1000000000000000000` is `1.0` for DAI. See the image below for a screenshot of Ropsten's Etherscan token page:
+![](./guides/set-balance-image.png)

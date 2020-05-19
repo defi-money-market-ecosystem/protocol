@@ -29,9 +29,17 @@ const deployContract = async (artifact, params, deployer, gasLimit, web3, gasPri
       console.log(`Contract Deployed at address ${receipt.contractAddress} with TransactionHash: ${receipt.transactionHash}`);
     })
     .then(async contract => {
-      const instance = await artifact.at(contract.options.address);
-      instance.contract.address = instance.address;
-      return instance.contract;
+      return new Promise((resolve, fail) => {
+        setTimeout(async () => {
+          try {
+            const instance = await artifact.at(contract.options.address);
+            instance.contract.address = instance.address;
+            resolve(instance.contract);
+          } catch(error) {
+            fail(error);
+          }
+        }, 2000);
+      })
     });
 };
 
