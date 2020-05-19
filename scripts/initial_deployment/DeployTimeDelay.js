@@ -41,135 +41,135 @@ const deployTimeDelay = async (loader, environment, deployer) => {
 
   console.log("Delayed owner: ", delayedOwner.address);
 
-  // console.log('Adding time delay for DmmController#enableMarket...');
-  // await callContract(
-  //   delayedOwner,
-  //   'addDelay',
-  //   [
-  //     dmmController.address,
-  //     dmmController.methods.enableMarket(defaultUint).encodeABI().slice(0, 10),
-  //     delay,
-  //   ],
-  //   deployer,
-  //   3e5,
-  // );
-  //
-  // console.log('Adding time delay for DmmController#disableMarket...');
-  // await callContract(
-  //   delayedOwner,
-  //   'addDelay',
-  //   [
-  //     dmmController.address,
-  //     dmmController.methods.disableMarket(defaultUint).encodeABI().slice(0, 10),
-  //     delay,
-  //   ],
-  //   deployer,
-  //   3e5,
-  // );
-  //
-  // console.log('Adding time delay for DmmController#setInterestRateInterface...');
-  // await callContract(
-  //   delayedOwner,
-  //   'addDelay',
-  //   [
-  //     dmmController.address,
-  //     dmmController.methods.setInterestRateInterface(defaultAddress).encodeABI().slice(0, 10),
-  //     delay,
-  //   ],
-  //   deployer,
-  //   3e5,
-  // );
-  //
-  // console.log('Adding time delay for DmmController#setOffChainAssetValuator...');
-  // await callContract(
-  //   delayedOwner,
-  //   'addDelay',
-  //   [
-  //     dmmController.address,
-  //     dmmController.methods.setOffChainAssetValuator(defaultAddress).encodeABI().slice(0, 10),
-  //     delay,
-  //   ],
-  //   deployer,
-  //   3e5,
-  // );
-  //
-  // console.log('Adding time delay for DmmController#setOffChainCurrencyValuator...');
-  // await callContract(
-  //   delayedOwner,
-  //   'addDelay',
-  //   [
-  //     dmmController.address,
-  //     dmmController.methods.setOffChainCurrencyValuator(defaultAddress).encodeABI().slice(0, 10),
-  //     delay,
-  //   ],
-  //   deployer,
-  //   3e5,
-  // );
-  //
-  // console.log('Adding time delay for DmmController#setUnderlyingTokenValuator...');
-  // await callContract(
-  //   delayedOwner,
-  //   'addDelay',
-  //   [
-  //     dmmController.address,
-  //     dmmController.methods.setUnderlyingTokenValuator(defaultAddress).encodeABI().slice(0, 10),
-  //     delay,
-  //   ],
-  //   deployer,
-  //   3e5,
-  // );
-  //
-  // console.log('Adding time delay for DmmController#setMinCollateralization...');
-  // await callContract(
-  //   delayedOwner,
-  //   'addDelay',
-  //   [
-  //     dmmController.address,
-  //     dmmController.methods.setMinCollateralization(defaultUint).encodeABI().slice(0, 10),
-  //     delay,
-  //   ],
-  //   deployer,
-  //   3e5,
-  // );
-  //
-  // console.log('Adding time delay for DmmController#setMinReserveRatio...');
-  // await callContract(
-  //   delayedOwner,
-  //   'addDelay',
-  //   [
-  //     dmmController.address,
-  //     dmmController.methods.setMinReserveRatio(defaultUint).encodeABI().slice(0, 10),
-  //     delay,
-  //   ],
-  //   deployer,
-  //   3e5,
-  // );
-  //
-  // console.log('Adding time delay for DmmController#increaseTotalSupply...');
-  // await callContract(
-  //   delayedOwner,
-  //   'addDelay',
-  //   [
-  //     dmmController.address,
-  //     dmmController.methods.increaseTotalSupply(defaultUint, defaultUint).encodeABI().slice(0, 10),
-  //     delay,
-  //   ],
-  //   deployer,
-  //   3e5,
-  // );
-  //
-  // console.log('Adding time delay for DmmController#decreaseTotalSupply...');
-  // await callContract(
-  //   delayedOwner,
-  //   'addDelay',
-  //   [
-  //     dmmController.address,
-  //     dmmController.methods.decreaseTotalSupply(defaultUint, defaultUint).encodeABI().slice(0, 10),
-  //     delay,
-  //   ],
-  //   deployer,
-  //   3e5,
-  // );
+  console.log('Adding time delay for DmmController#enableMarket...');
+  await callContract(
+    delayedOwner,
+    'addDelay',
+    [
+      dmmController.address,
+      dmmController.methods.enableMarket(defaultUint).encodeABI().slice(0, 10),
+      delay,
+    ],
+    deployer,
+    3e5,
+  );
+
+  console.log('Adding time delay for DmmController#disableMarket...');
+  await callContract(
+    delayedOwner,
+    'addDelay',
+    [
+      dmmController.address,
+      dmmController.methods.disableMarket(defaultUint).encodeABI().slice(0, 10),
+      delay,
+    ],
+    deployer,
+    3e5,
+  );
+
+  console.log('Adding time delay for DmmController#setInterestRateInterface...');
+  await callContract(
+    delayedOwner,
+    'addDelay',
+    [
+      dmmController.address,
+      dmmController.methods.setInterestRateInterface(defaultAddress).encodeABI().slice(0, 10),
+      delay,
+    ],
+    deployer,
+    3e5,
+  );
+
+  console.log('Adding time delay for DmmController#setOffChainAssetValuator...');
+  await callContract(
+    delayedOwner,
+    'addDelay',
+    [
+      dmmController.address,
+      dmmController.methods.setOffChainAssetValuator(defaultAddress).encodeABI().slice(0, 10),
+      delay,
+    ],
+    deployer,
+    3e5,
+  );
+
+  console.log('Adding time delay for DmmController#setOffChainCurrencyValuator...');
+  await callContract(
+    delayedOwner,
+    'addDelay',
+    [
+      dmmController.address,
+      dmmController.methods.setOffChainCurrencyValuator(defaultAddress).encodeABI().slice(0, 10),
+      delay,
+    ],
+    deployer,
+    3e5,
+  );
+
+  console.log('Adding time delay for DmmController#setUnderlyingTokenValuator...');
+  await callContract(
+    delayedOwner,
+    'addDelay',
+    [
+      dmmController.address,
+      dmmController.methods.setUnderlyingTokenValuator(defaultAddress).encodeABI().slice(0, 10),
+      delay,
+    ],
+    deployer,
+    3e5,
+  );
+
+  console.log('Adding time delay for DmmController#setMinCollateralization...');
+  await callContract(
+    delayedOwner,
+    'addDelay',
+    [
+      dmmController.address,
+      dmmController.methods.setMinCollateralization(defaultUint).encodeABI().slice(0, 10),
+      delay,
+    ],
+    deployer,
+    3e5,
+  );
+
+  console.log('Adding time delay for DmmController#setMinReserveRatio...');
+  await callContract(
+    delayedOwner,
+    'addDelay',
+    [
+      dmmController.address,
+      dmmController.methods.setMinReserveRatio(defaultUint).encodeABI().slice(0, 10),
+      delay,
+    ],
+    deployer,
+    3e5,
+  );
+
+  console.log('Adding time delay for DmmController#increaseTotalSupply...');
+  await callContract(
+    delayedOwner,
+    'addDelay',
+    [
+      dmmController.address,
+      dmmController.methods.increaseTotalSupply(defaultUint, defaultUint).encodeABI().slice(0, 10),
+      delay,
+    ],
+    deployer,
+    3e5,
+  );
+
+  console.log('Adding time delay for DmmController#decreaseTotalSupply...');
+  await callContract(
+    delayedOwner,
+    'addDelay',
+    [
+      dmmController.address,
+      dmmController.methods.decreaseTotalSupply(defaultUint, defaultUint).encodeABI().slice(0, 10),
+      delay,
+    ],
+    deployer,
+    3e5,
+  );
 
   console.log('Adding time delay for DmmController#adminWithdrawFunds...');
   await callContract(

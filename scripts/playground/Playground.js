@@ -2,7 +2,7 @@ const provider = process.env.PROVIDER ? process.env.PROVIDER : 'http://localhost
 const Web3 = require('web3');
 const {setupLoader} = require('@openzeppelin/contract-loader');
 const {BN} = require('ethereumjs-util');
-const {callContract, deployContract} = require('./ContractUtils');
+const {callContract, deployContract} = require('../ContractUtils');
 
 const loader = setupLoader({provider: provider, defaultGasPrice: 8e9});
 
