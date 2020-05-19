@@ -6,7 +6,7 @@ const {setupLoader} = require('@openzeppelin/contract-loader');
 const {callContract, deployContract} = require('../ContractUtils');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 8e9;
+const defaultGasPrice = 15e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
@@ -43,7 +43,7 @@ const main = async () => {
   const usdcAddress = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
   const wethAddress = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
   const daiUsdAggregatorAddress = '0xa7D38FBD325a6467894A13EeFD977aFE558bC1f0';
-  const ethUsdAggregatorAddress = '0x79fEbF6B9F76853EDBcBc913e6aAE8232cFB9De9';
+  const ethUsdAggregatorAddress = '0xF79D6aFBb6dA890132F9D7c355e3015f15F3406F';
   const usdcEthAggregatorAddress = '0xdE54467873c3BCAA76421061036053e371721708';
 
   const UnderlyingTokenValuatorImplV3 = loader.truffle.fromArtifact('UnderlyingTokenValuatorImplV3');

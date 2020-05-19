@@ -35,7 +35,7 @@ const delayedOwnerAddress = "0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD";
 const gnosisSafeAddress = "0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF";
 const offChainAssetValuatorImplV1Address = "0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4";
 const underlyingTokenValuatorImplV2Address = "0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d";
-const underlyingTokenValuatorImplV3Address = "0xE9390E80D1E9833710412C3a14F6f2f7888aAaE1";
+const underlyingTokenValuatorImplV3Address = "0x7812e0F5Da2F0917BD9054951415EDFF571964dB";
 
 const jobId = '0x11cdfd87ac17f6fc2aea9ca5c77544f33decb571339a31f546c2b6a36a406f15';
 const oracleAddress = '0x0563fC575D5219C48E2Dfc20368FA4179cDF320D';

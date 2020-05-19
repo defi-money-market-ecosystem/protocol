@@ -58,7 +58,7 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 
 #### Mainnet
 
- **Contract**  	                                | **Address**   	                            | Link   	                                                             
+ **Contract Name**  	                        | **Contract Address**   	                    | Link   	                                                             
 ------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------
 | Delayed Owner  	                            | 0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD    | [Etherscan](https://etherscan.io/address/0x9e97ee8631da9e96bc36a6bf39d332c38d9834dd)
 | DMG (Governance Token)  	                    | 0xEd91879919B71bB6905f23af0A68d231EcF87b14    | [Etherscan](https://etherscan.io/address/0xed91879919b71bb6905f23af0a68d231ecf87b14)
@@ -75,4 +75,4 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | Referral Program Proxy Factory                | 0x926ebD23E6d5fD38dC6A4FD79C58B6A2b543e9aC    | [Etherscan](https://etherscan.io/address/0x926ebd23e6d5fd38dc6a4fd79c58b6a2b543e9ac)
 | ~~Underlying Token Valuator V1~~ DEPRECATED   | 0xe8B313e7BfdC0eCB23e4BE47062dB0A65AE5705c    | [Etherscan](https://etherscan.io/address/0xe8b313e7bfdc0ecb23e4be47062db0a65ae5705c)
 | ~~Underlying Token Valuator V2~~ DEPRECATED   | 0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d    | [Etherscan](https://etherscan.io/address/0x693aa8ead81d2f88a45e870fa7e25f84ca93ca4d)
-| Underlying Token Valuator V3                  | 0xE9390E80D1E9833710412C3a14F6f2f7888aAaE1    | [Etherscan](https://etherscan.io/address/0xe9390e80d1e9833710412c3a14f6f2f7888aaae1)
+| Underlying Token Valuator V3                  | 0x7812e0F5Da2F0917BD9054951415EDFF571964dB    | [Etherscan](https://etherscan.io/address/0x7812e0f5da2f0917bd9054951415edff571964db)

@@ -11,7 +11,7 @@ const [owner] = accounts;
 // Create a contract object from a compilation artifact
 const ERC20Mock = contract.fromArtifact('ERC20Mock');
 const WETHMock = contract.fromArtifact('WETHMock');
-const EthUsdAggregatorMock = contract.fromArtifact('EthUsdAggregatorMock');
+const EthUsdAggregatorMock = contract.fromArtifact('EthUsdAggregatorMockV1');
 const SafeMath = contract.fromArtifact('SafeMath');
 const StringHelpers = contract.fromArtifact('StringHelpers');
 const UnderlyingTokenValuatorImplV2 = contract.fromArtifact('UnderlyingTokenValuatorImplV2');
