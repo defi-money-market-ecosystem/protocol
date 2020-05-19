@@ -19,22 +19,33 @@ const main = async () => {
   web3.eth.defaultAccount = account.address;
   const deployer = account.address;
 
-  const linkAddress = '0x01BE23585060835E02B77ef475b0Cc51aA1e0709';
-  const link = await loader.truffle.fromArtifact('IERC20').at(linkAddress);
+  const DmmController = loader.truffle.fromArtifact('DmmController');
+  const dmmController = await DmmController.at('0x5Ac111AeD2B53F2b43B60d5f4729CF1076d48391');
+  const innerAbi = dmmController.contract.methods.addMarket(
+    '0x07865c6e87b9f70255377e024ace6630c1eaa37f',
+    'mUSDC',
+    'DMM: USDC (Circle)',
+    6,
+    new BN('10000').toString(10),
+    new BN('10000').toString(10),
+    new BN('1000000000000').toString(10),
+  ).encodeABI()
 
-  const payment = '100000000000000000';
-  const oracleAddress = '0x7AFe1118Ea78C1eae84ca8feE5C65Bc76CcF879e';
-  const chainlinkJobId = '0xd4b380b30cb64722b8843ead232985c300000000000000000000000000000000';
+  const DelayedOwner = loader.truffle.fromArtifact('DelayedOwner');
+  const delayedOwner = await DelayedOwner.at('0x6C8C010354A010bee5E8b563eC457614B9Db8eFf')
 
-  console.log("Deploying contract...");
-  const OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
-  const offChainAssetValuatorImplV1 = await deployContract(OffChainAssetValuatorImplV1, [linkAddress, payment, chainlinkJobId], deployer, 4e6, web3, 1e9);
-
-  console.log("Sending 10 LINK to collateral valuator");
-  const _10 = new BN('10000000000000000000');
-  await callContract(link, 'transfer', [offChainAssetValuatorImplV1.address, _10], deployer, 3e5, 0, web3, 1e9);
-
-  await callContract(offChainAssetValuatorImplV1, 'getOffChainAssetsValue', [oracleAddress], deployer, 1e6, 0, web3, 1e9);
+  await callContract(
+    delayedOwner,
+    'transact',
+    [dmmController.address, innerAbi],
+    deployer,
+    6e6,
+    0,
+    web3,
+    3e9,
+  );
 };
 
-main();
+main()
+  .then(() => console.log('Finished calling main'))
+  .catch(error => console.error('Failed to call main due to error ', error));
