@@ -62,6 +62,7 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 ------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------
 | Delayed Owner  	                            | 0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD    | [Etherscan](https://etherscan.io/address/0x9e97ee8631da9e96bc36a6bf39d332c38d9834dd)
 | DMG (Governance Token)  	                    | 0xEd91879919B71bB6905f23af0A68d231EcF87b14    | [Etherscan](https://etherscan.io/address/0xed91879919b71bb6905f23af0a68d231ecf87b14)
+| DMG (Foundation Lockbox)  	                | 0x3ED70f95C5A979572673558b2f1deEFdd46F1230    | [Etherscan](https://etherscan.io/address/0x3ed70f95c5a979572673558b2f1deefdd46f1230)
 | DMM Blacklist  	                            | 0x516d652E2f12876F5f0244aa661b1C262a2d96b1    | [Etherscan](https://etherscan.io/address/0x516d652e2f12876f5f0244aa661b1c262a2d96b1)
 | DMM Controller  	                            | 0x4CB120Dd1D33C9A3De8Bc15620C7Cd43418d77E2    | [Etherscan](https://etherscan.io/address/0x4cb120dd1d33c9a3de8bc15620c7cd43418d77e2)
 | DMM Ether Factory  	                        | 0x1186d7dFf910Aa6c74bb9af71539C668133034aC    | [Etherscan](https://etherscan.io/address/0x1186d7dff910aa6c74bb9af71539c668133034ac)
