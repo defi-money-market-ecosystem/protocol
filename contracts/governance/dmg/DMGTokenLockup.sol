@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Dolomite
+ * Copyright 2020 DMM Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import "../../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol"
  * This was copied from OpenZeppelin's TokenLockup contract to work for solidity version 5.0.
  */
 contract DMGTokenLockup is Ownable {
+
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -77,6 +78,14 @@ contract DMGTokenLockup is Ownable {
      * @param _token ERC20 token which is being vested
      */
     function release(IERC20 _token) public {
+        if (duration == 0) {
+            // If the duration is set to 0, it's in here for optics and only key addresses can release it.
+            require(
+                msg.sender == owner() || msg.sender == beneficiary,
+                "DMGTokenLockup: UNAUTHORIZED"
+            );
+        }
+
         uint256 unreleased = releasableAmount(_token);
 
         require(unreleased > 0);

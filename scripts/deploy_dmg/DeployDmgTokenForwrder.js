@@ -7,7 +7,7 @@ const {setupLoader} = require('@openzeppelin/contract-loader');
 const {deployContract} = require('../ContractUtils');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 27e9;
+const defaultGasPrice = 24e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
@@ -37,57 +37,16 @@ const main = async () => {
 
   const loader = setupLoader({provider: web3, defaultSender: deployer, defaultGasPrice: 8e9});
 
-  let params;
-  if(vestingType === 'FUTURE_LONG_TERM') {
-    params = getParamsForFutureVesting(multiSigWallet);
-  } else if (vestingType === 'SIMPLE_SIX_MONTHS') {
-    params = getParamsForSimple6MonthLockup(multiSigWallet);
-  } else if (vestingType === 'NO_VESTING') {
-    params = getParamsForNoLockup(multiSigWallet);
-  } else {
-    throw new Error(`Invalid vesting type, found ${vestingType}`);
-  }
-
-  const DMGTokenLockup = loader.truffle.fromArtifact('DMGTokenLockup');
+  const DMGTokenForwarder = loader.truffle.fromArtifact('DMGTokenForwarder');
   await deployContract(
-    DMGTokenLockup,
-    params,
+    DMGTokenForwarder,
+    [multiSigWallet],
     deployer,
-    1.2e6,
+    1e6,
     web3,
     defaultGasPrice,
   );
 };
-
-function getParamsForFutureVesting(multiSigWallet) {
-  return [
-    multiSigWallet,
-    new BN('1590451200'), // Starts on May 26, 2020
-    new BN('14947200'), // 173 days as of May 26 to November 15, 2020
-    new BN('46483200'), // 538 days as of May 26 to November 15, 2021
-    false, // Tokens are un-revocable
-  ];
-}
-
-function getParamsForSimple6MonthLockup(multiSigWallet) {
-  return [
-    multiSigWallet,
-    new BN('1590451200'), // start timestamp - May 26, 2020
-    new BN('14947200'), // 173 days as of May 26 to November 15, 2020
-    new BN('14947200'), // vesting duration - same as cliff, which means vesting ends at cliff date.
-    false, // Tokens are un-revocable from vesting
-  ];
-}
-
-function getParamsForNoLockup(multiSigWallet) {
-  return [
-    multiSigWallet,
-    new BN('1590451200'), // start timestamp - May 26, 2020
-    new BN('0'), // cliff duration - nothing
-    new BN('0'), // vesting duration - nothing
-    false, // Tokens are un-revocable from vesting
-  ];
-}
 
 main()
   .then(() => {
