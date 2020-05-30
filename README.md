@@ -75,6 +75,7 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | DMM: DAI  	                                | 0x06301057D77D54B6e14c7FafFB11Ffc7Cab4eaa7    | [Etherscan](https://etherscan.io/address/0x06301057d77d54b6e14c7faffb11ffc7cab4eaa7)
 | DMM: ETH  	                                | 0xdF9307DFf0a1B57660F60f9457D32027a55ca0B2    | [Etherscan](https://etherscan.io/address/0xdF9307DFf0a1B57660F60f9457D32027a55ca0B2)
 | DMM: USDC  	                                | 0x3564ad35b9E95340E5Ace2D6251dbfC76098669B    | [Etherscan](https://etherscan.io/address/0x3564ad35b9e95340e5ace2d6251dbfc76098669b)
+| Loopring Protocol V2 (for Trading DMG)  	    | 0xC0b569Ff46EEA7BfbB130bd6d7af0a0A7f513C6F    | [Etherscan](https://etherscan.io/address/0xC0b569Ff46EEA7BfbB130bd6d7af0a0A7f513C6F)
 | Interest Rate Setter V1  	                    | 0x6F2A3b2EFa07D264EA79Ce0b96d3173a8feAcD35    | [Etherscan](https://etherscan.io/address/0x6f2a3b2efa07d264ea79ce0b96d3173a8feacd35)
 | Off-Chain Assets Valuator V1  	            | 0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4    | [Etherscan](https://etherscan.io/address/0xace9112efe78d9e5018fd12164d30366ca629ab4)
 | Off-Chain Currency Valuator V1  	            | 0x35cceb6ED6EB90d0c89a8F8b28E00aE23545312b    | [Etherscan](https://etherscan.io/address/0x35cceb6ed6eb90d0c89a8f8b28e00ae23545312b)
