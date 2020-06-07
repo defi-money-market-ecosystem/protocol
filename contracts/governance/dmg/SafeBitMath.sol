@@ -18,9 +18,17 @@ library SafeBitMath {
         return c;
     }
 
+    function add128(uint128 a, uint128 b) internal pure returns (uint128) {
+        return add128(a, b, "");
+    }
+
     function sub128(uint128 a, uint128 b, string memory errorMessage) internal pure returns (uint128) {
         require(b <= a, errorMessage);
         return a - b;
+    }
+
+    function sub128(uint128 a, uint128 b) internal pure returns (uint128) {
+        return sub128(a, b, "");
     }
 
 }

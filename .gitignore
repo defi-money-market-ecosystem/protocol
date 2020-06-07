@@ -6,6 +6,6 @@ node_modules
 .openzeppelin/dev-*.json
 .openzeppelin/.session
 
-ethereum-nodes.txt
+ethereum-nodes.json
 
 deployment/

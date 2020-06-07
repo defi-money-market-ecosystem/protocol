@@ -7,7 +7,7 @@ const {setupLoader} = require('@openzeppelin/contract-loader');
 const {deployContract} = require('../ContractUtils');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 27e9;
+const defaultGasPrice = 32e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
@@ -38,12 +38,14 @@ const main = async () => {
   const loader = setupLoader({provider: web3, defaultSender: deployer, defaultGasPrice: 8e9});
 
   let params;
-  if(vestingType === 'FUTURE_LONG_TERM') {
+  if (vestingType === 'FUTURE_LONG_TERM') {
     params = getParamsForFutureVesting(multiSigWallet);
   } else if (vestingType === 'SIMPLE_SIX_MONTHS') {
     params = getParamsForSimple6MonthLockup(multiSigWallet);
   } else if (vestingType === 'NO_VESTING') {
     params = getParamsForNoLockup(multiSigWallet);
+  } else if (vestingType === 'CUSTOM') {
+    params = getParamsForCustomLockup()
   } else {
     throw new Error(`Invalid vesting type, found ${vestingType}`);
   }
@@ -84,7 +86,17 @@ function getParamsForNoLockup(multiSigWallet) {
     multiSigWallet,
     new BN('1590451200'), // start timestamp - May 26, 2020
     new BN('0'), // cliff duration - nothing
-    new BN('0'), // vesting duration - nothing
+    new BN('0'), // vesting duration - 5 months, in seconds
+    false, // Tokens are un-revocable from vesting
+  ];
+}
+
+function getParamsForCustomLockup() {
+  return [
+    '0x292790069022bA3414C01F9d43d53A665b247CC1',
+    new BN('1584057600'), // start timestamp - March 13, 2020
+    new BN('0'), // cliff duration - nothing
+    new BN('12960000'), // vesting duration - nothing
     false, // Tokens are un-revocable from vesting
   ];
 }

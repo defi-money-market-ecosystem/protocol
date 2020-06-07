@@ -8,7 +8,7 @@
     "deploy": "oz compile && ENVIRONMENT=LOCAL node scripts/initial_deployment/index.js",
     "deploy-mainnet": "oz compile && ENVIRONMENT=PRODUCTION node scripts/initial_deployment/index.js",
     "deploy-mainnet-dmg": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_dmg/DeployDmg.js",
-    "deploy-mainnet-dmg-forwarder": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_dmg/DeployDmgTokenForwrder.js",
+    "deploy-mainnet-dmg-forwarder": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_dmg/DeployDmgTokenFowarder.js",
     "deploy-mainnet-dmg-lockup": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_dmg/DeployDmgTokenLockup.js",
     "deploy-mainnet-off-chain-asset-valuator": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_off_chain_asset_valuator/DeployOffChainAssetValuator.js",
     "deploy-mainnet-referral-tracker-proxy": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_referral_tracker_proxy/DeployReferralTrackerProxy.js",
@@ -17,6 +17,12 @@
     "encode-abi": "DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node scripts/EncodeAbi.js",
     "format": "solium -d contracts/",
     "increase-gas-price": "node scripts/increase_tx_speed/IncreaseTxSpeed.js",
+    "mesa-cancel-bids": "node scripts/mesa_market_maker/CancelMesaBids.js",
+    "mesa-deposit": "node scripts/mesa_market_maker/DepositIntoMesa.js",
+    "mesa-get-orders": "node scripts/mesa_market_maker/GetOrders.js",
+    "mesa-place-bids": "node scripts/mesa_market_maker/PlaceMesaBids.js",
+    "mesa-request-withdrawal": "node scripts/mesa_market_maker/RequestWithdrawFromMesa.js",
+    "mesa-withdraw": "node scripts/mesa_market_maker/WithdrawFromMesa.js",
     "playground": "DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node scripts/playground/Playground.js",
     "send-ether": "ENVIRONMENT=LOCAL RECIPIENT=0x8D7f03FdE1A626223364E592740a233b72395235 node scripts/playground/SendEther.js",
     "send-tokens": "DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node scripts/playground/SendTokens.js",
@@ -50,7 +56,8 @@
     "@openzeppelin/contract-loader": "^0.6.1",
     "@openzeppelin/contracts": "^2.4.0",
     "chainlink": "^0.8.2",
-    "ganache-cli": "^6.9.0"
+    "ganache-cli": "^6.9.0",
+    "prompt": "^1.0.0"
   },
   "devDependencies": {
     "@openzeppelin/test-environment": "^0.1.2",
