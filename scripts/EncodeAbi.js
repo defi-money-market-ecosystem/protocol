@@ -1,4 +1,5 @@
-const provider = process.env.PROVIDER ? process.env.PROVIDER : new Error("NO PROVIDER GIVEN");
+const {throwError} = require('./GeneralUtils');
+const provider = process.env.PROVIDER ? process.env.PROVIDER : throwError("NO PROVIDER GIVEN");
 const Web3 = require('web3');
 const {setupLoader} = require('@openzeppelin/contract-loader');
 const {BN, MAX_INTEGER} = require('ethereumjs-util');
@@ -81,9 +82,10 @@ const main = async () => {
   // await adminDepositFunds(delayedOwner, dmmController, wethTokenId, new BN('14548721724500000000'));
 
   // const _1000_DAI = new BN('1000000000000000000000');
-  // const _1000_USDC = new BN('1000000000');
+  const usdcAmount = new BN('350000000');
   // await adminWithdrawFunds(delayedOwner, dmmController, daiTokenId, _1000_DAI);
   // await adminWithdrawFunds(delayedOwner, dmmController, usdcTokenId, _1000_USDC);
+  await adminDepositFunds(delayedOwner, dmmController, usdcTokenId, usdcAmount);
 
   // await sendTokensFromDelayedOwnerToRecipient(dai, delayedOwner, gnosisSafeAddress, _1000_DAI);
   // await sendTokensFromDelayedOwnerToRecipient(usdc, delayedOwner, gnosisSafeAddress, _1000_USDC);
@@ -91,12 +93,14 @@ const main = async () => {
   // 1.5m each
   // await decreaseTotalSupply(delayedOwner, dmmController, daiTokenId, new BN('1500000000000000000000000'));
   // await decreaseTotalSupply(delayedOwner, dmmController, usdcTokenId, new BN('1500000000000'));
+  // 10,000
+  // await decreaseTotalSupply(delayedOwner, dmmController, wethTokenId, new BN('10000000000000000000000'));
 
-  await executeDelayedTransaction(delayedOwner, new BN(10));
-  await executeDelayedTransaction(delayedOwner, new BN(11));
-  await executeDelayedTransaction(delayedOwner, new BN(12));
-  await executeDelayedTransaction(delayedOwner, new BN(13));
   await executeDelayedTransaction(delayedOwner, new BN(14));
+  await executeDelayedTransaction(delayedOwner, new BN(15));
+  await executeDelayedTransaction(delayedOwner, new BN(16));
+  await executeDelayedTransaction(delayedOwner, new BN(17));
+  await executeDelayedTransaction(delayedOwner, new BN(18));
 
   // await claimOwnershipForDelayedOwner(delayedOwner);
   //
@@ -194,13 +198,13 @@ const main = async () => {
   //   dmmController.contract.methods.adminWithdrawFunds(defaultUint, defaultUint),
   //   'adminWithdrawFunds'
   // );
-  // await changeFunctionDelay(
-  //   delayedOwner,
-  //   dmmControllerAddress,
-  //   dmmController.contract.methods.adminDepositFunds(defaultUint, defaultUint),
-  //   'adminDepositFunds'
-  // );
-  //
+  await changeFunctionDelay(
+    delayedOwner,
+    dmmControllerAddress,
+    dmmController.contract.methods.adminDepositFunds(defaultUint, defaultUint),
+    'adminDepositFunds'
+  );
+
   // await pauseEcosystem(delayedOwner, await DmmController.at("0xadcFec14eDD9901ce328D1E3e9211Ac64f774321"));
   //
   // await setOraclePayment(delayedOwner, offChainAssetValuatorImplV1, _1.div(new BN(2)));
@@ -208,7 +212,7 @@ const main = async () => {
   // await submitGetOffChainAssetsValueRequest(delayedOwner, offChainAssetValuatorImplV1, oracleAddress);
   //
   // await setOffChainAssetValuator(delayedOwner, dmmController, offChainAssetValuatorImplV1Address);
-  await setUnderlyingTokenValuator(delayedOwner, dmmController, underlyingTokenValuatorImplV3Address);
+  // await setUnderlyingTokenValuator(delayedOwner, dmmController, underlyingTokenValuatorImplV3Address);
   //
   // await addMarket(
   //   dmmController,
@@ -219,7 +223,7 @@ const main = async () => {
   //   18,
   //   '10000000000',
   //   '10000000000',
-  //   '20000000000000000000000', // 20,000 ETH
+  //   '10000000000000000000000', // 20,000 ETH
   // );
 };
 
@@ -314,12 +318,13 @@ const sendTokensFromDelayedOwnerToRecipient = async (token, delayedOwner, recipi
 const adminDepositFunds = async (delayedOwner, controller, dmmTokenId, amount) => {
   const innerAbi = controller.contract.methods.adminDepositFunds(dmmTokenId.toString(), amount.toString()).encodeABI();
 
-  const actualAbi = delayedOwner.contract.methods.transact(
-    controller.address,
-    innerAbi,
-  ).encodeABI();
+  // const actualAbi = delayedOwner.contract.methods.transact(
+  //   controller.address,
+  //   innerAbi,
+  // ).encodeABI();
 
-  console.log(`adminDepositFunds for ${dmmTokenId.toString()}: `, actualAbi);
+  // console.log(`adminDepositFunds for ${dmmTokenId.toString()}: `, actualAbi);
+  console.log(`adminDepositFunds for ${dmmTokenId.toString()}: `, innerAbi);
 };
 
 const adminWithdrawFunds = async (delayedOwner, controller, dmmTokenId, amount) => {
@@ -333,9 +338,10 @@ const adminWithdrawFunds = async (delayedOwner, controller, dmmTokenId, amount) 
 const decreaseTotalSupply = async (delayedOwner, controller, dmmTokenId, amount) => {
   const innerAbi = controller.contract.methods.decreaseTotalSupply(dmmTokenId.toString(), amount.toString()).encodeABI();
 
-  const actualAbi = delayedOwner.contract.methods.transact(controller.address, innerAbi,).encodeABI();
+  // const actualAbi = delayedOwner.contract.methods.transact(controller.address, innerAbi,).encodeABI();
 
-  console.log(`decreaseTotalSupply for ${dmmTokenId.toString()}: `, actualAbi);
+  // console.log(`decreaseTotalSupply for ${dmmTokenId.toString()}: `, actualAbi);
+  console.log(`decreaseTotalSupply for ${dmmTokenId.toString()}: `, innerAbi);
 };
 
 const withdrawFromAtm = async (delayedOwner, atmContract, tokenAddress, recipient, amount) => {
@@ -394,6 +400,12 @@ const changeFunctionDelay = async (delayedOwner, contractAddress, fnCall, fnName
     functionDelay.toString(),
   ).encodeABI();
 
+  // 0000000000000000000000004cb120dd1d33c9a3de8bc15620c7cd43418d77e227c3a77
+  // 00000000000000000000000000000000000000000000000000000000000000000000000
+  // 00000000000000000000000000000000000000000000000e10
+
+  console.log(`Function selector for ${fnName}: `, fnCall.encodeABI().slice(0, 10));
+
   console.log(`changeFunctionDelay with ID ${fnName.toString()}: `, actualAbi);
 };
 
@@ -402,7 +414,8 @@ const executeDelayedTransaction = async (delayedOwner, transactionId) => {
     transactionId.toString()
   ).encodeABI();
 
-  console.log(`delayedTransaction with ID ${transactionId.toString()}: `, actualAbi);
+  // console.log(`delayedTransaction with ID ${transactionId.toString()}: `, actualAbi);
+  console.log(`delayedTransaction with ID ${transactionId.toString()}: `, web3.eth.abi.encodeParameters(['uint'], [transactionId]));
 };
 
 const setTimeToLive = async (delayedOwner, secondsBN) => {
