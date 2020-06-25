@@ -82,10 +82,10 @@ const main = async () => {
   // await adminDepositFunds(delayedOwner, dmmController, wethTokenId, new BN('14548721724500000000'));
 
   // const _1000_DAI = new BN('1000000000000000000000');
-  const usdcAmount = new BN('350000000');
+  // const usdcAmount = new BN('5929500000');
   // await adminWithdrawFunds(delayedOwner, dmmController, daiTokenId, _1000_DAI);
   // await adminWithdrawFunds(delayedOwner, dmmController, usdcTokenId, _1000_USDC);
-  await adminDepositFunds(delayedOwner, dmmController, usdcTokenId, usdcAmount);
+  // await adminDepositFunds(delayedOwner, dmmController, usdcTokenId, usdcAmount);
 
   // await sendTokensFromDelayedOwnerToRecipient(dai, delayedOwner, gnosisSafeAddress, _1000_DAI);
   // await sendTokensFromDelayedOwnerToRecipient(usdc, delayedOwner, gnosisSafeAddress, _1000_USDC);
@@ -198,18 +198,18 @@ const main = async () => {
   //   dmmController.contract.methods.adminWithdrawFunds(defaultUint, defaultUint),
   //   'adminWithdrawFunds'
   // );
-  await changeFunctionDelay(
-    delayedOwner,
-    dmmControllerAddress,
-    dmmController.contract.methods.adminDepositFunds(defaultUint, defaultUint),
-    'adminDepositFunds'
-  );
+  // await changeFunctionDelay(
+  //   delayedOwner,
+  //   dmmControllerAddress,
+  //   dmmController.contract.methods.adminDepositFunds(defaultUint, defaultUint),
+  //   'adminDepositFunds'
+  // );
 
   // await pauseEcosystem(delayedOwner, await DmmController.at("0xadcFec14eDD9901ce328D1E3e9211Ac64f774321"));
   //
   // await setOraclePayment(delayedOwner, offChainAssetValuatorImplV1, _1.div(new BN(2)));
   // await setCollateralValueJobId(delayedOwner, offChainAssetValuatorImplV1, jobId);
-  // await submitGetOffChainAssetsValueRequest(delayedOwner, offChainAssetValuatorImplV1, oracleAddress);
+  await submitGetOffChainAssetsValueRequest(delayedOwner, offChainAssetValuatorImplV1, oracleAddress);
   //
   // await setOffChainAssetValuator(delayedOwner, dmmController, offChainAssetValuatorImplV1Address);
   // await setUnderlyingTokenValuator(delayedOwner, dmmController, underlyingTokenValuatorImplV3Address);
@@ -374,9 +374,8 @@ const setCollateralValueJobId = async (delayedOwner, offChainAssetValuator, jobI
 
 const submitGetOffChainAssetsValueRequest = async (delayedOwner, offChainAssetValuator, oracleAddress) => {
   const innerAbi = offChainAssetValuator.contract.methods.submitGetOffChainAssetsValueRequest(oracleAddress).encodeABI();
-  const actualAbi = delayedOwner.contract.methods.transact(offChainAssetValuator.address, innerAbi).encodeABI();
 
-  console.log(`submitGetOffChainAssetsValueRequest: `, actualAbi);
+  console.log(`submitGetOffChainAssetsValueRequest: `, offChainAssetValuator.address, innerAbi);
 };
 
 const setOffChainAssetValuator = async (delayedOwner, dmmController, offChainAssetValuatorAddress) => {

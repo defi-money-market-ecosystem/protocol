@@ -16,34 +16,47 @@ async function placeBids() {
   const artifact = {address: mesaExchangeAddress, abi: mesaExchangeJson.abi};
 
   // const currentBatchId = await readContract(artifact, '')
+  const length = 30;
 
+  const buyTokenAddresses = Array(length).fill().map(() => data.WETH)
   const buyTokens = await mapAddressesToTokenIds(
-    [data.DAI, data.DAI],
-    web3,
-    artifact,
-    deployer,
-  );
-  const sellTokens = await mapAddressesToTokenIds(
-    [data.DMG, data.DMG],
+    buyTokenAddresses,
     web3,
     artifact,
     deployer,
   );
 
-  const latestBatchId = await readContract(artifact, 'getCurrentBatchId', [], deployer, web3);
-  const fromBatchId = new BN(latestBatchId).add(new BN(1));
-  const toBatchId = fromBatchId.mul(new BN('100000'));
+  const sellTokenAddresses = Array(length).fill().map(() => data.DMG)
+  const sellTokens = await mapAddressesToTokenIds(
+    sellTokenAddresses,
+    web3,
+    artifact,
+    deployer,
+  );
+
+  const fromBatchIds = Array(length).fill().map(() => new BN('5309436')); // June 22 @ 9 AM EST, sharp.
+  const toBatchIds = fromBatchIds.map((unused, index) => fromBatchIds[index].mul(new BN('100000')));
   const sellAmount = new BN('83333000000000000000000')
+  const buyAmounts = Array(length).fill().map((unused, index) => {
+    const price = new BN('1531910000000000');
+    const bondingCurvePower = new BN('1015').pow(new BN(index.toString()));
+    const bondingCurveBase = new BN('1000').pow(new BN(index.toString()));
+    const buyAmountRaw = price.mul(bondingCurvePower).div(bondingCurveBase).mul(sellAmount);
+    return buyAmountRaw.div(new BN('1000000000000000000')).toString();
+  });
+  const sellAmounts = Array(length).fill().map(() => sellAmount.toString());
+  console.log('sellAmounts ', sellAmounts);
+  console.log('buyAmounts ', buyAmounts);
   const methodName = 'placeValidFromOrders'
   const params = [
     buyTokens,
     sellTokens,
-    [fromBatchId, fromBatchId],
-    [toBatchId, toBatchId],
-    [new BN('11212270000000000000000'), new BN('13533330000000000000000')],
-    [sellAmount, sellAmount],
+    fromBatchIds,
+    toBatchIds,
+    buyAmounts,
+    sellAmounts,
   ];
-  const gasLimit = 21000 + (params[0].length * 125000);
+  const gasLimit = 21000 + (params[0].length * 115000);
   const value = 0;
   await callContract(artifact, methodName, params, deployer, gasLimit, value, web3, defaultGasPrice);
 }

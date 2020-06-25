@@ -8,7 +8,8 @@ const mesaExchangeJson = require('./ABI/MesaExchange.json');
 const data = require('./utils/data.json');
 const web3 = new Web3(data.provider);
 const tokenAddress = data[!!process.env.TICKER ? process.env.TICKER : throwError('No TICKER specified')];
-const amountBN = new BN(!!process.env.AMOUNT ? process.env.AMOUNT : throwError('No AMOUNT specified'));
+// const amountBN = new BN(!!process.env.AMOUNT ? process.env.AMOUNT : throwError('No AMOUNT specified'));
+const amountBN = new BN('7750544000000000000000000');
 
 async function deposit() {
   const defaultGasPrice = await getGasPriceFromPrompt();
