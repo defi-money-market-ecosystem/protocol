@@ -8,7 +8,7 @@ const {setupLoader} = require('@openzeppelin/contract-loader');
 const {deployContract} = require('../ContractUtils');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 46e9;
+const defaultGasPrice = 30e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
@@ -94,10 +94,10 @@ function getParamsForNoLockup(multiSigWallet) {
 
 function getParamsForCustomLockup() {
   return [
-    '0xE8b8e9Dc071B83b60c601e3b2F8077B914d083C0',
-    new BN('1583971200'), // start timestamp - March 12, 2020
-    new BN('0'), // cliff duration
-    new BN('15552000'), // vesting duration
+    '0x3c1d6DEB260A173059e030Fa29D053545E7Bc821',
+    new BN('1577836800'), // start timestamp - Jan 1, 2020
+    new BN('31536000'), // cliff duration
+    new BN('63072000'), // vesting duration
     true, // False if tokens are un-revocable from vesting; true if they are
   ];
 }
