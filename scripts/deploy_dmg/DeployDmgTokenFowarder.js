@@ -1,13 +1,11 @@
 const provider = process.env.PROVIDER ? process.env.PROVIDER : 'http://localhost:8545';
 const environment = process.env.ENVIRONMENT ? process.env.ENVIRONMENT : new Error('No ENVIRONMENT specified!');
-const vestingType = process.env.VESTING_TYPE
 const Web3 = require('web3');
-const {BN} = require('ethereumjs-util');
 const {setupLoader} = require('@openzeppelin/contract-loader');
 const {deployContract} = require('../ContractUtils');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 24e9;
+const defaultGasPrice = 45e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;

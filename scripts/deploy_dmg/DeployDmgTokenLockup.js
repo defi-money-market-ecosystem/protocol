@@ -1,13 +1,14 @@
-const provider = process.env.PROVIDER ? process.env.PROVIDER : 'http://localhost:8545';
-const environment = process.env.ENVIRONMENT ? process.env.ENVIRONMENT : new Error('No ENVIRONMENT specified!');
-const vestingType = process.env.VESTING_TYPE
+const {throwError} = require('../GeneralUtils');
+const provider = process.env.PROVIDER ? process.env.PROVIDER : throwError('No PROVIDER specified!');
+const environment = process.env.ENVIRONMENT ? process.env.ENVIRONMENT : throwError('No ENVIRONMENT specified!');
+const vestingType = process.env.VESTING_TYPE ? process.env.VESTING_TYPE : throwError('No VESTING_TYPE specified!');
 const Web3 = require('web3');
 const {BN} = require('ethereumjs-util');
 const {setupLoader} = require('@openzeppelin/contract-loader');
 const {deployContract} = require('../ContractUtils');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 32e9;
+const defaultGasPrice = 46e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
@@ -93,11 +94,11 @@ function getParamsForNoLockup(multiSigWallet) {
 
 function getParamsForCustomLockup() {
   return [
-    '0x292790069022bA3414C01F9d43d53A665b247CC1',
-    new BN('1584057600'), // start timestamp - March 13, 2020
-    new BN('0'), // cliff duration - nothing
-    new BN('12960000'), // vesting duration - nothing
-    false, // Tokens are un-revocable from vesting
+    '0xE8b8e9Dc071B83b60c601e3b2F8077B914d083C0',
+    new BN('1583971200'), // start timestamp - March 12, 2020
+    new BN('0'), // cliff duration
+    new BN('15552000'), // vesting duration
+    true, // False if tokens are un-revocable from vesting; true if they are
   ];
 }
 
