@@ -84,23 +84,23 @@ const main = async () => {
   // const _1000_DAI = new BN('1000000000000000000000');
   // const usdcAmount = new BN('5929500000');
   // await adminWithdrawFunds(delayedOwner, dmmController, daiTokenId, _1000_DAI);
-  // await adminWithdrawFunds(delayedOwner, dmmController, usdcTokenId, _1000_USDC);
+  // await adminWithdrawFunds(delayedOwner, dmmController, usdcTokenId, new BN('300000000000'));
   // await adminDepositFunds(delayedOwner, dmmController, usdcTokenId, usdcAmount);
 
   // await sendTokensFromDelayedOwnerToRecipient(dai, delayedOwner, gnosisSafeAddress, _1000_DAI);
-  // await sendTokensFromDelayedOwnerToRecipient(usdc, delayedOwner, gnosisSafeAddress, _1000_USDC);
+  await sendTokensFromDelayedOwnerToRecipient(usdc, delayedOwner, gnosisSafeAddress, new BN('300000000000'));
 
   // 1.5m each
   // await decreaseTotalSupply(delayedOwner, dmmController, daiTokenId, new BN('1500000000000000000000000'));
   // await decreaseTotalSupply(delayedOwner, dmmController, usdcTokenId, new BN('1500000000000'));
-  // 10,000
-  // await decreaseTotalSupply(delayedOwner, dmmController, wethTokenId, new BN('10000000000000000000000'));
+  // 5,000
+  // await decreaseTotalSupply(delayedOwner, dmmController, wethTokenId, new BN('5000000000000000000000'));
 
-  await executeDelayedTransaction(delayedOwner, new BN(14));
-  await executeDelayedTransaction(delayedOwner, new BN(15));
-  await executeDelayedTransaction(delayedOwner, new BN(16));
-  await executeDelayedTransaction(delayedOwner, new BN(17));
   await executeDelayedTransaction(delayedOwner, new BN(18));
+  await executeDelayedTransaction(delayedOwner, new BN(19));
+  await executeDelayedTransaction(delayedOwner, new BN(20));
+  await executeDelayedTransaction(delayedOwner, new BN(21));
+  await executeDelayedTransaction(delayedOwner, new BN(22));
 
   // await claimOwnershipForDelayedOwner(delayedOwner);
   //
@@ -309,8 +309,7 @@ const sendTokensToRecipient = async (token, recipient, amount) => {
 };
 
 const sendTokensFromDelayedOwnerToRecipient = async (token, delayedOwner, recipient, amount) => {
-  const innerAbi = token.contract.methods.transfer(recipient, amount.toString()).encodeABI();
-  const actualAbi = delayedOwner.contract.methods.transact(token.address, innerAbi).encodeABI();
+  const actualAbi = token.contract.methods.transfer(recipient, amount.toString()).encodeABI();
 
   console.log(`transfer token=[${token.address}] from delayed owner to ${recipient}: `, actualAbi);
 };
@@ -330,9 +329,7 @@ const adminDepositFunds = async (delayedOwner, controller, dmmTokenId, amount) =
 const adminWithdrawFunds = async (delayedOwner, controller, dmmTokenId, amount) => {
   const innerAbi = controller.contract.methods.adminWithdrawFunds(dmmTokenId.toString(), amount.toString()).encodeABI();
 
-  const actualAbi = delayedOwner.contract.methods.transact(controller.address, innerAbi,).encodeABI();
-
-  console.log(`adminWithdrawFunds for ${dmmTokenId.toString()}: `, actualAbi);
+  console.log(`adminWithdrawFunds for ${dmmTokenId.toString()}: `, innerAbi);
 };
 
 const decreaseTotalSupply = async (delayedOwner, controller, dmmTokenId, amount) => {
