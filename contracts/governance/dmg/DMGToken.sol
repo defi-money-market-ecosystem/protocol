@@ -23,6 +23,7 @@ import "../../../node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./SafeBitMath.sol";
 
 import "../../utils/EvmUtil.sol";
+import "./IDMGToken.sol";
 
 /**
  * This contract is mainly based on Compound's COMP token
@@ -34,7 +35,7 @@ import "../../utils/EvmUtil.sol";
  * of 96, increasing the number of bits for a checkpoint to 64, adding a burn function, and creating an initial
  * totalSupply of 250mm.
  */
-contract DMGToken is IERC20 {
+contract DMGToken is IDMGToken, IERC20 {
 
     string public constant name = "DMM: Governance";
 
