@@ -102,7 +102,7 @@ contract DMGYieldFarming is IDMGYieldFarming, DMGYieldFarmingData, Ownable, Reen
 
     function setDmgGrowthCoefficient(uint dmgGrowthCoefficient) external nonReentrant onlyOwner {
         _dmgGrowthCoefficient = dmgGrowthCoefficient;
-        emit DmgGrowthCoefficientSet(dmmTokenId, points);
+        emit DmgGrowthCoefficientSet(dmgGrowthCoefficient);
     }
 
     // ////////////////////
