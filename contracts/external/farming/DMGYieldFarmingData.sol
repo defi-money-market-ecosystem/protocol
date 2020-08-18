@@ -17,13 +17,9 @@
 
 pragma solidity ^0.5.0;
 
-import "../../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
-import "../interfaces/IOffChainCurrencyValuator.sol";
+contract DMGYieldFarmingData {
 
-contract OffChainCurrencyValuatorImplV1 is IOffChainCurrencyValuator, Ownable {
-
-    function getOffChainCurrenciesValue() public view returns (uint) {
-        return 0;
-    }
+    /// @notice Reward points have a base of 2 decimal places.
+    uint16 public constant ONE_REWARD_POINTS = 100;
 
 }

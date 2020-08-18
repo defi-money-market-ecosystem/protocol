@@ -145,6 +145,11 @@ interface IDmmController {
     function adminDepositFunds(uint dmmTokenId, uint underlyingAmount) external;
 
     /**
+     * @return  All of the DMM token IDs that are currently in the ecosystem. NOTE: this is an unfiltered list.
+     */
+    function getDmmTokenIds() external view returns (uint[] memory);
+
+    /**
      * @dev Gets the collateralization of the system assuming 1-year's worth of interest payments are due by dividing
      *      the total value of all the collateralized assets plus the value of the underlying tokens in each DMMA by the
      *      aggregate interest owed (plus the principal), assuming each DMMA was at maximum usage.

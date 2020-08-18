@@ -17,13 +17,21 @@
 
 pragma solidity ^0.5.0;
 
-import "../../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
-import "../interfaces/IOffChainCurrencyValuator.sol";
+library DmmControllerHelper {
 
-contract OffChainCurrencyValuatorImplV1 is IOffChainCurrencyValuator, Ownable {
-
-    function getOffChainCurrenciesValue() public view returns (uint) {
-        return 0;
+    function getDmmTokenAddressByDmmTokenId(
+        IFarmDmmController controller,
+        uint dmmTokenId
+    ) external view returns (address) {
+        address token = controller.dmmTokenIdToDmmTokenAddressMap(dmmTokenId);
+        require(token != address(0x0), "DmmControllerHelper::getDmmTokenAddressByDmmTokenId INVALID_TOKEN_ID");
+        return token;
     }
+
+}
+
+interface IFarmDmmController {
+
+    function dmmTokenIdToDmmTokenAddressMap(uint dmmTokenId) external view returns (address);
 
 }

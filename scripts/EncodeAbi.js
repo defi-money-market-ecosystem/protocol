@@ -29,14 +29,18 @@ const defaultAddress = '0x0000000000000000000000000000000000000000';
 const daiAddress = "0x6b175474e89094c44da98b954eedeac495271d0f";
 const linkAddress = "0x514910771af9ca656af840dff83e8264ecf986ca";
 const usdcAddress = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
 const wethAddress = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
 const dmmControllerAddress = "0x4CB120Dd1D33C9A3De8Bc15620C7Cd43418d77E2";
 const delayedOwnerAddress = "0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD";
 const gnosisSafeAddress = "0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF";
+const governorAlphaAddress = "0x67Cb2868Ebf965b66d3dC81D0aDd6fd849BCF6D5"
+const governorTimelockAddress = "0xE679eBf544A6BE5Cb8747012Ea6B08F04975D264"
 const offChainAssetValuatorImplV1Address = "0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4";
 const underlyingTokenValuatorImplV2Address = "0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d";
 const underlyingTokenValuatorImplV3Address = "0x7812e0F5Da2F0917BD9054951415EDFF571964dB";
+const underlyingTokenValuatorImplV4Address = "0x0c65c147aAf2DbD5109ba74e36f730D081489B5B";
 
 const jobId = '0x11cdfd87ac17f6fc2aea9ca5c77544f33decb571339a31f546c2b6a36a406f15';
 const oracleAddress = '0x0563fC575D5219C48E2Dfc20368FA4179cDF320D';
@@ -62,15 +66,18 @@ const main = async () => {
   const DmmEtherFactory = loader.truffle.fromArtifact('DmmEtherFactory');
   const DmmToken = loader.truffle.fromArtifact('DmmToken');
   const ERC20 = loader.truffle.fromArtifact('ERC20');
+  const GovernorAlpha = loader.truffle.fromArtifact('GovernorAlpha');
   const OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
 
   const delayedOwner = await DelayedOwner.at(delayedOwnerAddress);
   const dmmController = await DmmController.at(dmmControllerAddress);
+  const governorAlpha = await GovernorAlpha.at(governorAlphaAddress);
   const offChainAssetValuatorImplV1 = await OffChainAssetValuatorImplV1.at(offChainAssetValuatorImplV1Address);
 
   const dai = await ERC20.at(daiAddress);
   const link = await ERC20.at(linkAddress);
   const usdc = await ERC20.at(usdcAddress);
+  const usdt = await ERC20.at(usdtAddress);
   const weth = await ERC20.at(wethAddress);
 
   // await setTimeToLive(delayedOwner, new BN(3600));
@@ -88,13 +95,16 @@ const main = async () => {
   // await adminDepositFunds(delayedOwner, dmmController, usdcTokenId, usdcAmount);
 
   // await sendTokensFromDelayedOwnerToRecipient(dai, delayedOwner, gnosisSafeAddress, _1000_DAI);
-  await sendTokensFromDelayedOwnerToRecipient(usdc, delayedOwner, gnosisSafeAddress, new BN('300000000000'));
+  // await sendTokensFromDelayedOwnerToRecipient(usdc, delayedOwner, gnosisSafeAddress, new BN('300000000000'));
 
   // 1.5m each
   // await decreaseTotalSupply(delayedOwner, dmmController, daiTokenId, new BN('1500000000000000000000000'));
   // await decreaseTotalSupply(delayedOwner, dmmController, usdcTokenId, new BN('1500000000000'));
   // 5,000
   // await decreaseTotalSupply(delayedOwner, dmmController, wethTokenId, new BN('5000000000000000000000'));
+
+  await transferOwnership(dmmController, governorTimelockAddress);
+  await createProposalForAddingUsdt(governorAlpha, dmmController);
 
   await executeDelayedTransaction(delayedOwner, new BN(18));
   await executeDelayedTransaction(delayedOwner, new BN(19));
@@ -280,6 +290,11 @@ const setBalance = async (token, recipient, amount) => {
   console.log("setBalance: ", actualAbi);
 };
 
+const transferOwnership = async (ownerContract, newOwnerAddress) => {
+  const actualABI = ownerContract.contract.methods.transferOwnership(newOwnerAddress).encodeABI();
+  console.log(`transferOwnership of ${ownerContract.address} `, actualABI)
+}
+
 const claimOwnershipForDelayedOwner = async (delayedOwner) => {
   const innerAbi = delayedOwner.contract.methods.claimOwnership().encodeABI();
 
@@ -403,6 +418,98 @@ const changeFunctionDelay = async (delayedOwner, contractAddress, fnCall, fnName
   console.log(`Function selector for ${fnName}: `, fnCall.encodeABI().slice(0, 10));
 
   console.log(`changeFunctionDelay with ID ${fnName.toString()}: `, actualAbi);
+};
+
+const createProposalForAddingUsdt = async (governorAlpha, dmmController) => {
+  const addMarketSignature = 'addMarket(address,string,string,uint8,uint256,uint256,uint256)';
+  const setUnderlyingTokenValuatorSignature = 'setUnderlyingTokenValuator(address)';
+
+  if (!dmmController.contract.methods[addMarketSignature]) {
+    throw Error('Invalid addMarketSignature, found ' + addMarketSignature)
+  }
+  if (!dmmController.contract.methods[setUnderlyingTokenValuatorSignature]) {
+    throw Error('Invalid setUnderlyingTokenValuatorSignature, found ' + setUnderlyingTokenValuatorSignature)
+  }
+
+  const addMarketCalldata = '0x' + dmmController.contract.methods.addMarket(
+    usdtAddress,
+    'mUSDT',
+    'DMM: USDT',
+    6,
+    '1',
+    '1',
+    '8000000000000',
+  ).encodeABI().substring(10);
+
+  const setUnderlyingTokenValuatorCalldata = '0x' + dmmController.contract.methods.setUnderlyingTokenValuator(
+    underlyingTokenValuatorImplV4Address,
+  ).encodeABI().substring(10);
+
+  const targets = [dmmController.address, dmmController.address];
+  const values = ['0', '0'];
+  const signatures = [addMarketSignature, setUnderlyingTokenValuatorSignature]
+  const calldatas = [addMarketCalldata, setUnderlyingTokenValuatorCalldata];
+  const title = 'Add Support for USDT (mUSDT)';
+  const description = `
+  The [USD Tether (USDT) stablecoin](https://tether.to) is the most liquid stablecoin in the world as of today - August 12, 2020.
+  
+  As our first vote for the ecosystem, we think that onboarding USDT with a debt ceiling of 8,000,000 USDT will bring new
+  heights to the DMM Protocol's usage. From the protocol's perspective, the goal is to grow the amount of stablecoins
+  deposited, so the DAO can onboard the next asset - [two private PC-12 planes](https://medium.com/dmm-dao/introducing-aviation-assets-into-the-dmm-ecosystem-a7310970291c).
+  
+  As with all votes, the passing of this proposal will (relatively) immediately create the mUSDT token. All necessary
+  logic to trustlessly create the token will automatically execute if this proposal passes.
+  `;
+
+  await createGovernanceProposal(
+    governorAlpha,
+    targets,
+    values,
+    signatures,
+    calldatas,
+    title,
+    description,
+  );
+}
+
+const createProposalForDryRun = async (governorAlpha, safeAddress) => {
+  const dryRunSignature = 'dryRun()';
+  const dryRunCallData = '0x0';
+  const targets = [safeAddress];
+  const values = ['0'];
+  const signatures = [dryRunSignature]
+  const calldatas = [dryRunCallData];
+  const title = 'Test out Voting!';
+  const description = `
+  Voting requires that you activate your wallet in order to vote. Upon activation, your wallet will receive ballots
+  equal to your DMG token balance. Once enough users have activated their wallets, we will create the first proposal
+  for the community to ratify the onboarding of USDT to the ecosystem.
+  
+  To activate your wallet, press the *ACTIVATE WALLET* button on the main page of the voting dashboard.
+  `;
+
+  await createGovernanceProposal(
+    governorAlpha,
+    targets,
+    values,
+    signatures,
+    calldatas,
+    title,
+    description,
+  );
+}
+
+const createGovernanceProposal = async (governorAlpha, targets, values, signatures, calldatas, title, description) => {
+  const actualAbi = governorAlpha.contract.methods.propose(
+    targets,
+    values,
+    signatures,
+    calldatas,
+    title,
+    description
+  ).encodeABI();
+
+  console.log(`createGovernanceProposal at ${governorAlpha.address} `, actualAbi);
 };
 
 const executeDelayedTransaction = async (delayedOwner, transactionId) => {

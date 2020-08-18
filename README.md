@@ -85,7 +85,8 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | Referral Program Proxy Factory                | 0x926ebD23E6d5fD38dC6A4FD79C58B6A2b543e9aC    | [Etherscan](https://etherscan.io/address/0x926ebd23e6d5fd38dc6a4fd79c58b6a2b543e9ac)
 | ~~Underlying Token Valuator V1~~ DEPRECATED   | 0xe8B313e7BfdC0eCB23e4BE47062dB0A65AE5705c    | [Etherscan](https://etherscan.io/address/0xe8b313e7bfdc0ecb23e4be47062db0a65ae5705c)
 | ~~Underlying Token Valuator V2~~ DEPRECATED   | 0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d    | [Etherscan](https://etherscan.io/address/0x693aa8ead81d2f88a45e870fa7e25f84ca93ca4d)
-| Underlying Token Valuator V3                  | 0x7812e0F5Da2F0917BD9054951415EDFF571964dB    | [Etherscan](https://etherscan.io/address/0x7812e0f5da2f0917bd9054951415edff571964db)
+| ~~Underlying Token Valuator V3~~ DEPRECATED   | 0x7812e0F5Da2F0917BD9054951415EDFF571964dB    | [Etherscan](https://etherscan.io/address/0x7812e0f5da2f0917bd9054951415edff571964db)
+| Underlying Token Valuator V4                  | 0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4    | [Etherscan](https://etherscan.io/address/0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4)
 
 #### Ropsten Testnet
 
