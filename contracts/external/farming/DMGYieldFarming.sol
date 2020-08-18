@@ -70,8 +70,8 @@ contract DMGYieldFarming is IDMGYieldFarming, DMGYieldFarmingData, Ownable, Reen
     // Admin Functions
     // ////////////////////
 
-    function beginFarmCampaign(address funder, uint dmgAmount) external nonReentrant onlyOwner {
-        require(!_isFarmActive, "DMGYieldFarming::beginFarmCampaign: FARM_ALREADY_ACTIVE");
+    function beginFarmingCampaign(address funder, uint dmgAmount) external nonReentrant onlyOwner {
+        require(!_isFarmActive, "DMGYieldFarming::beginFarmingCampaign: FARM_ALREADY_ACTIVE");
 
         _farmIndex += 1;
         _isFarmActive = true;
@@ -80,8 +80,8 @@ contract DMGYieldFarming is IDMGYieldFarming, DMGYieldFarmingData, Ownable, Reen
         emit FarmCampaignBegun(_farmIndex, dmgAmount);
     }
 
-    function endActiveFarmCampaign(address dustRecipient) external nonReentrant {
-        require(_isFarmActive, "DMGYieldFarming::endActiveFarmCampaign: FARM_NOT_ACTIVE");
+    function endActiveFarmingCampaign(address dustRecipient) external nonReentrant {
+        require(_isFarmActive, "DMGYieldFarming::endActiveFarmingCampaign: FARM_NOT_ACTIVE");
 
         uint dmgBalance = IERC20(_dmgToken).balanceOf(address(this));
         // Anyone can end the farm if the DMG balance has been drawn down to 0.
@@ -134,7 +134,7 @@ contract DMGYieldFarming is IDMGYieldFarming, DMGYieldFarmingData, Ownable, Reen
     // User Functions
     // ////////////////////
 
-    function beginFarm(uint dmmTokenId, uint amount) external farmIsActive nonReentrant {
+    function beginFarming(uint dmmTokenId, uint amount) external farmIsActive nonReentrant {
         address token = IFarmDmmController(_dmmController).getDmmTokenAddressByDmmTokenId(dmmTokenId);
         if (amount > 0) {
             // In case the user is reusing a non-zero balance they had before the start of this farm.
@@ -146,30 +146,32 @@ contract DMGYieldFarming is IDMGYieldFarming, DMGYieldFarmingData, Ownable, Reen
         _reindex(dmmTokenId, /* shouldAddToBalance */ true);
 
         _addressToTokenIdToBalanceMap[msg.sender][dmmTokenId] = _addressToTokenIdToBalanceMap[msg.sender][dmmTokenId].add(amount);
+
+        emit BeginFarming(msg.sender, dmmTokenId, amount);
     }
 
-    function endFarm() external farmIsActive nonReentrant returns (uint) {
+    function endFarming() external farmIsActive nonReentrant returns (uint) {
         uint totalEarnedDmgAmount = 0;
         uint[] memory dmmTokenIds = IDmmController(_dmmController).getDmmTokenIds();
         for (uint i = 0; i < dmmTokenIds.length; i++) {
             uint balance = _addressToTokenIdToBalanceMap[msg.sender][dmmTokenIds[i]];
             if (balance > 0) {
                 uint earnedDmgAmount = _rewardBalanceOf(msg.sender, dmmTokenIds[i]);
-                _endFarmByDmmTokenId(dmmTokenIds[i], balance);
+                _endFarmingByDmmTokenId(dmmTokenIds[i], balance, earnedDmgAmount);
                 totalEarnedDmgAmount = totalEarnedDmgAmount.add(earnedDmgAmount);
             }
         }
         return totalEarnedDmgAmount;
     }
 
-    function endFarmByDmmTokenId(uint dmmTokenId) external farmIsActive nonReentrant returns (uint, uint) {
+    function endFarmingByDmmTokenId(uint dmmTokenId) external farmIsActive nonReentrant returns (uint, uint) {
         uint balance = _addressToTokenIdToBalanceMap[msg.sender][dmmTokenId];
-        require(balance > 0, "DMGYieldFarming::endFarmByDmmTokenId: ZERO_BALANCE");
+        require(balance > 0, "DMGYieldFarming::endFarmingByDmmTokenId: ZERO_BALANCE");
 
         uint earnedDmgAmount = _rewardBalanceOf(msg.sender, dmmTokenId);
         IERC20(_dmgToken).safeTransfer(msg.sender, earnedDmgAmount);
 
-        _endFarmByDmmTokenId(dmmTokenId, balance);
+        _endFarmingByDmmTokenId(dmmTokenId, balance, earnedDmgAmount);
 
         return (balance, earnedDmgAmount);
     }
@@ -213,11 +215,13 @@ contract DMGYieldFarming is IDMGYieldFarming, DMGYieldFarmingData, Ownable, Reen
     // Internal Functions
     // ////////////////////
 
-    function _endFarmByDmmTokenId(uint dmmTokenId, uint balance) internal {
+    function _endFarmingByDmmTokenId(uint dmmTokenId, uint balance, uint earnedDmgAmount) internal {
         address token = IFarmDmmController(_dmmController).getDmmTokenAddressByDmmTokenId(dmmTokenId);
         IERC20(token).safeTransfer(msg.sender, balance);
         _reindex(dmmTokenId, /* shouldAddToBalance */ false);
         _addressToTokenIdToBalanceMap[msg.sender][dmmTokenId] = 0;
+
+        emit EndFarming(msg.sender, dmmTokenId, balance, earnedDmgAmount);
     }
 
     function _withdrawByDmmTokenIdWhenOutOfSeason(uint dmmTokenId) internal {
@@ -225,6 +229,8 @@ contract DMGYieldFarming is IDMGYieldFarming, DMGYieldFarmingData, Ownable, Reen
         uint amount = _addressToTokenIdToBalanceMap[msg.sender][dmmTokenId];
         _addressToTokenIdToBalanceMap[msg.sender][dmmTokenId] = 0;
         IERC20(token).safeTransfer(msg.sender, amount);
+
+        emit WithdrawOutOfSeason(msg.sender, dmmTokenId, amount);
     }
 
     function _reindex(uint dmmTokenId, bool shouldAddToBalance) internal {

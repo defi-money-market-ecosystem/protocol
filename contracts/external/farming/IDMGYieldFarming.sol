@@ -36,7 +36,7 @@ interface IDMGYieldFarming {
     event RewardPointsSet(uint indexed dmmTokenId, uint16 points);
 
     event BeginFarming(address indexed owner, uint indexed dmmTokenId, uint amount);
-    event EndFarming(address indexed owner, uint indexed dmmTokenId, uint amount, uint earnedAmount);
+    event EndFarming(address indexed owner, uint indexed dmmTokenId, uint amount, uint earnedDmgAmount);
 
     event WithdrawOutOfSeason(address indexed owner, uint indexed dmmTokenId, uint amount);
 
@@ -51,7 +51,7 @@ interface IDMGYieldFarming {
      * @param funder    The address of the entity that will fund this yield farming campaign.
      * @param dmgAmount The amount of DMG that will be used to fund this campaign.
      */
-    function beginFarmCampaign(address funder, uint dmgAmount) external;
+    function beginFarmingCampaign(address funder, uint dmgAmount) external;
 
     /**
      * Ends the active farming process if the admin calls this function. Otherwise, anyone may call this function once
@@ -59,7 +59,7 @@ interface IDMGYieldFarming {
      *
      * @param dustRecipient The recipient of any leftover DMG in this contract, when the campaign finishes.
      */
-    function endActiveFarmCampaign(address dustRecipient) external;
+    function endActiveFarmingCampaign(address dustRecipient) external;
 
     /**
      * Changes the reward points for the provided tokenID. Reward points are a weighting system that enables certain
@@ -112,7 +112,7 @@ interface IDMGYieldFarming {
      * Begins a farm by transferring `amount` mTokens (with DMM token ID `dmmTokenId`) from `msg.sender` to this
      * contract.
      */
-    function beginFarm(uint dmmTokenId, uint amount) external;
+    function beginFarming(uint dmmTokenId, uint amount) external;
 
     /**
      * Ends a farm by transferring all mTokens deposited by `msg.sender` to `msg.sender`, from this contract, as well as
@@ -120,7 +120,7 @@ interface IDMGYieldFarming {
      *
      * @return  The amount of DMG earned for farming. This value is sent to `msg.sender`.
      */
-    function endFarm() external returns (uint);
+    function endFarming() external returns (uint);
 
     /**
      * Ends a farm by transferring all mTokens (with DMM token ID `dmmTokenId`) deposited by `msg.sender` to
@@ -129,7 +129,7 @@ interface IDMGYieldFarming {
      * @return  The amount of mTokens withdrawn and the amount of DMG earned for farming. Both values are sent to
      *          `msg.sender`.
      */
-    function endFarmByDmmTokenId(uint dmmTokenId) external returns (uint, uint);
+    function endFarmingByDmmTokenId(uint dmmTokenId) external returns (uint, uint);
 
     /**
      * Withdraws all of `msg.sender`'s mTokens from the farm. This function reverts if there is an active farm.
@@ -149,7 +149,7 @@ interface IDMGYieldFarming {
 
     /**
      * @return  The amount of `dmmTokenId` that this owner has deposited into this contract. The user may withdraw this
-     *          non-zero balance by invoking `endFarm` or `endFarmByDmmTokenId` if there is an active farm. If there is
+     *          non-zero balance by invoking `endFarming` or `endFarmingByDmmTokenId` if there is an active farm. If there is
      *          NO active farm, the user may withdraw his/her funds by invoking
      */
     function balanceOf(address owner, uint dmmTokenId) external view returns (uint);
