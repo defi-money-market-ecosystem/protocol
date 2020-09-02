@@ -23,7 +23,7 @@ pragma solidity ^0.5.0;
  * Yield farming in the DMM Ecosystem entails "rotation periods" in which a campaign is active, in order to incentivize
  * deposits of underlying tokens into the protocol.
  */
-interface IDMGYieldFarming {
+interface IDMGYieldFarmingV1 {
 
     // ////////////////////
     // Events
@@ -33,16 +33,29 @@ interface IDMGYieldFarming {
     event FarmCampaignEnd(uint indexed campaignIndex, address dustRecipient);
 
     event DmgGrowthCoefficientSet(uint coefficient);
-    event RewardPointsSet(uint indexed dmmTokenId, uint16 points);
+    event RewardPointsSet(address indexed token, uint16 points);
 
-    event BeginFarming(address indexed owner, uint indexed dmmTokenId, uint amount);
-    event EndFarming(address indexed owner, uint indexed dmmTokenId, uint amount, uint earnedDmgAmount);
+    event BeginFarming(address indexed owner, address indexed token, uint depositedAmount);
+    event EndFarming(address indexed owner, address indexed token, uint withdrawnAmount, uint earnedDmgAmount);
 
-    event WithdrawOutOfSeason(address indexed owner, uint indexed dmmTokenId, uint amount);
+    event WithdrawOutOfSeason(address indexed owner, address indexed token, uint amount);
 
     // ////////////////////
     // Admin Functions
     // ////////////////////
+
+    /**
+     * @param token             The address of the token to be supported for farming.
+     * @param underlyingToken   The token to which this token is pegged. IE a Uniswap-V2 LP equity token for DAI-mDAI
+     *                          has an underlying token of DAI.
+     * @param points            The amount of reward points for the provided token.
+     */
+    function addAllowableToken(address token, address underlyingToken, uint16 points) external;
+
+    /**
+     * @param token     The address of the token that will be removed from farming.
+     */
+    function removeAllowableToken(address token) external;
 
     /**
      * Begins the farming process so users that accumulate DMG by locking mTokens can start for this rotation. Calling
@@ -62,10 +75,10 @@ interface IDMGYieldFarming {
     function endActiveFarmingCampaign(address dustRecipient) external;
 
     /**
-     * Changes the reward points for the provided tokenID. Reward points are a weighting system that enables certain
+     * Changes the reward points for the provided token. Reward points are a weighting system that enables certain
      * mTokens to accrue DMG faster than others, allowing the protocol to prioritize certain deposits.
      */
-    function setRewardPointsByDmmTokenId(uint dmmTokenId, uint16 points) external;
+    function setRewardPointsByToken(address token, uint16 points) external;
 
     /**
      * Sets the DMG growth coefficient to use the new parameter provided. This variable is used to define how much
@@ -78,14 +91,20 @@ interface IDMGYieldFarming {
     // ////////////////////
 
     /**
+     * @return  The tokens that the farm supports.
+     */
+    function getFarmTokens() external view returns (address[] memory);
+
+    /**
      * @return  True if there is an active farm, or false if there isn't one.
      */
     function isFarmActive() external view returns (bool);
 
     /**
-     * @return The DMM Controller that corresponds with the DMM Ecosystem.
+     * The address that acts as a "secondary" owner with quicker access to function calling than the owner. Typically,
+     * this is the DMMF.
      */
-    function dmmController() external view returns (address);
+    function guardian() external view returns (address);
 
     /**
      * @return The DMG token.
@@ -100,19 +119,19 @@ interface IDMGYieldFarming {
 
     /**
      * @return  The amount of points that the provided mToken earns for each unit of mToken deposited. Defaults to `1`
-     *          if the provided `dmmTokenId` does not exist or does not have a special weight.
+     *          if the provided `token` does not exist or does not have a special weight.
      */
-    function getRewardPointsByDmmTokenId(uint dmmTokenId) external view returns (uint16);
+    function getRewardPointsByToken(address token) external view returns (uint16);
 
     // ////////////////////
     // User Functions
     // ////////////////////
 
     /**
-     * Begins a farm by transferring `amount` mTokens (with DMM token ID `dmmTokenId`) from `msg.sender` to this
+     * Begins a farm by transferring `amount` mTokens (with DMM token ID `token`) from `msg.sender` to this
      * contract.
      */
-    function beginFarming(uint dmmTokenId, uint amount) external;
+    function beginFarming(address token, uint amount) external;
 
     /**
      * Ends a farm by transferring all mTokens deposited by `msg.sender` to `msg.sender`, from this contract, as well as
@@ -123,13 +142,13 @@ interface IDMGYieldFarming {
     function endFarming() external returns (uint);
 
     /**
-     * Ends a farm by transferring all mTokens (with DMM token ID `dmmTokenId`) deposited by `msg.sender` to
-     * `msg.sender`, from this contract, as well as all earned DMG for farming `dmmTokenId`.
+     * Ends a farm by transferring all mTokens (with DMM token ID `token`) deposited by `msg.sender` to
+     * `msg.sender`, from this contract, as well as all earned DMG for farming `token`.
      *
      * @return  The amount of mTokens withdrawn and the amount of DMG earned for farming. Both values are sent to
      *          `msg.sender`.
      */
-    function endFarmingByDmmTokenId(uint dmmTokenId) external returns (uint, uint);
+    function endFarmingByToken(address token) external returns (uint, uint);
 
     /**
      * Withdraws all of `msg.sender`'s mTokens from the farm. This function reverts if there is an active farm.
@@ -137,9 +156,9 @@ interface IDMGYieldFarming {
     function withdrawAllWhenOutOfSeason() external;
 
     /**
-     * Withdraws all of `msg.sender` `dmmTokenId` from the farm. This function reverts if there is an active farm.
+     * Withdraws all of `msg.sender` `token` from the farm. This function reverts if there is an active farm.
      */
-    function withdrawByDmmTokenIdWhenOutOfSeason(uint dmmTokenId) external;
+    function withdrawByTokenWhenOutOfSeason(address token) external;
 
     /**
      * @return  The amount of DMG that this owner has earned in the active farm. If there are no active farms, this
@@ -148,10 +167,10 @@ interface IDMGYieldFarming {
     function rewardBalanceOf(address owner) external view returns (uint);
 
     /**
-     * @return  The amount of `dmmTokenId` that this owner has deposited into this contract. The user may withdraw this
-     *          non-zero balance by invoking `endFarming` or `endFarmingByDmmTokenId` if there is an active farm. If there is
+     * @return  The amount of `token` that this owner has deposited into this contract. The user may withdraw this
+     *          non-zero balance by invoking `endFarming` or `endFarmingByToken` if there is an active farm. If there is
      *          NO active farm, the user may withdraw his/her funds by invoking
      */
-    function balanceOf(address owner, uint dmmTokenId) external view returns (uint);
+    function balanceOf(address owner, address token) external view returns (uint);
 
 }

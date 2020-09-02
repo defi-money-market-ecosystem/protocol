@@ -70,12 +70,15 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | DMG (Incentives Lockbox #2)  	                | 0x382c4fd48Fbac7b5E973504cca1458A66A84a94f    | [Etherscan](https://etherscan.io/address/0x382c4fd48Fbac7b5E973504cca1458A66A84a94f)
 | DMG (Incentives Forwarder #3)  	            | 0x704828d766181C906182C89CF1bC5A79bFf3a402    | [Etherscan](https://etherscan.io/address/0x704828d766181C906182C89CF1bC5A79bFf3a402)
 | DMM Blacklist  	                            | 0x516d652E2f12876F5f0244aa661b1C262a2d96b1    | [Etherscan](https://etherscan.io/address/0x516d652e2f12876f5f0244aa661b1c262a2d96b1)
-| DMM Controller  	                            | 0x4CB120Dd1D33C9A3De8Bc15620C7Cd43418d77E2    | [Etherscan](https://etherscan.io/address/0x4cb120dd1d33c9a3de8bc15620c7cd43418d77e2)
+| ~~DMM Controller V1~~ DEPRECATED 	            | 0x4CB120Dd1D33C9A3De8Bc15620C7Cd43418d77E2    | [Etherscan](https://etherscan.io/address/0x4cb120dd1d33c9a3de8bc15620c7cd43418d77e2)
+| DMM Controller V2 	                        | 0xB07EB3426d742cda9120931e7028d54F9dF34A3e    | [Etherscan](https://etherscan.io/address/0xB07EB3426d742cda9120931e7028d54F9dF34A3e)
 | DMM Ether Factory  	                        | 0x1186d7dFf910Aa6c74bb9af71539C668133034aC    | [Etherscan](https://etherscan.io/address/0x1186d7dff910aa6c74bb9af71539c668133034ac)
-| DMM Token Factory  	                        | 0x42665308F611b022df2fD48757A457BEC12BA668    | [Etherscan](https://etherscan.io/address/0x42665308f611b022df2fd48757a457bec12ba668)
+| ~~DMM Token Factory V1~~ DEPRECATED 	        | 0x42665308F611b022df2fD48757A457BEC12BA668    | [Etherscan](https://etherscan.io/address/0x42665308f611b022df2fd48757a457bec12ba668)
+| DMM Token Factory V2 	                        | 0x6Ce6C84Fe43Df6A28c209b36179bD84a52CAEEFe    | [Etherscan](https://etherscan.io/address/0x6Ce6C84Fe43Df6A28c209b36179bD84a52CAEEFe)
 | DMM: DAI  	                                | 0x06301057D77D54B6e14c7FafFB11Ffc7Cab4eaa7    | [Etherscan](https://etherscan.io/address/0x06301057d77d54b6e14c7faffb11ffc7cab4eaa7)
 | DMM: ETH  	                                | 0xdF9307DFf0a1B57660F60f9457D32027a55ca0B2    | [Etherscan](https://etherscan.io/address/0xdF9307DFf0a1B57660F60f9457D32027a55ca0B2)
 | DMM: USDC  	                                | 0x3564ad35b9E95340E5Ace2D6251dbfC76098669B    | [Etherscan](https://etherscan.io/address/0x3564ad35b9e95340e5ace2d6251dbfc76098669b)
+| DMM: USDT  	                                | 0x84d4AfE150dA7Ea1165B9e45Ff8Ee4798d7C38DA    | [Etherscan](https://etherscan.io/address/0x84d4AfE150dA7Ea1165B9e45Ff8Ee4798d7C38DA)
 | Governor Alpha  	                            | 0x67Cb2868Ebf965b66d3dC81D0aDd6fd849BCF6D5    | [Etherscan](https://etherscan.io/address/0x67Cb2868Ebf965b66d3dC81D0aDd6fd849BCF6D5)
 | Governance Timelock  	                        | 0xE679eBf544A6BE5Cb8747012Ea6B08F04975D264    | [Etherscan](https://etherscan.io/address/0xE679eBf544A6BE5Cb8747012Ea6B08F04975D264)
 | Loopring Protocol V2 (for Trading DMG)  	    | 0xC0b569Ff46EEA7BfbB130bd6d7af0a0A7f513C6F    | [Etherscan](https://etherscan.io/address/0xC0b569Ff46EEA7BfbB130bd6d7af0a0A7f513C6F)
@@ -86,7 +89,7 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | ~~Underlying Token Valuator V1~~ DEPRECATED   | 0xe8B313e7BfdC0eCB23e4BE47062dB0A65AE5705c    | [Etherscan](https://etherscan.io/address/0xe8b313e7bfdc0ecb23e4be47062db0a65ae5705c)
 | ~~Underlying Token Valuator V2~~ DEPRECATED   | 0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d    | [Etherscan](https://etherscan.io/address/0x693aa8ead81d2f88a45e870fa7e25f84ca93ca4d)
 | ~~Underlying Token Valuator V3~~ DEPRECATED   | 0x7812e0F5Da2F0917BD9054951415EDFF571964dB    | [Etherscan](https://etherscan.io/address/0x7812e0f5da2f0917bd9054951415edff571964db)
-| Underlying Token Valuator V4                  | 0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4    | [Etherscan](https://etherscan.io/address/0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4)
+| Underlying Token Valuator V4                  | 0x0c65c147aAf2DbD5109ba74e36f730D081489B5B    | [Etherscan](https://etherscan.io/address/0x0c65c147aAf2DbD5109ba74e36f730D081489B5B)
 
 #### Ropsten Testnet
 

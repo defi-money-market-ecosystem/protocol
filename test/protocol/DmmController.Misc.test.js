@@ -30,6 +30,7 @@ describe('DmmController.Misc', async () => {
 
   const ownableError = 'Ownable: caller is not the owner';
   const defaultDmmTokenId = new BN('1');
+  const invalidDefaultDmmTokenId = new BN('1123123123123');
 
   beforeEach(async () => {
     this.admin = admin;
@@ -241,10 +242,19 @@ describe('DmmController.Misc', async () => {
     expect(await this.controller.isMarketEnabledByDmmTokenAddress(dmmTokenAddress)).equals(true);
   });
 
-  it('should get DMM token ID from DMM token address', async () => {
+  it('should get DMM token address from a valid DMM token ID', async () => {
     await addDaiMarket();
-    const dmmTokenAddress = await this.controller.dmmTokenIdToDmmTokenAddressMap(defaultDmmTokenId);
+    const dmmTokenAddress = await this.controller.getDmmTokenAddressByDmmTokenId(defaultDmmTokenId);
     (await this.controller.getTokenIdFromDmmTokenAddress(dmmTokenAddress)).should.be.bignumber.equals(defaultDmmTokenId);
+  });
+
+  it('should not get DMM token address from an invalid DMM token ID', async () => {
+    await addDaiMarket();
+    const dmmTokenAddressPromise = this.controller.getDmmTokenAddressByDmmTokenId(invalidDefaultDmmTokenId);
+    await expectRevert(
+      dmmTokenAddressPromise,
+      "TOKEN_DOES_NOT_EXIST"
+    );
   });
 
   /**********************

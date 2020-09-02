@@ -17,21 +17,15 @@
 
 pragma solidity ^0.5.0;
 
-library DmmControllerHelper {
+interface IDMGYieldFarmingV1Initializable {
 
-    function getDmmTokenAddressByDmmTokenId(
-        IFarmDmmController controller,
-        uint dmmTokenId
-    ) external view returns (address) {
-        address token = controller.dmmTokenIdToDmmTokenAddressMap(dmmTokenId);
-        require(token != address(0x0), "DmmControllerHelper::getDmmTokenAddressByDmmTokenId INVALID_TOKEN_ID");
-        return token;
-    }
-
-}
-
-interface IFarmDmmController {
-
-    function dmmTokenIdToDmmTokenAddressMap(uint dmmTokenId) external view returns (address);
+    function initialize(
+        address dmgToken,
+        address guardian,
+        uint dmgGrowthCoefficient,
+        address[] calldata allowableTokens,
+        address[] calldata underlyingTokens,
+        uint16[] calldata points
+    ) external;
 
 }

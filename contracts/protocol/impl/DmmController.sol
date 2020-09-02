@@ -46,6 +46,9 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
      * Events
      */
 
+    event GuardianChanged(address previousGuardian, address newGuardian);
+    event DmmTokenFactoryChanged(address previousDmmTokenFactory, address newDmmTokenFactory);
+    event DmmEtherFactoryChanged(address previousDmmEtherFactory, address newDmmEtherFactory);
     event InterestRateInterfaceChanged(address previousInterestRateInterface, address newInterestRateInterface);
     event OffChainAssetValuatorChanged(address previousOffChainAssetValuator, address newOffChainAssetValuator);
     event OffChainCurrencyValuatorChanged(address previousOffChainCurrencyValuator, address newOffChainCurrencyValuator);
@@ -63,13 +66,14 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
      * Controller Fields
      */
 
-    DmmBlacklistable public dmmBlacklistable;
+    address public guardian;
     InterestRateInterface public interestRateInterface;
-    IOffChainCurrencyValuator public offChainCurrencyValuator;
     IOffChainAssetValuator public offChainAssetsValuator;
+    IOffChainCurrencyValuator public offChainCurrencyValuator;
     IUnderlyingTokenValuator public underlyingTokenValuator;
-    IDmmTokenFactory public dmmTokenFactory;
     IDmmTokenFactory public dmmEtherFactory;
+    IDmmTokenFactory public dmmTokenFactory;
+    DmmBlacklistable public blacklistable;
     uint public minCollateralization;
     uint public minReserveRatio;
     address public wethToken;
@@ -96,24 +100,26 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     uint public constant MIN_RESERVE_RATIO_BASE_RATE = 1e18;
 
     constructor(
+        address _guardian,
         address _interestRateInterface,
         address _offChainAssetsValuator,
         address _offChainCurrencyValuator,
         address _underlyingTokenValuator,
         address _dmmEtherFactory,
         address _dmmTokenFactory,
-        address _dmmBlacklistable,
+        address _blacklistable,
         uint _minCollateralization,
         uint _minReserveRatio,
         address _wethToken
     ) public {
+        guardian = _guardian;
         interestRateInterface = InterestRateInterface(_interestRateInterface);
         offChainAssetsValuator = IOffChainAssetValuator(_offChainAssetsValuator);
         offChainCurrencyValuator = IOffChainCurrencyValuator(_offChainCurrencyValuator);
         underlyingTokenValuator = IUnderlyingTokenValuator(_underlyingTokenValuator);
         dmmTokenFactory = IDmmTokenFactory(_dmmTokenFactory);
         dmmEtherFactory = IDmmTokenFactory(_dmmEtherFactory);
-        dmmBlacklistable = DmmBlacklistable(_dmmBlacklistable);
+        blacklistable = DmmBlacklistable(_blacklistable);
         minCollateralization = _minCollateralization;
         minReserveRatio = _minReserveRatio;
         wethToken = _wethToken;
@@ -138,6 +144,11 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         _;
     }
 
+    modifier onlyOwnerOrGuardian() {
+        require(isOwner() || msg.sender == guardian, "MUST_BE_OWNER_OR_GUARDIAN");
+        _;
+    }
+
     /**********************
      * Public Functions
      */
@@ -149,10 +160,6 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         _addPauser(newOwner);
     }
 
-    function blacklistable() public view returns (Blacklistable) {
-        return dmmBlacklistable;
-    }
-
     function addMarket(
         address underlyingToken,
         string memory symbol,
@@ -162,7 +169,10 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         uint minRedeemAmount,
         uint totalSupply
     ) public onlyOwner {
-        require(underlyingTokenAddressToDmmTokenIdMap[underlyingToken] == 0, "TOKEN_ALREADY_EXISTS");
+        require(
+            underlyingTokenAddressToDmmTokenIdMap[underlyingToken] == 0,
+            "TOKEN_ALREADY_EXISTS"
+        );
 
         IDmmToken dmmToken;
         address controller = address(this);
@@ -197,10 +207,22 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     )
     onlyOwner
     public {
-        require(underlyingTokenAddressToDmmTokenIdMap[underlyingToken] == 0, "TOKEN_ALREADY_EXISTS");
-        require(dmmToken.isContract(), "DMM_TOKEN_IS_NOT_CONTRACT");
-        require(underlyingToken.isContract(), "UNDERLYING_TOKEN_IS_NOT_CONTRACT");
-        require(Ownable(dmmToken).owner() == address(this), "INVALID_DMM_TOKEN_OWNERSHIP");
+        require(
+            underlyingTokenAddressToDmmTokenIdMap[underlyingToken] == 0,
+            "TOKEN_ALREADY_EXISTS"
+        );
+        require(
+            dmmToken.isContract(),
+            "DMM_TOKEN_IS_NOT_CONTRACT"
+        );
+        require(
+            underlyingToken.isContract(),
+            "UNDERLYING_TOKEN_IS_NOT_CONTRACT"
+        );
+        require(
+            Ownable(dmmToken).owner() == address(this),
+            "INVALID_DMM_TOKEN_OWNERSHIP"
+        );
 
         _addMarket(dmmToken, underlyingToken);
     }
@@ -210,7 +232,10 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     )
     onlyOwner
     public {
-        require(newController.isContract(), "NEW_CONTROLLER_IS_NOT_CONTRACT");
+        require(
+            newController.isContract(),
+            "NEW_CONTROLLER_IS_NOT_CONTRACT"
+        );
         // All of the following contracts are owned by the controller. All other ownable contracts are owned by the
         // same owner as this controller.
         for (uint i = 0; i < dmmTokenIds.length; i++) {
@@ -231,6 +256,29 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         require(!dmmTokenIdToIsDisabledMap[dmmTokenId], "MARKET_ALREADY_DISABLED");
         dmmTokenIdToIsDisabledMap[dmmTokenId] = true;
         emit DisableMarket(dmmTokenId);
+    }
+
+    function setGuardian(
+        address newGuardian
+    )
+    whenNotPaused
+    onlyOwner
+    public {
+        address oldGuardian = guardian;
+        guardian = newGuardian;
+        emit GuardianChanged(oldGuardian, newGuardian);
+    }
+
+    function setDmmTokenFactory(address newDmmTokenFactory) public whenNotPaused onlyOwner {
+        address oldDmmTokenFactory = address(dmmTokenFactory);
+        dmmTokenFactory = IDmmTokenFactory(newDmmTokenFactory);
+        emit DmmTokenFactoryChanged(oldDmmTokenFactory, address(dmmTokenFactory));
+    }
+
+    function setDmmEtherFactory(address newDmmEtherFactory) public whenNotPaused onlyOwner {
+        address oldDmmEtherFactory = address(dmmEtherFactory);
+        dmmEtherFactory = IDmmTokenFactory(newDmmEtherFactory);
+        emit DmmEtherFactoryChanged(oldDmmEtherFactory, address(dmmEtherFactory));
     }
 
     function setInterestRateInterface(address newInterestRateInterface) public whenNotPaused onlyOwner {
@@ -310,7 +358,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     function adminDepositFunds(
         uint dmmTokenId,
         uint underlyingAmount
-    ) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwner {
+    ) public checkTokenExists(dmmTokenId) whenNotPaused onlyOwnerOrGuardian {
         // Attempt to pull from the sender into this contract, then have the DMM token pull from here.
         IERC20 underlyingToken = IERC20(dmmTokenIdToUnderlyingTokenAddressMap[dmmTokenId]);
         underlyingToken.safeTransferFrom(_msgSender(), address(this), underlyingAmount);
@@ -373,7 +421,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
     function getInterestRateByDmmTokenAddress(address dmmToken) public view returns (uint) {
         uint dmmTokenId = dmmTokenAddressToDmmTokenIdMap[dmmToken];
-        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
+        _checkTokenExists(dmmTokenId);
 
         uint totalSupply = IERC20(dmmToken).totalSupply();
         uint activeSupply = IDmmToken(dmmToken).activeSupply();
@@ -387,21 +435,21 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
     function getExchangeRate(address dmmToken) public view returns (uint) {
         uint dmmTokenId = dmmTokenAddressToDmmTokenIdMap[dmmToken];
-        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
+        _checkTokenExists(dmmTokenId);
 
         return IDmmToken(dmmToken).getCurrentExchangeRate();
     }
 
     function getDmmTokenForUnderlying(address underlyingToken) public view returns (address) {
         uint dmmTokenId = underlyingTokenAddressToDmmTokenIdMap[underlyingToken];
-        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
+        _checkTokenExists(dmmTokenId);
 
         return dmmTokenIdToDmmTokenAddressMap[dmmTokenId];
     }
 
     function getUnderlyingTokenForDmm(address dmmToken) public view returns (address) {
         uint dmmTokenId = dmmTokenAddressToDmmTokenIdMap[dmmToken];
-        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
+        _checkTokenExists(dmmTokenId);
 
         return dmmTokenIdToUnderlyingTokenAddressMap[dmmTokenId];
     }
@@ -412,16 +460,22 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
     function isMarketEnabledByDmmTokenAddress(address dmmToken) public view returns (bool) {
         uint dmmTokenId = dmmTokenAddressToDmmTokenIdMap[dmmToken];
-        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
+        _checkTokenExists(dmmTokenId);
 
         return !dmmTokenIdToIsDisabledMap[dmmTokenId];
     }
 
     function getTokenIdFromDmmTokenAddress(address dmmToken) public view returns (uint) {
         uint dmmTokenId = dmmTokenAddressToDmmTokenIdMap[dmmToken];
-        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
+        _checkTokenExists(dmmTokenId);
 
         return dmmTokenId;
+    }
+
+    function getDmmTokenAddressByDmmTokenId(uint dmmTokenId) external view returns (address) {
+        address token = dmmTokenIdToDmmTokenAddressMap[dmmTokenId];
+        require(token != address(0x0), "TOKEN_DOES_NOT_EXIST");
+        return token;
     }
 
     function getDmmTokenIds() public view returns (uint[] memory) {
@@ -431,6 +485,11 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     /**********************
      * Private Functions
      */
+
+    function _checkTokenExists(uint dmmTokenId) internal pure returns (bool) {
+        require(dmmTokenId != 0, "TOKEN_DOES_NOT_EXIST");
+        return true;
+    }
 
     function _addMarket(address dmmToken, address underlyingToken) private {
         // Start the IDs at 1. Zero is reserved for the empty case when it doesn't exist.

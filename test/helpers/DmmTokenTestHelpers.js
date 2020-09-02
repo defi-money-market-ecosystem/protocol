@@ -24,6 +24,44 @@ const _10000 = () => new BN('10000000000000000000000');
 const _1000000 = () => new BN('1000000000000000000000000');
 const _250000000 = () => new BN('250000000000000000000000000');
 
+const doYieldFarmingBeforeEach = async (thisInstance, contracts, web3) => {
+  web3Config.getWeb3 = () => web3;
+
+  const DMGToken = contracts.fromArtifact('DMGToken');
+  const DMGYieldFarmingV1 = contracts.fromArtifact('DMGYieldFarmingV1');
+  const DMGYieldFarmingProxy = contracts.fromArtifact('DMGYieldFarmingProxy');
+  const ERC20Mock = contracts.fromArtifact('ERC20Mock');
+  const UnderlyingTokenValuatorMock = contracts.fromArtifact('UnderlyingTokenValuatorMock');
+
+  thisInstance.dmgToken = await DMGToken.new(thisInstance.admin, {from: thisInstance.admin});
+
+  thisInstance.dmmController =
+
+  thisInstance.tokenA = await ERC20Mock.new({from: thisInstance.admin});
+  thisInstance.tokenB = await ERC20Mock.new({from: thisInstance.admin});
+
+  thisInstance.allowableTokens = [thisInstance.tokenA.address, thisInstance.tokenB.address];
+  thisInstance.underlyingTokens = [thisInstance.tokenA.address, thisInstance.tokenB.address];
+
+  thisInstance.implementation = await DMGYieldFarmingV1.new(
+    {from: thisInstance.admin},
+  );
+
+  thisInstance.yieldFarming = await DMGYieldFarmingProxy.new(
+    thisInstance.implementation.address,
+    thisInstance.admin,
+    // Begin IMPL initializer
+    thisInstance.dmgToken.address,
+    thisInstance.admin,
+    thisInstance.dmmController.address,
+    _1(),
+    thisInstance.allowableTokens,
+    thisInstance.underlyingTokens,
+    [18, 6],
+    [new BN('100'), new BN('300')],
+  )
+};
+
 const doDmgTokenBeforeEach = async (thisInstance, contracts, web3) => {
   web3Config.getWeb3 = () => web3;
 
@@ -182,7 +220,7 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
   const SafeERC20 = contracts.fromArtifact('SafeERC20');
   const SafeMath = contracts.fromArtifact('SafeMath');
   const StringHelpers = contracts.fromArtifact('StringHelpers');
-  const UnderlyingTokenValuatorImplV1 = contracts.fromArtifact('UnderlyingTokenValuatorImplV1');
+  const UnderlyingTokenValuatorImplV4 = contracts.fromArtifact('UnderlyingTokenValuatorImplV4');
   const WETHMock = contracts.fromArtifact('WETHMock');
 
   await Promise.all(
@@ -192,7 +230,7 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
       DmmEtherFactory.detectNetwork(),
       DmmTokenFactory.detectNetwork(),
       StringHelpers.detectNetwork(),
-      UnderlyingTokenValuatorImplV1.detectNetwork(),
+      UnderlyingTokenValuatorImplV4.detectNetwork(),
     ]
   );
 
@@ -211,7 +249,7 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
       DmmEtherFactory.link('SafeERC20', safeERC20.address),
       DmmEtherFactory.link('SafeMath', safeMath.address),
       DmmEtherFactory.link('DmmTokenLibrary', dmmTokenLibrary.address),
-      UnderlyingTokenValuatorImplV1.link("StringHelpers", stringHelpers.address),
+      UnderlyingTokenValuatorImplV4.link("StringHelpers", stringHelpers.address),
     ]
   );
 
@@ -222,7 +260,7 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
   thisInstance.interestRateInterface = await InterestRateImplV1.new({from: thisInstance.admin});
   thisInstance.offChainAssetValuator = await DmmOffChainAssetValuatorMock.new({from: thisInstance.admin});
   thisInstance.offChainCurrencyValuator = await OffChainCurrencyValuatorImplV1.new({from: thisInstance.admin});
-  thisInstance.underlyingTokenValuator = await UnderlyingTokenValuatorImplV1.new(
+  thisInstance.underlyingTokenValuator = await UnderlyingTokenValuatorImplV4.new(
     thisInstance.dai.address,
     thisInstance.usdc.address,
     {from: thisInstance.admin},
@@ -235,6 +273,7 @@ const doDmmControllerBeforeEach = async (thisInstance, contracts, web3) => {
   thisInstance.minCollateralization = _1();
 
   thisInstance.controller = await DmmController.new(
+    thisInstance.admin,
     thisInstance.interestRateInterface.address,
     thisInstance.offChainAssetValuator.address,
     thisInstance.offChainCurrencyValuator.address,
@@ -529,6 +568,7 @@ module.exports = {
   doDmmControllerBeforeEach,
   doDmmEtherBeforeEach,
   doDmmTokenBeforeEach,
+  doYieldFarmingBeforeEach,
   encodeHashAndSign,
   encodePermitHashAndSign,
   expectApprove,

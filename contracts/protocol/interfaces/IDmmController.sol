@@ -1,6 +1,7 @@
 pragma solidity ^0.5.0;
 
 import "./InterestRateInterface.sol";
+import "./IUnderlyingTokenValuator.sol";
 
 import "../../utils/Blacklistable.sol";
 
@@ -11,8 +12,6 @@ interface IDmmController {
 
     event AdminDeposit(address indexed sender, uint amount);
     event AdminWithdraw(address indexed receiver, uint amount);
-
-    function blacklistable() external view returns (Blacklistable);
 
     /**
      * @dev Creates a new mToken using the provided data.
@@ -69,7 +68,28 @@ interface IDmmController {
     function disableMarket(uint dmmTokenId) external;
 
     /**
-     * @dev Sets a new contract that implements the `InterestRateInterface` interface.
+     * @dev Sets the new address that will serve as the guardian for this controller.
+     *
+     * @param newGuardian   The new address that will serve as the guardian for this controller.
+     */
+    function setGuardian(address newGuardian) external;
+
+    /**
+     * @dev Sets a new contract that implements the `DmmTokenFactory` interface.
+     *
+     * @param newDmmTokenFactory  The new contract that implements the `DmmTokenFactory` interface.
+     */
+    function setDmmTokenFactory(address newDmmTokenFactory) external;
+
+    /**
+     * @dev Sets a new contract that implements the `DmmEtherFactory` interface.
+     *
+     * @param newDmmEtherFactory  The new contract that implements the `DmmEtherFactory` interface.
+     */
+    function setDmmEtherFactory(address newDmmEtherFactory) external;
+
+    /**
+     * @dev Sets a new contract that implements the `InterestRate` interface.
      *
      * @param newInterestRateInterface  The new contract that implements the `InterestRateInterface` interface.
      */
@@ -233,5 +253,15 @@ interface IDmmController {
      * @return True if the market is enabled for this underlying token (IE DAI) or false if it is not enabled.
      */
     function getTokenIdFromDmmTokenAddress(address dmmTokenAddress) external view returns (uint);
+
+    /**
+     * @dev Gets the DMM token contract address for the provided DMM token ID. For example, `1` returns the mToken
+     *      contract address for that token ID.
+     */
+    function getDmmTokenAddressByDmmTokenId(uint dmmTokenId) external view returns (address);
+
+    function underlyingTokenValuator() external view returns (IUnderlyingTokenValuator);
+
+    function blacklistable() external view returns (Blacklistable);
 
 }

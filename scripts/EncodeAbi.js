@@ -32,6 +32,11 @@ const usdcAddress = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
 const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
 const wethAddress = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
+const mDaiAddress = "0x06301057D77D54B6e14c7FafFB11Ffc7Cab4eaa7";
+const mUsdcAddress = "0x3564ad35b9E95340E5Ace2D6251dbfC76098669B";
+const mUsdtAddress = "";
+const mWethAddress = "0xdF9307DFf0a1B57660F60f9457D32027a55ca0B2";
+
 const dmmControllerAddress = "0x4CB120Dd1D33C9A3De8Bc15620C7Cd43418d77E2";
 const delayedOwnerAddress = "0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD";
 const gnosisSafeAddress = "0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF";
@@ -42,8 +47,11 @@ const underlyingTokenValuatorImplV2Address = "0x693AA8eAD81D2F88A45e870Fa7E25f84
 const underlyingTokenValuatorImplV3Address = "0x7812e0F5Da2F0917BD9054951415EDFF571964dB";
 const underlyingTokenValuatorImplV4Address = "0x0c65c147aAf2DbD5109ba74e36f730D081489B5B";
 
-const jobId = '0x11cdfd87ac17f6fc2aea9ca5c77544f33decb571339a31f546c2b6a36a406f15';
-const oracleAddress = '0x0563fC575D5219C48E2Dfc20368FA4179cDF320D';
+const newDmmControllerAddress = '0xB07EB3426d742cda9120931e7028d54F9dF34A3e';
+const newDmmTokenFactoryAddress = '0x6Ce6C84Fe43Df6A28c209b36179bD84a52CAEEFe';
+
+const jobId = '0x2017ac2b3b5b37d2fbb5fef6193d6eef0cb50a4c6b3796c5b5c44bd1cca83aa0';
+const oracleAddress = '0x59bbE8CFC79c76857fE0eC27e67E4957370d72B5';
 
 const functionDelay = new BN('3600'); // Function delay
 
@@ -71,6 +79,7 @@ const main = async () => {
 
   const delayedOwner = await DelayedOwner.at(delayedOwnerAddress);
   const dmmController = await DmmController.at(dmmControllerAddress);
+  const newDmmController = await DmmController.at(newDmmControllerAddress);
   const governorAlpha = await GovernorAlpha.at(governorAlphaAddress);
   const offChainAssetValuatorImplV1 = await OffChainAssetValuatorImplV1.at(offChainAssetValuatorImplV1Address);
 
@@ -103,14 +112,14 @@ const main = async () => {
   // 5,000
   // await decreaseTotalSupply(delayedOwner, dmmController, wethTokenId, new BN('5000000000000000000000'));
 
-  await transferOwnership(dmmController, governorTimelockAddress);
-  await createProposalForAddingUsdt(governorAlpha, dmmController);
+  // await transferOwnership(newDmmController, governorTimelockAddress);
+  // await createProposalForUpgradingController(governorAlpha, dmmController, usdt, newDmmController);
 
-  await executeDelayedTransaction(delayedOwner, new BN(18));
-  await executeDelayedTransaction(delayedOwner, new BN(19));
-  await executeDelayedTransaction(delayedOwner, new BN(20));
-  await executeDelayedTransaction(delayedOwner, new BN(21));
-  await executeDelayedTransaction(delayedOwner, new BN(22));
+  // await executeDelayedTransaction(delayedOwner, new BN(18));
+  // await executeDelayedTransaction(delayedOwner, new BN(19));
+  // await executeDelayedTransaction(delayedOwner, new BN(20));
+  // await executeDelayedTransaction(delayedOwner, new BN(21));
+  // await executeDelayedTransaction(delayedOwner, new BN(22));
 
   // await claimOwnershipForDelayedOwner(delayedOwner);
   //
@@ -218,8 +227,8 @@ const main = async () => {
   // await pauseEcosystem(delayedOwner, await DmmController.at("0xadcFec14eDD9901ce328D1E3e9211Ac64f774321"));
   //
   // await setOraclePayment(delayedOwner, offChainAssetValuatorImplV1, _1.div(new BN(2)));
-  // await setCollateralValueJobId(delayedOwner, offChainAssetValuatorImplV1, jobId);
-  await submitGetOffChainAssetsValueRequest(delayedOwner, offChainAssetValuatorImplV1, oracleAddress);
+  await setCollateralValueJobId(delayedOwner, offChainAssetValuatorImplV1, jobId);
+  // await submitGetOffChainAssetsValueRequest(delayedOwner, offChainAssetValuatorImplV1, oracleAddress);
   //
   // await setOffChainAssetValuator(delayedOwner, dmmController, offChainAssetValuatorImplV1Address);
   // await setUnderlyingTokenValuator(delayedOwner, dmmController, underlyingTokenValuatorImplV3Address);
@@ -379,9 +388,8 @@ const setOraclePayment = async (delayedOwner, offChainAssetValuator, amount) => 
 
 const setCollateralValueJobId = async (delayedOwner, offChainAssetValuator, jobId) => {
   const innerAbi = offChainAssetValuator.contract.methods.setCollateralValueJobId(jobId).encodeABI();
-  const actualAbi = delayedOwner.contract.methods.transact(offChainAssetValuator.address, innerAbi).encodeABI();
 
-  console.log(`setCollateralValueJobId: `, actualAbi);
+  console.log(`setCollateralValueJobId: `, innerAbi);
 };
 
 const submitGetOffChainAssetsValueRequest = async (delayedOwner, offChainAssetValuator, oracleAddress) => {
@@ -420,6 +428,87 @@ const changeFunctionDelay = async (delayedOwner, contractAddress, fnCall, fnName
   console.log(`changeFunctionDelay with ID ${fnName.toString()}: `, actualAbi);
 };
 
+const createProposalForUpgradingController = async (governorAlpha, dmmController, usdt, newDmmController) => {
+  const setMinReserveRatio = 'setMinReserveRatio(uint256)';
+  const adminWithdrawFunds = 'adminWithdrawFunds(uint256,uint256)';
+  const transferFunds = 'transfer(address,uint256)';
+  const transferOwnershipToNewController = 'transferOwnershipToNewController(address)';
+  const addMarketFromExistingDmmToken = 'addMarketFromExistingDmmToken(address,address)';
+
+  if (!dmmController.contract.methods[setMinReserveRatio]) {
+    throw Error('Invalid setMinReserveRatio, found ' + setMinReserveRatio)
+  }
+  if (!dmmController.contract.methods[adminWithdrawFunds]) {
+    throw Error('Invalid adminWithdrawFunds, found ' + adminWithdrawFunds)
+  }
+  if (!usdt.contract.methods[transferFunds]) {
+    throw Error('Invalid transferFunds, found ' + transferFunds)
+  }
+  if (!dmmController.contract.methods[transferOwnershipToNewController]) {
+    throw Error('Invalid transferOwnershipToNewController, found ' + transferOwnershipToNewController)
+  }
+  if (!dmmController.contract.methods[addMarketFromExistingDmmToken]) {
+    throw Error('Invalid addMarketFromExistingDmmToken, found ' + addMarketFromExistingDmmToken)
+  }
+
+  const setMinReserveRatioCalldata = '0x' + dmmController.contract.methods.setMinReserveRatio(
+    '0',
+  ).encodeABI().substring(10);
+  const adminWithdrawFundsCalldata = '0x' + dmmController.contract.methods.adminWithdrawFunds(
+    '4',
+    '489827072240',
+  ).encodeABI().substring(10);
+  const transferFundsCalldata = '0x' + usdt.contract.methods.transfer(
+    gnosisSafeAddress,
+    '489827072240'
+  ).encodeABI().substring(10);
+  const transferOwnershipToNewControllerCalldata = '0x' + dmmController.contract.methods.transferOwnershipToNewController(
+    newDmmControllerAddress,
+  ).encodeABI().substring(10);
+  const daiMigrationCalldata = '0x' + dmmController.contract.methods.addMarketFromExistingDmmToken(
+    mDaiAddress,
+    daiAddress,
+  ).encodeABI().substring(10);
+  const usdcMigrationCalldata = '0x' + dmmController.contract.methods.addMarketFromExistingDmmToken(
+    mUsdcAddress,
+    usdcAddress,
+  ).encodeABI().substring(10);
+  const wethMigrationCalldata = '0x' + dmmController.contract.methods.addMarketFromExistingDmmToken(
+    mWethAddress,
+    wethAddress,
+  ).encodeABI().substring(10);
+
+  const targets = [dmmController, dmmController, usdt, dmmController, newDmmController, newDmmController, newDmmController];
+  const values = ['0', '0', '0', '0', '0', '0', '0'];
+  const signatures = [setMinReserveRatio, adminWithdrawFunds, transferFunds, transferOwnershipToNewController, addMarketFromExistingDmmToken, addMarketFromExistingDmmToken, addMarketFromExistingDmmToken]
+  const calldatas = [setMinReserveRatioCalldata, adminWithdrawFundsCalldata, transferFundsCalldata, transferOwnershipToNewControllerCalldata, daiMigrationCalldata, usdcMigrationCalldata, wethMigrationCalldata];
+  const title = 'Upgrade the DMM Ecosystem';
+  const description = `
+  The DMM Ecosystem Controller is missing some utility functions that could greatly improve the usability of the 
+  protocol. In addition, interest payments, which are currently brought on-chain via the Foundation must be voted into 
+  the ecosystem. Rather, the new controller introduces the concept of a "guardian" which has the privilege to deposit 
+  interest payments, in addition to the DAO.
+  
+  The last fix revolves around tokens that do not conform to the ERC20 standard exactly. We have upgraded the DMM Token 
+  Factory contract to use new source code that utilizes the Open Zeppelin "safeTransfer" function when transferring the 
+  underlying funds out of the DMM mToken contract.
+  
+  The address of the new and verified controller is [${newDmmControllerAddress}](https://etherscan.io/address/${newDmmControllerAddress}).
+  
+  The address of the new and verified DMM Token Factory is [${newDmmTokenFactoryAddress}](https://etherscan.io/address/${newDmmTokenFactoryAddress}).
+  `;
+
+  await createGovernanceProposal(
+    governorAlpha,
+    targets,
+    values,
+    signatures,
+    calldatas,
+    title,
+    description,
+  );
+}
+
 const createProposalForAddingUsdt = async (governorAlpha, dmmController) => {
   const addMarketSignature = 'addMarket(address,string,string,uint8,uint256,uint256,uint256)';
   const setUnderlyingTokenValuatorSignature = 'setUnderlyingTokenValuator(address)';
@@ -445,7 +534,7 @@ const createProposalForAddingUsdt = async (governorAlpha, dmmController) => {
     underlyingTokenValuatorImplV4Address,
   ).encodeABI().substring(10);
 
-  const targets = [dmmController.address, dmmController.address];
+  const targets = [dmmController, dmmController];
   const values = ['0', '0'];
   const signatures = [addMarketSignature, setUnderlyingTokenValuatorSignature]
   const calldatas = [addMarketCalldata, setUnderlyingTokenValuatorCalldata];
@@ -475,7 +564,7 @@ const createProposalForAddingUsdt = async (governorAlpha, dmmController) => {
 const createProposalForDryRun = async (governorAlpha, safeAddress) => {
   const dryRunSignature = 'dryRun()';
   const dryRunCallData = '0x0';
-  const targets = [safeAddress];
+  const targets = [{address: safeAddress}];
   const values = ['0'];
   const signatures = [dryRunSignature]
   const calldatas = [dryRunCallData];
@@ -500,8 +589,18 @@ const createProposalForDryRun = async (governorAlpha, safeAddress) => {
 }
 
 const createGovernanceProposal = async (governorAlpha, targets, values, signatures, calldatas, title, description) => {
+  targets.forEach((target, index) => {
+    if (target.contract) {
+      if (!target.contract.methods[signatures[index]]) {
+        throw Error(`Cannot find method for contract index=${index} signature=${signatures[index]}`)
+      }
+    } else {
+      throw `Could not verify ${target} at index ${index}`
+    }
+  })
+
   const actualAbi = governorAlpha.contract.methods.propose(
-    targets,
+    targets.map(target => target.address),
     values,
     signatures,
     calldatas,

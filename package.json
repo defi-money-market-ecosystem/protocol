@@ -10,6 +10,8 @@
     "deploy-mainnet-dmg": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_dmg/DeployDmg.js",
     "deploy-mainnet-dmg-forwarder": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_dmg/DeployDmgTokenFowarder.js",
     "deploy-mainnet-dmg-lockup": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_dmg/DeployDmgTokenLockup.js",
+    "deploy-mainnet-dmm-controller": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_ecosystem/DeployController.js",
+    "deploy-mainnet-dmm-token-factory": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_ecosystem/DeployDmmTokenFactory.js",
     "deploy-mainnet-governor-alpha": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_governance/DeployGovernorAlpha.js",
     "deploy-mainnet-off-chain-asset-valuator": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_off_chain_asset_valuator/DeployOffChainAssetValuator.js",
     "deploy-mainnet-referral-tracker-proxy": "oz compile && ENVIRONMENT=PRODUCTION node scripts/deploy_referral_tracker_proxy/DeployReferralTrackerProxy.js",
@@ -49,7 +51,11 @@
     "test-underlying-token-valuator-v1": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/protocol/UnderlyingTokenValuatorImplV1.test.js --slow 2500",
     "test-underlying-token-valuator-v2": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/protocol/UnderlyingTokenValuatorImplV2.test.js --slow 2500",
     "test-underlying-token-valuator-v3": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/protocol/UnderlyingTokenValuatorImplV3.test.js --slow 2500",
-    "test-underlying-token-valuator-v4": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/protocol/UnderlyingTokenValuatorImplV4.test.js --slow 2500"
+    "test-underlying-token-valuator-v4": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/protocol/UnderlyingTokenValuatorImplV4.test.js --slow 2500",
+    "test-yield-farming": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarming.*.test.js --slow 2500",
+    "test-yield-farming-admin": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.Admin.test.js --slow 2500",
+    "test-yield-farming-misc": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.Misc.test.js --slow 2500",
+    "test-yield-farming-user": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.User.test.js --slow 2500"
   },
   "keywords": [],
   "author": "",
@@ -58,6 +64,7 @@
     "@openzeppelin/cli": "^2.7.1",
     "@openzeppelin/contract-loader": "^0.6.1",
     "@openzeppelin/contracts": "^2.4.0",
+    "@openzeppelin/upgrades": "^2.8.0",
     "chainlink": "^0.8.2",
     "ganache-cli": "^6.9.0",
     "prompt": "^1.0.0"
