@@ -53,9 +53,10 @@
     "test-underlying-token-valuator-v3": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/protocol/UnderlyingTokenValuatorImplV3.test.js --slow 2500",
     "test-underlying-token-valuator-v4": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/protocol/UnderlyingTokenValuatorImplV4.test.js --slow 2500",
     "test-yield-farming": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarming.*.test.js --slow 2500",
-    "test-yield-farming-admin": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.Admin.test.js --slow 2500",
-    "test-yield-farming-misc": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.Misc.test.js --slow 2500",
-    "test-yield-farming-user": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.User.test.js --slow 2500"
+    "test-yield-farming-proxy": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarming.Proxy.test.js --slow 2500",
+    "test-yield-farming-v1-admin": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.Admin.test.js --slow 2500",
+    "test-yield-farming-v1-misc": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.Misc.test.js --slow 2500",
+    "test-yield-farming-v1-user": "oz compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.User.test.js --slow 2500"
   },
   "keywords": [],
   "author": "",

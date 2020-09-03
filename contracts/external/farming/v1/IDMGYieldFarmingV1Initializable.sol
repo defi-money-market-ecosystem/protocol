@@ -22,9 +22,11 @@ interface IDMGYieldFarmingV1Initializable {
     function initialize(
         address dmgToken,
         address guardian,
+        address dmmController,
         uint dmgGrowthCoefficient,
         address[] calldata allowableTokens,
         address[] calldata underlyingTokens,
+        uint8[] calldata tokenDecimals,
         uint16[] calldata points
     ) external;
 

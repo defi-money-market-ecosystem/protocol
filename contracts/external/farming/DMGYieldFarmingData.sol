@@ -27,7 +27,7 @@ contract DMGYieldFarmingData is Initializable {
 
     // counter to allow mutex lock with only one SSTORE operation
     uint256 private _guardCounter;
-    address private _owner;
+    address internal _owner;
 
     address internal _dmgToken;
     address internal _guardian;
@@ -38,10 +38,11 @@ contract DMGYieldFarmingData is Initializable {
     uint internal _dmgGrowthCoefficient;
 
     bool internal _isFarmActive;
-    uint internal _farmIndex;
+    uint internal _seasonIndex;
     mapping(address => uint16) internal _tokenToRewardPointMap;
-    mapping(uint => mapping(address => mapping(address => uint))) internal _farmIndexToUserToTokenToEarnedDmgAmountMap;
-    mapping(uint => mapping(address => mapping(address => uint64))) internal _farmIndexToUserToTokenToDepositTimestampMap;
+    mapping(address => mapping(address => bool)) internal _userToSpenderToIsApprovedMap;
+    mapping(uint => mapping(address => mapping(address => uint))) internal _seasonIndexToUserToTokenToEarnedDmgAmountMap;
+    mapping(uint => mapping(address => mapping(address => uint64))) internal _seasonIndexToUserToTokenToDepositTimestampMap;
     mapping(address => address) internal _tokenToUnderlyingTokenMap;
     mapping(address => uint8) internal _tokenToDecimalsMap;
     mapping(address => uint) internal _tokenToIndexPlusOneMap;
@@ -61,13 +62,13 @@ contract DMGYieldFarmingData is Initializable {
     // Functions
     // /////////////////////////
 
-    function initialize() public initializer {
+    function initialize(address owner) public initializer {
         // The counter starts at one to prevent changing it from zero to a non-zero
         // value, which is a more expensive operation.
         _guardCounter = 1;
 
-        _owner = msg.sender;
-        emit OwnershipTransferred(address(0), _owner);
+        _owner = owner;
+        emit OwnershipTransferred(address(0), owner);
     }
 
     /**
@@ -137,16 +138,16 @@ contract DMGYieldFarmingData is Initializable {
     // Constants
     // /////////////////////////
 
-    uint16 public constant POINTS_DECIMALS = 2;
+    uint8 public constant POINTS_DECIMALS = 2;
 
-    uint16 public constant POINTS_FACTOR = 10 ** POINTS_DECIMALS;
+    uint16 public constant POINTS_FACTOR = 10 ** uint16(POINTS_DECIMALS);
 
     uint8 public constant DMG_GROWTH_COEFFICIENT_DECIMALS = 18;
 
-    uint8 public constant DMG_GROWTH_COEFFICIENT_FACTOR = 10 ** DMG_GROWTH_COEFFICIENT_DECIMALS;
+    uint public constant DMG_GROWTH_COEFFICIENT_FACTOR = 10 ** uint(DMG_GROWTH_COEFFICIENT_DECIMALS);
 
     uint8 public constant USD_VALUE_DECIMALS = 18;
 
-    uint8 public constant USD_VALUE_FACTOR = 10 ** DMG_GROWTH_COEFFICIENT_DECIMALS;
+    uint public constant USD_VALUE_FACTOR = 10 ** uint(USD_VALUE_DECIMALS);
 
 }

@@ -19,12 +19,24 @@ pragma solidity ^0.5.0;
 
 library StringHelpers {
 
-    function toString(address _address) public pure returns (string memory) {
-        bytes memory b = new bytes(20);
-        for (uint i = 0; i < 20; i++) {
-            b[i] = byte(uint8(uint(_address) / (2 ** (8 * (19 - i)))));
+    function toString(address _value) public pure returns (string memory) {
+        return toString(abi.encodePacked(_value));
+    }
+
+    function toString(uint _value) public pure returns (string memory) {
+        return toString(abi.encodePacked(_value));
+    }
+
+    function toString(bytes memory value) internal pure returns (string memory) {
+        bytes memory alphabet = "0123456789abcdef";
+        bytes memory str = new bytes(2 + (value.length * 2));
+        str[0] = '0';
+        str[1] = 'x';
+        for (uint i = 0; i < value.length; i++) {
+            str[2 + i * 2] = alphabet[uint(uint8(value[i] >> 4))];
+            str[3 + i * 2] = alphabet[uint(uint8(value[i] & 0x0f))];
         }
-        return string(b);
+        return string(str);
     }
 
 }

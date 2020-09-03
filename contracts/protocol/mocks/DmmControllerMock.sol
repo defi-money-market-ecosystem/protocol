@@ -105,7 +105,8 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
     function setOffChainCurrencyValuator(address unused) public {
     }
 
-    function setUnderlyingTokenValuator(address unused) public {
+    function setUnderlyingTokenValuator(address underlyingTokenValuator) public {
+        _underlyingTokenValuator = underlyingTokenValuator;
     }
 
     function setMinCollateralization(uint unused) public {
@@ -140,6 +141,10 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
 
     function getInterestRateByDmmTokenId(uint dmmTokenId) public view returns (uint) {
         return _interestRate;
+    }
+
+    function getDmmTokenIds() external view returns (uint[] memory) {
+        return new uint[](0);
     }
 
     function getExchangeRateByUnderlying(address underlyingTokenAddress) public view returns (uint) {

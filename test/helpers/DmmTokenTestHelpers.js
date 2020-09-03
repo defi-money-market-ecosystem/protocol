@@ -1,3 +1,5 @@
+const {ZERO_ADDRESS} = require('@openzeppelin/test-helpers/src/constants');
+
 const {web3} = require('@openzeppelin/test-environment');
 const {expect} = require('chai');
 const web3Config = require('@openzeppelin/test-helpers/src/config/web3');
@@ -14,6 +16,7 @@ const _001 = () => new BN('10000000000');
 const _00625 = () => new BN('62500000000000000');
 const _05 = () => new BN('500000000000000000');
 const _1 = () => new BN('1000000000000000000');
+const _10 = () => new BN('10000000000000000000');
 const _24 = () => new BN('24000000000000000000');
 const _24_99 = () => new BN('24999999999999999999');
 const _25 = () => new BN('25000000000000000000');
@@ -27,39 +30,73 @@ const _250000000 = () => new BN('250000000000000000000000000');
 const doYieldFarmingBeforeEach = async (thisInstance, contracts, web3) => {
   web3Config.getWeb3 = () => web3;
 
-  const DMGToken = contracts.fromArtifact('DMGToken');
   const DMGYieldFarmingV1 = contracts.fromArtifact('DMGYieldFarmingV1');
   const DMGYieldFarmingProxy = contracts.fromArtifact('DMGYieldFarmingProxy');
   const ERC20Mock = contracts.fromArtifact('ERC20Mock');
+  const DmmControllerMock = contracts.fromArtifact('DmmControllerMock');
   const UnderlyingTokenValuatorMock = contracts.fromArtifact('UnderlyingTokenValuatorMock');
+  const StringHelpers = contracts.fromArtifact('StringHelpers');
 
-  thisInstance.dmgToken = await DMGToken.new(thisInstance.admin, {from: thisInstance.admin});
+  await Promise.all(
+    [
+      DMGYieldFarmingV1.detectNetwork(),
+    ]
+  );
 
-  thisInstance.dmmController =
+  const stringHelpers = await StringHelpers.new();
+  await DMGYieldFarmingV1.link("StringHelpers", stringHelpers.address);
 
   thisInstance.tokenA = await ERC20Mock.new({from: thisInstance.admin});
   thisInstance.tokenB = await ERC20Mock.new({from: thisInstance.admin});
+  thisInstance.tokenC = await ERC20Mock.new({from: thisInstance.admin});
 
-  thisInstance.allowableTokens = [thisInstance.tokenA.address, thisInstance.tokenB.address];
-  thisInstance.underlyingTokens = [thisInstance.tokenA.address, thisInstance.tokenB.address];
+  thisInstance.underlyingTokenA = await ERC20Mock.new({from: thisInstance.admin});
+  await thisInstance.underlyingTokenA.setBalance(thisInstance.tokenA.address, _10000());
 
-  thisInstance.implementation = await DMGYieldFarmingV1.new(
-    {from: thisInstance.admin},
+  thisInstance.underlyingTokenB = await ERC20Mock.new({from: thisInstance.admin});
+  await thisInstance.underlyingTokenB.setBalance(thisInstance.tokenB.address, '10000000000'); // 10,000 (6 decimals)
+
+  thisInstance.underlyingTokenC = await ERC20Mock.new({from: thisInstance.admin});
+  await thisInstance.underlyingTokenC.setBalance(thisInstance.tokenC.address, _10000());
+
+  thisInstance.dmgToken = await ERC20Mock.new(thisInstance.admin, {from: thisInstance.admin});
+  await thisInstance.dmgToken.setBalance(thisInstance.owner, _10000());
+
+  thisInstance.underlyingTokenValuator = await UnderlyingTokenValuatorMock.new(
+    [thisInstance.underlyingTokenA.address, thisInstance.underlyingTokenB.address],
+    ['101000000', '99000000'], // $1.01 and $0.99
+    ['8', '8'],
+  );
+  thisInstance.dmmController = await DmmControllerMock.new(
+    ZERO_ADDRESS,
+    thisInstance.underlyingTokenValuator.address,
+    ZERO_ADDRESS,
+    '0',
   );
 
-  thisInstance.yieldFarming = await DMGYieldFarmingProxy.new(
+  thisInstance.allowableTokens = [thisInstance.tokenA.address, thisInstance.tokenB.address];
+  thisInstance.underlyingTokens = [thisInstance.underlyingTokenA.address, thisInstance.underlyingTokenB.address];
+
+  thisInstance.implementation = await DMGYieldFarmingV1.new({from: thisInstance.admin});
+
+  thisInstance.proxy = await DMGYieldFarmingProxy.new(
     thisInstance.implementation.address,
     thisInstance.admin,
     // Begin IMPL initializer
     thisInstance.dmgToken.address,
-    thisInstance.admin,
+    thisInstance.guardian,
     thisInstance.dmmController.address,
-    _1(),
+    _1() /* dmgGrowthCoefficient */,
     thisInstance.allowableTokens,
     thisInstance.underlyingTokens,
     [18, 6],
     [new BN('100'), new BN('300')],
-  )
+  );
+
+  thisInstance.yieldFarming = await contracts.fromArtifact('DMGYieldFarmingV1', thisInstance.proxy.address)
+  thisInstance.contract = thisInstance.yieldFarming;
+
+  await thisInstance.yieldFarming.transferOwnership(thisInstance.owner, {from: thisInstance.guardian});
 };
 
 const doDmgTokenBeforeEach = async (thisInstance, contracts, web3) => {
@@ -549,12 +586,45 @@ const signMessage = async (thisInstance, digest) => {
   return ethereumJsUtil.ecsign(digestBuffer, privateKeyBuffer)
 };
 
+const snapshotChain = async (provider) => {
+  return callWeb3(provider, 'evm_snapshot');
+}
+
+const resetChain = async (provider, resetToId) => {
+  if (!resetToId) {
+    throw new Error('id must be set');
+  }
+
+  const currentId = await snapshotChain(provider);
+
+  if (currentId !== resetToId) {
+    await callWeb3(provider, 'evm_revert', [resetToId]);
+    return snapshotChain(provider);
+  }
+}
+
+const callWeb3 = async (provider, method, params) => {
+  const args = {
+    method,
+    params,
+    jsonrpc: '2.0',
+    id: new Date().getTime(),
+  };
+
+  const response = await new Promise(((resolve, reject) => {
+    provider.send(args, (error, response) => !!error ? reject(error) : resolve(response))
+  }));
+
+  return response.result;
+}
+
 module.exports = {
   _0,
   _001,
   _00625,
   _05,
   _1,
+  _10,
   _24,
   _24_99,
   _25,
@@ -587,4 +657,6 @@ module.exports = {
   setRealInterestRateOnController,
   setupWallet,
   signMessage,
+  snapshotChain,
+  resetChain
 };

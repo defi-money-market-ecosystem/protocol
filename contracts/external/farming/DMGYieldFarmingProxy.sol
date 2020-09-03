@@ -21,7 +21,7 @@ import "../../../node_modules/@openzeppelin/upgrades/contracts/upgradeability/Ad
 
 import "./v1/IDMGYieldFarmingV1Initializable.sol";
 
-contract DMGYieldFarmingProxy is AdminUpgradeabilityProxy, IDMGYieldFarmingV1Initializable {
+contract DMGYieldFarmingProxy is AdminUpgradeabilityProxy {
 
     /**
      * @param logic                 The address of the initial implementation.
@@ -53,10 +53,18 @@ contract DMGYieldFarmingProxy is AdminUpgradeabilityProxy, IDMGYieldFarmingV1Ini
         logic,
         admin,
         abi.encodePacked(
-            this.initialize.selector,
+            IDMGYieldFarmingV1Initializable(address(0)).initialize.selector,
             abi.encode(dmgToken, guardian, dmmController, dmgGrowthCoefficient, allowableTokens, underlyingTokens, tokenDecimals, points)
         )
     )
     public {}
+
+    function getImplementation() public view returns (address) {
+        return _implementation();
+    }
+
+    function _willFallback() internal {
+        // Don't call super. We want the admin to be able to call-through to the implementation contract
+    }
 
 }

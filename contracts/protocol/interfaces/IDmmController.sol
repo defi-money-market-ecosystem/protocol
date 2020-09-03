@@ -260,8 +260,8 @@ interface IDmmController {
      */
     function getDmmTokenAddressByDmmTokenId(uint dmmTokenId) external view returns (address);
 
-    function underlyingTokenValuator() external view returns (IUnderlyingTokenValuator);
-
     function blacklistable() external view returns (Blacklistable);
+
+    function underlyingTokenValuator() external view returns (IUnderlyingTokenValuator);
 
 }

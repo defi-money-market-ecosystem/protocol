@@ -20,10 +20,12 @@ pragma solidity ^0.5.0;
 import "../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../interfaces/IUnderlyingTokenValuator.sol";
+import "../../utils/StringHelpers.sol";
 
 contract UnderlyingTokenValuatorMock is IUnderlyingTokenValuator {
 
     using SafeMath for uint;
+    using StringHelpers for *;
 
     mapping(address => uint) public tokenToPriceMap;
     mapping(address => uint8) public tokenToPriceDecimalsMap;
@@ -65,8 +67,7 @@ contract UnderlyingTokenValuatorMock is IUnderlyingTokenValuator {
             tokenToPriceMap[token] != 0,
             "UnderlyingTokenValuatorMock::getTokenValue: INVALID_TOKEN"
         );
-
-        return tokenToPriceMap[token].mul(amount).div(10 ** tokenToPriceDecimalsMap[token]);
+        return tokenToPriceMap[token].mul(amount).div(10 ** uint(tokenToPriceDecimalsMap[token]));
     }
 
 }

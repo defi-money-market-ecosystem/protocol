@@ -1,23 +1,20 @@
-const {accounts, contract, web3} = require('@openzeppelin/test-environment');
+const {accounts, contract, web3, provider} = require('@openzeppelin/test-environment');
 require('@openzeppelin/test-helpers/src/config/web3').getWeb3 = () => web3;
-const {expect} = require('chai');
 require('chai').should();
-const {BN, constants, expectRevert, expectEvent, send, balance} = require('@openzeppelin/test-helpers');
+const {expectRevert, expectEvent} = require('@openzeppelin/test-helpers');
 
-const {doYieldFarmingBeforeEach, setApproval, _001, _1, _10000, _0, signMessage} = require('../../helpers/DmmTokenTestHelpers');
+const {doYieldFarmingBeforeEach, snapshotChain, resetChain, _1} = require('../../helpers/DmmTokenTestHelpers');
 
 
 // Use the different accounts, which are unlocked and funded with Ether
-const [admin, user, otherUser] = accounts;
-
-// Create a contract object from a compilation artifact
-const DMGYieldFarming = contract.fromArtifact('DMGYieldFarming');
+const [admin, guardian, user, owner] = accounts;
 
 describe('DMGYieldFarming.Proxy', () => {
-  let farming = null;
-
-  beforeEach(async () => {
+  let snapshotId;
+  before(async () => {
     this.admin = admin;
+    this.guardian = guardian;
+    this.owner = owner;
     this.user = user;
 
     this.wallet = web3.eth.accounts.create();
@@ -26,10 +23,50 @@ describe('DMGYieldFarming.Proxy', () => {
     await web3.eth.personal.unlockAccount(this.wallet.address, password, 600);
 
     await doYieldFarmingBeforeEach(this, contract, web3);
+
+    snapshotId = await snapshotChain(provider);
   });
 
-  it('should get', async () => {
+  beforeEach(async () => {
+    (this.yieldFarming.address).should.eq(this.proxy.address);
+    await resetChain(provider, snapshotId);
+  })
 
+  it('admin: should get admin on proxy contract', async () => {
+    const result = await this.proxy.admin({from: admin});
+    (result.receipt.status).should.eq(true)
+  });
+
+  it('upgradeTo: should upgrade proxy to new address', async () => {
+    const result = await this.proxy.upgradeTo(this.dmmController.address, {from: admin});
+    (result.receipt.status).should.eq(true);
+    expectEvent(result.receipt, 'Upgraded', {'implementation': this.dmmController.address});
+
+    (await this.proxy.getImplementation()).should.eq(this.dmmController.address);
+  });
+
+  it('guardian: should call function on implementation contract', async () => {
+    (await this.yieldFarming.guardian()).should.eq(guardian);
+  });
+
+  it('guardian: should call function on implementation contract when using admin', async () => {
+    (await this.yieldFarming.guardian({from: admin})).should.eq(guardian);
+  });
+
+  it('initialize: should not call initialize again', async () => {
+    const methodName = 'initialize(address,address,address,uint256,address[],address[],uint8[],uint16[])';
+    const promise = this.yieldFarming.methods[methodName](
+      this.dmgToken.address,
+      guardian,
+      this.dmmController.address,
+      _1(),
+      [this.tokenA.address],
+      [this.underlyingTokenA.address],
+      ['8'],
+      ['100'],
+      {from: admin},
+    );
+    await expectRevert(promise, 'Contract instance has already been initialized')
   });
 
 });
