@@ -33,8 +33,8 @@ interface IDMGYieldFarmingV1 {
     event TokenAdded(address indexed token, address indexed underlyingToken, uint8 underlyingTokenDecimals, uint16 points);
     event TokenRemoved(address indexed token);
 
-    event FarmCampaignBegun(uint indexed seasonIndex, uint dmgAmount);
-    event FarmCampaignEnd(uint indexed seasonIndex, address dustRecipient, uint dustyDmgAmount);
+    event FarmSeasonBegun(uint indexed seasonIndex, uint dmgAmount);
+    event FarmSeasonEnd(uint indexed seasonIndex, address dustRecipient, uint dustyDmgAmount);
 
     event DmgGrowthCoefficientSet(uint coefficient);
     event RewardPointsSet(address indexed token, uint16 points);
@@ -83,7 +83,7 @@ interface IDMGYieldFarmingV1 {
      *
      * @param dmgAmount The amount of DMG that will be used to fund this campaign.
      */
-    function beginFarmingCampaign(uint dmgAmount) external;
+    function beginFarmingSeason(uint dmgAmount) external;
 
     /**
      * Ends the active farming process if the admin calls this function. Otherwise, anyone may call this function once
@@ -91,7 +91,7 @@ interface IDMGYieldFarmingV1 {
      *
      * @param dustRecipient The recipient of any leftover DMG in this contract, when the campaign finishes.
      */
-    function endActiveFarmingCampaign(address dustRecipient) external;
+    function endActiveFarmingSeason(address dustRecipient) external;
 
     // ////////////////////
     // Misc Functions

@@ -131,8 +131,8 @@ describe('DMGYieldFarmingV1.Admin', () => {
 
   it('removeAllowableToken: should not remove token if there is an active season', async () => {
     await this.dmgToken.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: owner});
-    const result = await this.yieldFarming.beginFarmingCampaign(_100(), {from: owner});
-    expectEvent(result, 'FarmCampaignBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
+    const result = await this.yieldFarming.beginFarmingSeason(_100(), {from: owner});
+    expectEvent(result, 'FarmSeasonBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
 
     await expectRevert(
       this.yieldFarming.removeAllowableToken(this.tokenC.address, {from: owner}),
@@ -187,73 +187,73 @@ describe('DMGYieldFarmingV1.Admin', () => {
     )
   });
 
-  // beginFarmingCampaign
+  // beginFarmingSeason
 
-  it('beginFarmingCampaign: should succeed if the system is idle', async () => {
+  it('beginFarmingSeason: should succeed if the system is idle', async () => {
     await this.dmgToken.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: owner});
-    const result = await this.yieldFarming.beginFarmingCampaign(_100(), {from: owner});
-    expectEvent(result, 'FarmCampaignBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
+    const result = await this.yieldFarming.beginFarmingSeason(_100(), {from: owner});
+    expectEvent(result, 'FarmSeasonBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
 
     (await this.yieldFarming.isFarmActive()).should.eq(true);
     (await this.dmgToken.balanceOf(owner)).should.be.bignumber.eq(_10000().sub(_100()));
   });
 
-  it('beginFarmingCampaign: should fail if there is a season active', async () => {
+  it('beginFarmingSeason: should fail if there is a season active', async () => {
     await this.dmgToken.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: owner});
-    const result = await this.yieldFarming.beginFarmingCampaign(_100(), {from: owner});
-    expectEvent(result, 'FarmCampaignBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
+    const result = await this.yieldFarming.beginFarmingSeason(_100(), {from: owner});
+    expectEvent(result, 'FarmSeasonBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
 
     await expectRevert(
-      this.yieldFarming.beginFarmingCampaign(_100(), {from: owner}),
-      'DMGYieldFarming::beginFarmingCampaign: FARM_ALREADY_ACTIVE',
+      this.yieldFarming.beginFarmingSeason(_100(), {from: owner}),
+      'DMGYieldFarming::beginFarmingSeason: FARM_ALREADY_ACTIVE',
     );
   });
 
-  it('beginFarmingCampaign: should fail if called by guardian', async () => {
-    await expectRevert(this.yieldFarming.beginFarmingCampaign(_100(), {from: guardian}), NOT_OWNER_ERROR);
+  it('beginFarmingSeason: should fail if called by guardian', async () => {
+    await expectRevert(this.yieldFarming.beginFarmingSeason(_100(), {from: guardian}), NOT_OWNER_ERROR);
   });
 
-  it('beginFarmingCampaign: should fail if not called by owner', async () => {
-    await expectRevert(this.yieldFarming.beginFarmingCampaign(_100(), {from: guardian}), NOT_OWNER_ERROR);
+  it('beginFarmingSeason: should fail if not called by owner', async () => {
+    await expectRevert(this.yieldFarming.beginFarmingSeason(_100(), {from: guardian}), NOT_OWNER_ERROR);
   });
 
-  it('endActiveFarmingCampaign: should succeed if the farm is active and sent by owner', async () => {
+  it('endActiveFarmingSeason: should succeed if the farm is active and sent by owner', async () => {
     await this.dmgToken.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: owner});
-    let result = await this.yieldFarming.beginFarmingCampaign(_100(), {from: owner});
-    expectEvent(result, 'FarmCampaignBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
+    let result = await this.yieldFarming.beginFarmingSeason(_100(), {from: owner});
+    expectEvent(result, 'FarmSeasonBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
 
     (await this.yieldFarming.isFarmActive()).should.eq(true);
     (await this.dmgToken.balanceOf(owner)).should.be.bignumber.eq(_10000().sub(_100()));
 
-    result = await this.yieldFarming.endActiveFarmingCampaign(guardian, {from: owner});
-    expectEvent(result, 'FarmCampaignEnd', {seasonIndex: new BN('2'), dustRecipient: guardian});
+    result = await this.yieldFarming.endActiveFarmingSeason(guardian, {from: owner});
+    expectEvent(result, 'FarmSeasonEnd', {seasonIndex: new BN('2'), dustRecipient: guardian});
     (await this.dmgToken.balanceOf(guardian)).should.be.bignumber.eq(_100());
   });
 
-  it('endActiveFarmingCampaign: should succeed if the farm is active and sent by guardian', async () => {
+  it('endActiveFarmingSeason: should succeed if the farm is active and sent by guardian', async () => {
     await this.dmgToken.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: owner});
-    let result = await this.yieldFarming.beginFarmingCampaign(_100(), {from: owner});
-    expectEvent(result, 'FarmCampaignBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
+    let result = await this.yieldFarming.beginFarmingSeason(_100(), {from: owner});
+    expectEvent(result, 'FarmSeasonBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
 
     (await this.yieldFarming.isFarmActive()).should.eq(true);
     (await this.dmgToken.balanceOf(owner)).should.be.bignumber.eq(_10000().sub(_100()));
 
-    result = await this.yieldFarming.endActiveFarmingCampaign(guardian, {from: guardian});
-    expectEvent(result, 'FarmCampaignEnd', {seasonIndex: new BN('2'), dustRecipient: guardian});
+    result = await this.yieldFarming.endActiveFarmingSeason(guardian, {from: guardian});
+    expectEvent(result, 'FarmSeasonEnd', {seasonIndex: new BN('2'), dustRecipient: guardian});
     (await this.dmgToken.balanceOf(guardian)).should.be.bignumber.eq(_100());
   });
 
-  it('endActiveFarmingCampaign: should succeed if the farm is depleted and called by a user', async () => {
+  it('endActiveFarmingSeason: should succeed if the farm is depleted and called by a user', async () => {
     await this.dmgToken.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: owner});
-    let result = await this.yieldFarming.beginFarmingCampaign(_100(), {from: owner});
-    expectEvent(result, 'FarmCampaignBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
+    let result = await this.yieldFarming.beginFarmingSeason(_100(), {from: owner});
+    expectEvent(result, 'FarmSeasonBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
 
     (await this.yieldFarming.isFarmActive()).should.eq(true);
     (await this.dmgToken.balanceOf(owner)).should.be.bignumber.eq(_10000().sub(_100()));
 
     await this.tokenA.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await this.tokenA.setBalance(user, _10000());
-    result = await this.yieldFarming.beginFarming(user, this.tokenA.address, _10000(), {from: user});
+    result = await this.yieldFarming.beginFarming(user, user, this.tokenA.address, _10000(), {from: user});
     (result.receipt.status).should.eq(true)
 
     const _100Seconds = new BN('100');
@@ -266,21 +266,21 @@ describe('DMGYieldFarmingV1.Admin', () => {
       {owner: user, token: this.tokenA.address, withdrawnAmount: _10000(), earnedDmgAmount: _100()},
     );
 
-    result = await this.yieldFarming.endActiveFarmingCampaign(guardian, {from: user});
-    expectEvent(result, 'FarmCampaignEnd', {seasonIndex: new BN('2'), dustRecipient: guardian});
+    result = await this.yieldFarming.endActiveFarmingSeason(guardian, {from: user});
+    expectEvent(result, 'FarmSeasonEnd', {seasonIndex: new BN('2'), dustRecipient: guardian});
     (await this.dmgToken.balanceOf(guardian)).should.be.bignumber.eq(new BN('0'));
   });
 
-  it('endActiveFarmingCampaign: should fail if the farm is active and sent by a user', async () => {
+  it('endActiveFarmingSeason: should fail if the farm is active and sent by a user', async () => {
     await this.dmgToken.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: owner});
-    let result = await this.yieldFarming.beginFarmingCampaign(_100(), {from: owner});
-    expectEvent(result, 'FarmCampaignBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
+    let result = await this.yieldFarming.beginFarmingSeason(_100(), {from: owner});
+    expectEvent(result, 'FarmSeasonBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
 
     (await this.yieldFarming.isFarmActive()).should.eq(true);
     (await this.dmgToken.balanceOf(owner)).should.be.bignumber.eq(_10000().sub(_100()));
 
     await expectRevert(
-      this.yieldFarming.endActiveFarmingCampaign(user, {from: user}),
+      this.yieldFarming.endActiveFarmingSeason(user, {from: user}),
       'DMGYieldFarming: FARM_ACTIVE or INVALID_SENDER'
     )
   });

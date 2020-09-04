@@ -183,22 +183,22 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
         emit DmgGrowthCoefficientSet(dmgGrowthCoefficient);
     }
 
-    function beginFarmingCampaign(
+    function beginFarmingSeason(
         uint dmgAmount
     )
     public
     nonReentrant
     onlyOwner {
-        require(!_isFarmActive, "DMGYieldFarming::beginFarmingCampaign: FARM_ALREADY_ACTIVE");
+        require(!_isFarmActive, "DMGYieldFarming::beginFarmingSeason: FARM_ALREADY_ACTIVE");
 
         _seasonIndex += 1;
         _isFarmActive = true;
         IERC20(_dmgToken).safeTransferFrom(msg.sender, address(this), dmgAmount);
 
-        emit FarmCampaignBegun(_seasonIndex, dmgAmount);
+        emit FarmSeasonBegun(_seasonIndex, dmgAmount);
     }
 
-    function endActiveFarmingCampaign(
+    function endActiveFarmingSeason(
         address dustRecipient
     )
     public
@@ -215,7 +215,7 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
             IERC20(_dmgToken).safeTransfer(dustRecipient, dmgBalance);
         }
 
-        emit FarmCampaignEnd(_seasonIndex, dustRecipient, dmgBalance);
+        emit FarmSeasonEnd(_seasonIndex, dustRecipient, dmgBalance);
     }
 
     // ////////////////////
@@ -366,7 +366,7 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
     public returns (uint) {
         require(
             !_isFarmActive || _tokenToIndexPlusOneMap[token] == 0,
-            "DMGYieldFarmingV1::withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved: FARM_ACTIVE_OR_TOKEN_SUPPORTED"
+            "DMGYieldFarmingV1::withdrawByTokenWhenOutOfSeason: FARM_ACTIVE_OR_TOKEN_SUPPORTED"
         );
 
         return _withdrawByTokenWhenOutOfSeason(user, recipient, token);

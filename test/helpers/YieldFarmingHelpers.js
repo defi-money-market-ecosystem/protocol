@@ -147,14 +147,14 @@ const doYieldFarmingBeforeEach = async (thisInstance, contracts, web3) => {
 
 const startFarmSeason = async (thisInstance, index) => {
   await thisInstance.dmgToken.approve(thisInstance.yieldFarming.address, constants.MAX_UINT256, {from: thisInstance.owner});
-  let result = await thisInstance.yieldFarming.beginFarmingCampaign(_100(), {from: thisInstance.owner});
-  expectEvent(result, 'FarmCampaignBegun', {seasonIndex: index || new BN('2'), dmgAmount: _100()});
+  let result = await thisInstance.yieldFarming.beginFarmingSeason(_100(), {from: thisInstance.owner});
+  expectEvent(result, 'FarmSeasonBegun', {seasonIndex: index || new BN('2'), dmgAmount: _100()});
 }
 
 const endFarmSeason = async (thisInstance, index) => {
   await thisInstance.dmgToken.approve(thisInstance.yieldFarming.address, constants.MAX_UINT256, {from: thisInstance.owner});
-  let result = await thisInstance.yieldFarming.endActiveFarmingCampaign(thisInstance.owner, {from: thisInstance.owner});
-  expectEvent(result, 'FarmCampaignEnd', {seasonIndex: index || new BN('2'), dustRecipient: thisInstance.owner});
+  let result = await thisInstance.yieldFarming.endActiveFarmingSeason(thisInstance.owner, {from: thisInstance.owner});
+  expectEvent(result, 'FarmSeasonEnd', {seasonIndex: index || new BN('2'), dustRecipient: thisInstance.owner});
 }
 
 module.exports = {
