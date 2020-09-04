@@ -294,7 +294,7 @@ contract DelayedTransaction is IDelayedTransaction
         // Return the transaction value (if there is any)
         uint value = transaction.value;
         if (value > 0) {
-            msg.sender.sendETHAndVerify(value, gasleft());
+            msg.sender.sendETHAndVerify(value);
         }
     }
 

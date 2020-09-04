@@ -3,8 +3,8 @@ require('@openzeppelin/test-helpers/src/config/web3').getWeb3 = () => web3;
 require('chai').should();
 const {expectRevert, expectEvent} = require('@openzeppelin/test-helpers');
 
-const {doYieldFarmingBeforeEach, snapshotChain, resetChain, _1} = require('../../helpers/DmmTokenTestHelpers');
-
+const {snapshotChain, resetChain, _1} = require('../../helpers/DmmTokenTestHelpers');
+const {doYieldFarmingBeforeEach} = require('../../helpers/YieldFarmingHelpers');
 
 // Use the different accounts, which are unlocked and funded with Ether
 const [admin, guardian, user, owner] = accounts;

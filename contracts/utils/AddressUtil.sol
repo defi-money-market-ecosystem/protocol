@@ -52,31 +52,31 @@ library AddressUtil
     // Make sure your code is safe for reentrancy when using this function!
     function sendETH(
         address to,
-        uint amount,
-        uint gasLimit
+        uint amount
     )
     internal
-    returns (bool success)
-    {
+    returns (bool success) {
         if (amount == 0) {
             return true;
         }
+
         address payable recipient = to.toPayable();
+        require(address(this).balance >= amount, "AddressUtil::sendETH: INSUFFICIENT_BALANCE");
+
         /* solium-disable-next-line */
-        (success,) = recipient.call.value(amount).gas(gasLimit)("");
+        (success,) = recipient.call.value(amount)("");
     }
 
     // Works like address.transfer but with a customizable gas limit
     // Make sure your code is safe for reentrancy when using this function!
     function sendETHAndVerify(
         address to,
-        uint amount,
-        uint gasLimit
+        uint amount
     )
     internal
     returns (bool success)
     {
-        success = to.sendETH(amount, gasLimit);
+        success = to.sendETH(amount);
         require(success, "TRANSFER_FAILURE");
     }
 }

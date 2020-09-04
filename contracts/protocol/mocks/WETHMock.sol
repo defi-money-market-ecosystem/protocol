@@ -46,7 +46,7 @@ contract WETHMock is ERC20Mock, IWETH {
         require(_balances[msg.sender] >= wad, "INSUFFICIENT_BALANCE");
 
         _balances[msg.sender] -= wad;
-        AddressUtil.sendETHAndVerify(msg.sender, wad, gasleft());
+        AddressUtil.sendETHAndVerify(msg.sender, wad);
         emit Withdrawal(msg.sender, wad);
     }
 

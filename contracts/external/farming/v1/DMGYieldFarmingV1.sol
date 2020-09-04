@@ -226,6 +226,10 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
         return _supportedFarmTokens;
     }
 
+    function isSupportedToken(address token) public view returns (bool) {
+        return _tokenToIndexPlusOneMap[token] > 0;
+    }
+
     function isFarmActive() public view returns (bool) {
         return _isFarmActive;
     }
@@ -282,6 +286,7 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
 
     function beginFarming(
         address user,
+        address funder,
         address token,
         uint amount
     )
@@ -290,9 +295,14 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
     requireIsFarmToken(token)
     isSpenderApproved(user)
     nonReentrant {
+        require(
+            funder == msg.sender || funder == user,
+            "DMGYieldFarmingV1::beginFarming: INVALID_FUNDER"
+        );
+
         if (amount > 0) {
             // In case the user is reusing a non-zero balance they had before the start of this farm.
-            IERC20(token).safeTransferFrom(user, address(this), amount);
+            IERC20(token).safeTransferFrom(funder, address(this), amount);
         }
 
         // We reindex before adding to the user's balance, because the indexing process takes the user's CURRENT
@@ -307,27 +317,27 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
     }
 
     function endFarmingByToken(
-        address from,
+        address user,
         address recipient,
         address token
     )
     public
     farmIsActive
     requireIsFarmToken(token)
-    isSpenderApproved(from)
+    isSpenderApproved(user)
     nonReentrant
     returns (uint, uint) {
-        uint balance = _addressToTokenToBalanceMap[from][token];
+        uint balance = _addressToTokenToBalanceMap[user][token];
         require(balance > 0, "DMGYieldFarming::endFarmingByToken: ZERO_BALANCE");
 
-        uint earnedDmgAmount = _getTotalRewardBalanceByUserAndToken(from, token, _seasonIndex);
+        uint earnedDmgAmount = _getTotalRewardBalanceByUserAndToken(user, token, _seasonIndex);
         require(earnedDmgAmount > 0, "DMGYieldFarming::endFarmingByToken: ZERO_EARNED");
 
         address dmgToken = _dmgToken;
         uint contractDmgBalance = IERC20(dmgToken).balanceOf(address(this));
-        _endFarmingByToken(from, recipient, token, balance, earnedDmgAmount, contractDmgBalance);
+        _endFarmingByToken(user, recipient, token, balance, earnedDmgAmount, contractDmgBalance);
 
-        _transferDmgOut(recipient, earnedDmgAmount, dmgToken, contractDmgBalance);
+        earnedDmgAmount = _transferDmgOut(recipient, earnedDmgAmount, dmgToken, contractDmgBalance);
 
         return (balance, earnedDmgAmount);
     }
@@ -346,7 +356,7 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
         }
     }
 
-    function withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved(
+    function withdrawByTokenWhenOutOfSeason(
         address user,
         address recipient,
         address token
@@ -567,11 +577,13 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
         uint amount,
         address dmgToken,
         uint contractDmgBalance
-    ) internal {
+    ) internal returns (uint) {
         if (contractDmgBalance < amount) {
             IERC20(dmgToken).safeTransfer(recipient, contractDmgBalance);
+            return contractDmgBalance;
         } else {
             IERC20(dmgToken).safeTransfer(recipient, amount);
+            return amount;
         }
     }
 

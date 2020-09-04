@@ -3,8 +3,8 @@ require('@openzeppelin/test-helpers/src/config/web3').getWeb3 = () => web3;
 require('chai').should();
 const {BN, constants, expectRevert, expectEvent, time} = require('@openzeppelin/test-helpers');
 
-const {doYieldFarmingBeforeEach, snapshotChain, resetChain, _1, _10, _100, _10000} = require('../../helpers/DmmTokenTestHelpers');
-
+const {snapshotChain, resetChain, _1, _10, _100, _10000} = require('../../helpers/DmmTokenTestHelpers');
+const {doYieldFarmingBeforeEach, startFarmSeason, endFarmSeason} = require('../../helpers/YieldFarmingHelpers');
 
 // Use the different accounts, which are unlocked and funded with Ether
 const [admin, guardian, owner, user, spender, receiver] = accounts;
@@ -36,18 +36,6 @@ describe('DMGYieldFarmingV1.User', () => {
     snapshotId = await resetChain(provider, snapshotId);
   });
 
-  const startFarm = async (index) => {
-    await this.dmgToken.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: owner});
-    let result = await this.yieldFarming.beginFarmingCampaign(_100(), {from: owner});
-    expectEvent(result, 'FarmCampaignBegun', {seasonIndex: index || new BN('2'), dmgAmount: _100()});
-  }
-
-  const endFarm = async (index) => {
-    await this.dmgToken.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: owner});
-    let result = await this.yieldFarming.endActiveFarmingCampaign(owner, {from: owner});
-    expectEvent(result, 'FarmCampaignEnd', {seasonIndex: index || new BN('2'), dustRecipient: owner});
-  }
-
   it('approve: should set spender to be approved and unapproved', async () => {
     let result = await this.yieldFarming.approve(spender, true, {from: user});
     expectEvent(result, 'Approval', {user, spender, isTrusted: true});
@@ -60,13 +48,13 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('beginFarming: should farm properly for 1 token with 1 deposit', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -92,13 +80,13 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('beginFarming: should farm properly for 1 token with 1 deposit, then should redeposit 0 for next season', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -121,16 +109,16 @@ describe('DMGYieldFarmingV1.User', () => {
     let expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1());
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
 
-    await endFarm();
+    await endFarmSeason(this);
 
     (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(new BN('0'));
 
-    await startFarm(new BN('3'));
+    await startFarmSeason(this, new BN('3'));
 
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(new BN('0'));
 
-    result = await this.yieldFarming.beginFarming(user, token.address, new BN('0'), {from: user});
+    result = await this.yieldFarming.beginFarming(user, user, token.address, new BN('0'), {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -153,14 +141,14 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('beginFarming: should farm properly for 1 token with 1 deposit, then should redeposit non-zero amount for next season', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
     const deposit2 = _10();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -183,16 +171,16 @@ describe('DMGYieldFarmingV1.User', () => {
     let expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1());
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
 
-    await endFarm();
+    await endFarmSeason(this);
 
     (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(new BN('0'));
 
-    await startFarm(new BN('3'));
+    await startFarmSeason(this, new BN('3'));
 
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(new BN('0'));
 
-    result = await this.yieldFarming.beginFarming(user, token.address, deposit2, {from: user});
+    result = await this.yieldFarming.beginFarming(user, user, token.address, deposit2, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -215,7 +203,7 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('beginFarming: should farm properly for 1 token with 1 deposit from another spender that is trusted', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     let result = await this.yieldFarming.approve(spender, true, {from: user});
@@ -225,7 +213,7 @@ describe('DMGYieldFarmingV1.User', () => {
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: spender});
+    result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: spender});
     expectEvent(
       result,
       'BeginFarming',
@@ -251,14 +239,14 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('beginFarming: should farm properly for 1 token with strange decimals and 1 deposit', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenB;
 
     const balance = new BN('10000000000')
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, balance);
     const deposit1 = new BN('100000000');
-    const result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    const result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -284,14 +272,14 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('beginFarming: should farm properly for 1 token with multiple deposits', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     const balance = _10000();
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, balance);
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -316,7 +304,7 @@ describe('DMGYieldFarmingV1.User', () => {
     // Deposit #2
 
     const deposit2 = _10();
-    result = await this.yieldFarming.beginFarming(user, token.address, deposit2, {from: user});
+    result = await this.yieldFarming.beginFarming(user, user, token.address, deposit2, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -346,14 +334,14 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('beginFarming: should farm properly for 1 token with strange decimals and multiple deposits', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenB;
 
     const balance = new BN('10000000000');
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, balance);
     const deposit1 = new BN('100000000');
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -379,7 +367,7 @@ describe('DMGYieldFarmingV1.User', () => {
     // Deposit #2
 
     const deposit2 = new BN('10000000');
-    result = await this.yieldFarming.beginFarming(user, token.address, deposit2, {from: user});
+    result = await this.yieldFarming.beginFarming(user, user, token.address, deposit2, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -409,7 +397,7 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('beginFarming: should farm properly for 2 tokens with deposits', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token1 = this.tokenA;
     const token2 = this.tokenB;
 
@@ -418,7 +406,7 @@ describe('DMGYieldFarmingV1.User', () => {
     await token1.setBalance(user, balance1);
 
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token1.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token1.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -446,7 +434,7 @@ describe('DMGYieldFarmingV1.User', () => {
     await token2.setBalance(user, balanceToken2);
 
     const deposit2 = new BN('125000000');
-    result = await this.yieldFarming.beginFarming(user, token2.address, deposit2, {from: user});
+    result = await this.yieldFarming.beginFarming(user, user, token2.address, deposit2, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -479,42 +467,42 @@ describe('DMGYieldFarmingV1.User', () => {
     const token = this.tokenA;
     const deposit1 = _100();
     await expectRevert(
-      this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user}),
+      this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user}),
       'DMGYieldFarming: FARM_NOT_ACTIVE',
     );
   });
 
   it('beginFarming: should fail adding an unsupported token', async () => {
-    await startFarm();
+    await startFarmSeason(this);
 
     const token = this.tokenC;
     const deposit1 = _100();
     await expectRevert(
-      this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user}),
+      this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user}),
       'DMGYieldFarming: TOKEN_UNSUPPORTED',
     );
   });
 
   it('beginFarming: should fail when the spender is not trusted', async () => {
-    await startFarm();
+    await startFarmSeason(this);
 
     const token = this.tokenA;
     const deposit1 = _100();
     await expectRevert(
-      this.yieldFarming.beginFarming(user, token.address, deposit1, {from: spender}),
+      this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: spender}),
       'DMGYieldFarmingV1: UNAPPROVED',
     );
   });
 
   it('endFarmingByToken: should redeem for 1 token with 1 deposit', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -539,7 +527,7 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('endFarmingByToken: should redeem for 1 token with 1 deposit using a trusted spender', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await this.yieldFarming.approve(spender, true, {from: user});
@@ -547,7 +535,7 @@ describe('DMGYieldFarmingV1.User', () => {
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: spender});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: spender});
     expectEvent(
       result,
       'BeginFarming',
@@ -573,13 +561,13 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('endFarmingByToken: should not redeem when a season is not active', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -591,7 +579,7 @@ describe('DMGYieldFarmingV1.User', () => {
     const _100Seconds = new BN('100');
     await time.increase(_100Seconds);
 
-    await endFarm();
+    await endFarmSeason(this);
 
     await expectRevert(
       this.yieldFarming.endFarmingByToken(user, receiver, token.address, {from: user}),
@@ -601,13 +589,13 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('endFarmingByToken: should not redeem when the token is not supported', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -627,13 +615,13 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('withdrawAllWhenOutOfSeason: should withdraw when there is no season', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -645,7 +633,7 @@ describe('DMGYieldFarmingV1.User', () => {
     const _100Seconds = new BN('100');
     await time.increase(_100Seconds);
 
-    await endFarm();
+    await endFarmSeason(this);
 
     result = await this.yieldFarming.withdrawAllWhenOutOfSeason(user, receiver, {from: user});
     expectEvent(
@@ -659,7 +647,7 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('withdrawAllWhenOutOfSeason: should withdraw 2+ tokens when there is no season', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token1 = this.tokenA;
     const token2 = this.tokenB;
 
@@ -674,7 +662,7 @@ describe('DMGYieldFarmingV1.User', () => {
     const deposit1 = _100();
     const deposit2 = new BN('125000000');
 
-    let result = await this.yieldFarming.beginFarming(user, token1.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token1.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -683,7 +671,7 @@ describe('DMGYieldFarmingV1.User', () => {
     (await token1.balanceOf(user)).should.be.bignumber.eq(balance1.sub(deposit1));
     (await this.yieldFarming.balanceOf(user, token1.address)).should.be.bignumber.eq(deposit1);
 
-    result = await this.yieldFarming.beginFarming(user, token2.address, deposit2, {from: user});
+    result = await this.yieldFarming.beginFarming(user, user, token2.address, deposit2, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -695,7 +683,7 @@ describe('DMGYieldFarmingV1.User', () => {
     const _100Seconds = new BN('100');
     await time.increase(_100Seconds);
 
-    await endFarm();
+    await endFarmSeason(this);
 
     result = await this.yieldFarming.withdrawAllWhenOutOfSeason(user, receiver, {from: user});
     expectEvent(
@@ -709,7 +697,7 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('withdrawAllWhenOutOfSeason: should withdraw with a trusted spender', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await this.yieldFarming.approve(spender, true, {from: user});
@@ -717,7 +705,7 @@ describe('DMGYieldFarmingV1.User', () => {
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: spender});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: spender});
     expectEvent(
       result,
       'BeginFarming',
@@ -729,7 +717,7 @@ describe('DMGYieldFarmingV1.User', () => {
     const _100Seconds = new BN('100');
     await time.increase(_100Seconds);
 
-    await endFarm();
+    await endFarmSeason(this);
 
     result = await this.yieldFarming.withdrawAllWhenOutOfSeason(user, receiver, {from: spender});
     expectEvent(
@@ -743,13 +731,13 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('withdrawAllWhenOutOfSeason: should not withdraw during a season', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -766,13 +754,13 @@ describe('DMGYieldFarmingV1.User', () => {
 
   it('withdrawAllWhenOutOfSeason: should not withdraw using an untrusted spender', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -781,7 +769,7 @@ describe('DMGYieldFarmingV1.User', () => {
     (await token.balanceOf(user)).should.be.bignumber.eq(_10000().sub(deposit1));
     (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
 
-    await endFarm();
+    await endFarmSeason(this);
 
     await expectRevert(
       this.yieldFarming.withdrawAllWhenOutOfSeason(user, receiver, {from: spender}),
@@ -789,15 +777,15 @@ describe('DMGYieldFarmingV1.User', () => {
     );
   });
 
-  it('withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved: should withdraw when the there is no active season', async () => {
+  it('withdrawByTokenWhenOutOfSeason: should withdraw when the there is no active season', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -809,9 +797,9 @@ describe('DMGYieldFarmingV1.User', () => {
     const _100Seconds = new BN('100');
     await time.increase(_100Seconds);
 
-    await endFarm();
+    await endFarmSeason(this);
 
-    result = await this.yieldFarming.withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved(user, receiver, token.address, {from: user});
+    result = await this.yieldFarming.withdrawByTokenWhenOutOfSeason(user, receiver, token.address, {from: user});
     expectEvent(
       result,
       'WithdrawOutOfSeason',
@@ -821,9 +809,9 @@ describe('DMGYieldFarmingV1.User', () => {
     (await token.balanceOf(receiver)).should.be.bignumber.eq(deposit1);
   });
 
-  it('withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved: should withdraw using a trusted spender when the there is a season', async () => {
+  it('withdrawByTokenWhenOutOfSeason: should withdraw using a trusted spender when the there is a season', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await this.yieldFarming.approve(spender, true, {from: user});
@@ -831,7 +819,7 @@ describe('DMGYieldFarmingV1.User', () => {
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: spender});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: spender});
     expectEvent(
       result,
       'BeginFarming',
@@ -843,9 +831,9 @@ describe('DMGYieldFarmingV1.User', () => {
     const _100Seconds = new BN('100');
     await time.increase(_100Seconds);
 
-    await endFarm();
+    await endFarmSeason(this);
 
-    result = await this.yieldFarming.withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved(user, receiver, token.address, {from: spender});
+    result = await this.yieldFarming.withdrawByTokenWhenOutOfSeason(user, receiver, token.address, {from: spender});
     expectEvent(
       result,
       'WithdrawOutOfSeason',
@@ -855,15 +843,15 @@ describe('DMGYieldFarmingV1.User', () => {
     (await token.balanceOf(receiver)).should.be.bignumber.eq(deposit1);
   });
 
-  it('withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved: should withdraw when there is an active season and removed token', async () => {
+  it('withdrawByTokenWhenOutOfSeason: should withdraw when there is an active season and removed token', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -877,7 +865,7 @@ describe('DMGYieldFarmingV1.User', () => {
 
     (await this.yieldFarming.isFarmActive()).should.eq(true);
 
-    result = await this.yieldFarming.withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved(user, receiver, this.tokenC.address, {from: user});
+    result = await this.yieldFarming.withdrawByTokenWhenOutOfSeason(user, receiver, this.tokenC.address, {from: user});
     expectEvent(
       result,
       'WithdrawOutOfSeason',
@@ -887,15 +875,15 @@ describe('DMGYieldFarmingV1.User', () => {
     (await token.balanceOf(receiver)).should.be.bignumber.eq(new BN('0'));
   });
 
-  it('withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved: should not withdraw when there is an active season', async () => {
+  it('withdrawByTokenWhenOutOfSeason: should not withdraw when there is an active season', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -910,20 +898,20 @@ describe('DMGYieldFarmingV1.User', () => {
     (await this.yieldFarming.isFarmActive()).should.eq(true);
 
     await expectRevert(
-      this.yieldFarming.withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved(user, receiver, token.address, {from: user}),
-      'DMGYieldFarmingV1::withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved: FARM_ACTIVE_OR_TOKEN_SUPPORTED',
+      this.yieldFarming.withdrawByTokenWhenOutOfSeason(user, receiver, token.address, {from: user}),
+      'DMGYieldFarmingV1::withdrawByTokenWhenOutOfSeason: FARM_ACTIVE_OR_TOKEN_SUPPORTED',
     );
   });
 
-  it('withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved: should not withdraw when there is an untrusted spender', async () => {
+  it('withdrawByTokenWhenOutOfSeason: should not withdraw when there is an untrusted spender', async () => {
     // Prices are $1.01 and $0.99
-    await startFarm();
+    await startFarmSeason(this);
     const token = this.tokenA;
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     await token.setBalance(user, _10000());
     const deposit1 = _100();
-    let result = await this.yieldFarming.beginFarming(user, token.address, deposit1, {from: user});
+    let result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
     expectEvent(
       result,
       'BeginFarming',
@@ -938,7 +926,7 @@ describe('DMGYieldFarmingV1.User', () => {
     (await this.yieldFarming.isFarmActive()).should.eq(true);
 
     await expectRevert(
-      this.yieldFarming.withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved(user, receiver, token.address, {from: spender}),
+      this.yieldFarming.withdrawByTokenWhenOutOfSeason(user, receiver, token.address, {from: spender}),
       'DMGYieldFarmingV1: UNAPPROVED',
     );
   });

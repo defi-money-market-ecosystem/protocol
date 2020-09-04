@@ -18,9 +18,10 @@
 pragma solidity ^0.5.0;
 
 /**
- * The interface for DMG "Yield Farming" - A process through which users may earn DMG by locking up their mTokens.
+ * The interface for DMG "Yield Farming" - A process through which users may earn DMG by locking up their mTokens in
+ * Uniswap pools, and staking the Uniswap pool's equity token in this contract.
  *
- * Yield farming in the DMM Ecosystem entails "rotation periods" in which a campaign is active, in order to incentivize
+ * Yield farming in the DMM Ecosystem entails "rotation periods" in which a season is active, in order to incentivize
  * deposits of underlying tokens into the protocol.
  */
 interface IDMGYieldFarmingV1 {
@@ -65,7 +66,7 @@ interface IDMGYieldFarmingV1 {
 
     /**
      * Changes the reward points for the provided token. Reward points are a weighting system that enables certain
-     * mTokens to accrue DMG faster than others, allowing the protocol to prioritize certain deposits.
+     * tokens to accrue DMG faster than others, allowing the protocol to prioritize certain deposits.
      */
     function setRewardPointsByToken(address token, uint16 points) external;
 
@@ -76,7 +77,7 @@ interface IDMGYieldFarmingV1 {
     function setDmgGrowthCoefficient(uint dmgGrowthCoefficient) external;
 
     /**
-     * Begins the farming process so users that accumulate DMG by locking mTokens can start for this rotation. Calling
+     * Begins the farming process so users that accumulate DMG by locking tokens can start for this rotation. Calling
      * this function increments the currentSeasonIndex, starting a new season. This function reverts if there is
      * already an active season.
      *
@@ -102,6 +103,11 @@ interface IDMGYieldFarmingV1 {
     function getFarmTokens() external view returns (address[] memory);
 
     /**
+     * @return  True if the provided token is supported for farming, or false if it's not.
+     */
+    function isSupportedToken(address token) external view returns (bool);
+
+    /**
      * @return  True if there is an active season for farming, or false if there isn't one.
      */
     function isFarmActive() external view returns (bool);
@@ -124,8 +130,8 @@ interface IDMGYieldFarmingV1 {
     function dmgGrowthCoefficient() external view returns (uint);
 
     /**
-     * @return  The amount of points that the provided mToken earns for each unit of mToken deposited. Defaults to `1`
-     *          if the provided `token` does not exist or does not have a special weight.
+     * @return  The amount of points that the provided token earns for each unit of token deposited. Defaults to `1`
+     *          if the provided `token` does not exist or does not have a special weight. This number is `2` decimals.
      */
     function getRewardPointsByToken(address token) external view returns (uint16);
 
@@ -156,10 +162,11 @@ interface IDMGYieldFarmingV1 {
     function isApproved(address user, address spender) external view returns (bool);
 
     /**
-     * Begins a farm by transferring `amount` mTokens (with DMM token ID `token`) from `user` to this
-     * contract and adds it to the balance of `user`. If `msg.sender` is not `user`, the
+     * Begins a farm by transferring `amount` of `token` from `user` to this contract and adds it to the balance of
+     * `user`. `user` must be either 1) msg.sender or 2) a wallet who has approved msg.sender as a proxy; else this
+     * function reverts. `funder` must fit into the same criteria as `user`; else this function reverts
      */
-    function beginFarming(address user, address token, uint amount) external;
+    function beginFarming(address user, address funder, address token, uint amount) external;
 
     /**
      * Ends a farm by transferring all of `token` deposited by `from` to `recipient`, from this contract, as well as
@@ -183,7 +190,7 @@ interface IDMGYieldFarmingV1 {
      *
      * @return The amount of tokens sent to `recipient`
      */
-    function withdrawByTokenWhenOutOfSeasonOrTokenIsRemoved(
+    function withdrawByTokenWhenOutOfSeason(
         address user,
         address recipient,
         address token
