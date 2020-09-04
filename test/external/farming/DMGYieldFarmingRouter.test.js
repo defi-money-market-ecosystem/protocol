@@ -9,7 +9,7 @@ const {doYieldFarmingExternalProxyBeforeEach, startFarmSeason, endFarmSeason} = 
 // Use the different accounts, which are unlocked and funded with Ether
 const [admin, guardian, owner, user, spender, receiver] = accounts;
 
-describe('DMGYieldFarmingFundingProxy', () => {
+describe('DMGYieldFarmingRouter', () => {
   const timeBuffer = new BN('2');
   const tokenUnsupportedError = 'DMGYieldFarmingFundingProxy::_verifyTokensAreSupported: TOKEN_UNSUPPORTED';
   let snapshotId;

@@ -23,7 +23,7 @@ const unsiwapDirectory = 'node_modules/@uniswap/v2-core/build/contracts'
 const doYieldFarmingExternalProxyBeforeEach = async (thisInstance, contracts, web3, provider) => {
   const ERC20Mock = contracts.fromArtifact('ERC20Mock');
   const WETHMock = contracts.fromArtifact('WETHMock');
-  const DMGYieldFarmingFundingProxy = contracts.fromArtifact('DMGYieldFarmingFundingProxy');
+  const DMGYieldFarmingRouter = contracts.fromArtifact('DMGYieldFarmingRouter');
 
   thisInstance.underlyingTokenA = await WETHMock.new({from: thisInstance.admin});
   thisInstance.weth = thisInstance.underlyingTokenA;
@@ -50,18 +50,18 @@ const doYieldFarmingExternalProxyBeforeEach = async (thisInstance, contracts, we
 
   await doYieldFarmingBeforeEach(thisInstance, contracts, web3);
 
-  thisInstance.yieldFarmingFundingProxy = await DMGYieldFarmingFundingProxy.new(
+  thisInstance.yieldFarmingRouter = await DMGYieldFarmingRouter.new(
     thisInstance.yieldFarming.address,
     thisInstance.uniswapFactory.address,
     thisInstance.weth.address,
   );
-  thisInstance.contract = thisInstance.yieldFarmingFundingProxy;
+  thisInstance.contract = thisInstance.yieldFarmingRouter;
 
   (await thisInstance.contract.getPair(thisInstance.underlyingTokenA_2.address, thisInstance.underlyingTokenA.address)).should.eq(thisInstance.tokenA.address);
   (await thisInstance.contract.getPair(thisInstance.underlyingTokenB_2.address, thisInstance.underlyingTokenB.address)).should.eq(thisInstance.tokenB.address);
   (await thisInstance.contract.getPair(thisInstance.underlyingTokenC_2.address, thisInstance.underlyingTokenC.address)).should.eq(thisInstance.tokenC.address);
 
-  await thisInstance.yieldFarmingFundingProxy.enableTokens(
+  await thisInstance.yieldFarmingRouter.enableTokens(
     [thisInstance.tokenA.address, thisInstance.tokenB.address, thisInstance.tokenC.address],
     [thisInstance.yieldFarming.address, thisInstance.yieldFarming.address, thisInstance.yieldFarming.address],
   );

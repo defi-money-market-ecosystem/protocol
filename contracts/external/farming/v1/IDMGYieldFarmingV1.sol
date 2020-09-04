@@ -30,6 +30,8 @@ interface IDMGYieldFarmingV1 {
     // Events
     // ////////////////////
 
+    event GlobalProxySet(address indexed proxy, bool isTrusted);
+
     event TokenAdded(address indexed token, address indexed underlyingToken, uint8 underlyingTokenDecimals, uint16 points);
     event TokenRemoved(address indexed token);
 
@@ -49,6 +51,20 @@ interface IDMGYieldFarmingV1 {
     // ////////////////////
     // Admin Functions
     // ////////////////////
+
+    /**
+     * Sets the `proxy` as a trusted contract, allowing it to interact with the user, on the user's behalf.
+     *
+     * @param proxy     The address that can interact on the user's behalf.
+     * @param isTrusted True if the proxy is trusted or false if it's not (should be removed).
+     */
+    function approveGloballyTrustedProxy(address proxy, bool isTrusted) external;
+
+    /**
+     * @return  true if the provided `proxy` is globally trusted and may interact with the yield farming contract on a
+     *          user's behalf or false otherwise.
+     */
+    function isGloballyTrustedProxy(address proxy) external view returns (bool);
 
     /**
      * @param token                     The address of the token to be supported for farming.

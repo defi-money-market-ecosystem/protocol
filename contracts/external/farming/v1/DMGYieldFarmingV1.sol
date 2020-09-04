@@ -18,11 +18,9 @@
 pragma solidity ^0.5.0;
 
 import "../../../../node_modules/@openzeppelin/upgrades/contracts/Initializable.sol";
-import "../../../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 import "../../../../node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
-import "../../../../node_modules/@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "../../../protocol/interfaces/IDmmController.sol";
 import "../../../protocol/interfaces/IUnderlyingTokenValuator.sol";
@@ -38,7 +36,7 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
 
     modifier isSpenderApproved(address user) {
         require(
-            msg.sender == user || _userToSpenderToIsApprovedMap[user][msg.sender],
+            msg.sender == user || _globalProxyToIsTrustedMap[msg.sender] || _userToSpenderToIsApprovedMap[user][msg.sender],
             "DMGYieldFarmingV1: UNAPPROVED"
         );
 
@@ -120,6 +118,23 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
     // ////////////////////
     // Admin Functions
     // ////////////////////
+
+    function approveGloballyTrustedProxy(
+        address proxy,
+        bool isTrusted
+    )
+    public
+    nonReentrant
+    onlyOwner {
+        _globalProxyToIsTrustedMap[proxy] = isTrusted;
+        emit GlobalProxySet(proxy, isTrusted);
+    }
+
+    function isGloballyTrustedProxy(
+        address proxy
+    ) public view returns (bool) {
+        return _globalProxyToIsTrustedMap[proxy];
+    }
 
     function addAllowableToken(
         address token,
@@ -441,8 +456,9 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
         address underlyingToken = _tokenToUnderlyingTokenMap[token];
 
         tokenAmount = tokenAmount
-        .mul(IERC20(underlyingToken).balanceOf(token)) // For Uniswap pools, underlying tokens are held in the pool's contract.
-        .div(IERC20(token).totalSupply(), "DMGYieldFarmingV1::_getUsdValueByTokenAndTokenAmount: INVALID_TOTAL_SUPPLY");
+        .mul(IERC20(underlyingToken).balanceOf(token)) /* For Uniswap pools, underlying tokens are held in the pool's contract. */
+        .div(IERC20(token).totalSupply(), "DMGYieldFarmingV1::_getUsdValueByTokenAndTokenAmount: INVALID_TOTAL_SUPPLY")
+        .mul(2) /* The user deposits effectively 2x the amount, to account for both sides of the pool. Assuming the pool is at (or close to it) equilibrium, this 2x suffices as an estimate */;
 
         if (decimals < 18) {
             tokenAmount = tokenAmount.mul((10 ** (18 - uint(decimals))));

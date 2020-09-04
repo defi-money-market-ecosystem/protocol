@@ -20,6 +20,7 @@ pragma solidity ^0.5.0;
 import "../../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 import "../../../node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "../../../node_modules/@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "../../protocol/interfaces/IWETH.sol";
 import "../../utils/AddressUtil.sol";
@@ -28,20 +29,7 @@ import "./libs/UniswapV2Library.sol";
 
 import "./v1/IDMGYieldFarmingV1.sol";
 
-contract DMGYieldFarmingFundingProxy is Ownable {
-
-    // TODO DELETE
-    function toString(bytes memory value) internal pure returns (string memory) {
-        bytes memory alphabet = "0123456789abcdef";
-        bytes memory str = new bytes(2 + (value.length * 2));
-        str[0] = '0';
-        str[1] = 'x';
-        for (uint i = 0; i < value.length; i++) {
-            str[2 + i * 2] = alphabet[uint(uint8(value[i] >> 4))];
-            str[3 + i * 2] = alphabet[uint(uint8(value[i] & 0x0f))];
-        }
-        return string(str);
-    }
+contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
 
     using AddressUtil for address payable;
     using SafeERC20 for IERC20;
@@ -102,6 +90,7 @@ contract DMGYieldFarmingFundingProxy is Ownable {
         address[] calldata spenders
     )
     external
+    nonReentrant
     onlyOwner {
         require(
             tokens.length == spenders.length,
@@ -123,26 +112,29 @@ contract DMGYieldFarmingFundingProxy is Ownable {
         uint deadline
     )
     public
+    nonReentrant
     ensureDeadline(deadline) {
         _verifyTokensAreSupported(tokenA, tokenB);
 
         address _uniswapV2Factory = uniswapV2Factory;
+
+        UniswapParams memory params = UniswapParams({
+        tokenA : tokenA,
+        tokenB : tokenB,
+        liquidity : 0,
+        amountAMin : amountAMin,
+        amountBMin : amountBMin
+        });
+
         (uint amountA, uint amountB) = _getAmounts(
-            tokenA,
-            tokenB,
+            params,
             amountADesired,
             amountBDesired,
-            amountAMin,
-            amountBMin,
             _uniswapV2Factory
         );
 
-        address pair = UniswapV2Library.pairFor(_uniswapV2Factory, tokenA, tokenB);
-
-        IERC20(tokenA).safeTransferFrom(msg.sender, pair, amountA);
-        IERC20(tokenB).safeTransferFrom(msg.sender, pair, amountB);
-
-        uint liquidity = IUniswapV2Pair(pair).mint(address(this));
+        address pair = UniswapV2Library.pairFor(uniswapV2Factory, params.tokenA, params.tokenB);
+        uint liquidity = _doTokenTransfersAndMintLiquidity(params, pair, amountA, amountB);
 
         IDMGYieldFarmingV1(dmgYieldFarming).beginFarming(msg.sender, address(this), pair, liquidity);
     }
@@ -155,28 +147,30 @@ contract DMGYieldFarmingFundingProxy is Ownable {
         uint deadline
     )
     public payable
+    nonReentrant
     ensureDeadline(deadline) {
-        address _weth = weth;
-        _verifyTokensAreSupported(token, _weth);
+        UniswapParams memory params = UniswapParams({
+        tokenA : token,
+        tokenB : weth,
+        liquidity : 0,
+        amountAMin : amountTokenMin,
+        amountBMin : amountETHMin
+        });
+
+        _verifyTokensAreSupported(token, params.tokenB);
 
         address _uniswapV2Factory = uniswapV2Factory;
+
         (uint amountToken, uint amountETH) = _getAmounts(
-            token,
-            _weth,
+            params,
             amountTokenDesired,
             msg.value,
-            amountTokenMin,
-            amountETHMin,
             _uniswapV2Factory
         );
 
-        address pair = UniswapV2Library.pairFor(_uniswapV2Factory, token, _weth);
+        address pair = UniswapV2Library.pairFor(_uniswapV2Factory, token, params.tokenB);
 
-        IERC20(token).safeTransferFrom(msg.sender, pair, amountToken);
-        IWETH(_weth).deposit.value(amountETH)();
-        IERC20(_weth).safeTransfer(pair, amountETH);
-
-        uint liquidity = IUniswapV2Pair(pair).mint(address(this));
+        uint liquidity = _doTokenTransfersWithEthAndMintLiquidity(params, pair, amountToken, amountETH);
 
         // refund dust eth, if any
         if (msg.value > amountETH) {
@@ -199,6 +193,7 @@ contract DMGYieldFarmingFundingProxy is Ownable {
         bool isInSeason
     )
     public
+    nonReentrant
     ensureDeadline(deadline) {
         _verifyTokensAreSupported(tokenA, tokenB);
 
@@ -222,6 +217,7 @@ contract DMGYieldFarmingFundingProxy is Ownable {
         bool isInSeason
     )
     public
+    nonReentrant
     ensureDeadline(deadline) {
         UniswapParams memory params = UniswapParams({
         tokenA : token,
@@ -285,30 +281,60 @@ contract DMGYieldFarmingFundingProxy is Ownable {
     }
 
     function _getAmounts(
-        address tokenA,
-        address tokenB,
+        UniswapParams memory params,
         uint amountADesired,
         uint amountBDesired,
-        uint amountAMin,
-        uint amountBMin,
         address uniswapV2Factory
     )
     internal view returns (uint amountA, uint amountB) {
-        (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(uniswapV2Factory, tokenA, tokenB);
+        (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(uniswapV2Factory, params.tokenA, params.tokenB);
         if (reserveA == 0 && reserveB == 0) {
             (amountA, amountB) = (amountADesired, amountBDesired);
         } else {
             uint amountBOptimal = UniswapV2Library.quote(amountADesired, reserveA, reserveB);
             if (amountBOptimal <= amountBDesired) {
-                require(amountBOptimal >= amountBMin, 'DMGYieldFarmingFundingProxy::_getAmounts: INSUFFICIENT_B_AMOUNT');
+                require(
+                    amountBOptimal >= params.amountBMin,
+                    "DMGYieldFarmingFundingProxy::_getAmounts: INSUFFICIENT_B_AMOUNT"
+                );
+
                 (amountA, amountB) = (amountADesired, amountBOptimal);
             } else {
                 uint amountAOptimal = UniswapV2Library.quote(amountBDesired, reserveB, reserveA);
                 assert(amountAOptimal <= amountADesired);
-                require(amountAOptimal >= amountAMin, 'DMGYieldFarmingFundingProxy::_getAmounts: INSUFFICIENT_A_AMOUNT');
+                require(
+                    amountAOptimal >= params.amountAMin,
+                    "DMGYieldFarmingFundingProxy::_getAmounts: INSUFFICIENT_A_AMOUNT"
+                );
+
                 (amountA, amountB) = (amountAOptimal, amountBDesired);
             }
         }
+    }
+
+    function _doTokenTransfersAndMintLiquidity(
+        UniswapParams memory params,
+        address pair,
+        uint amountA,
+        uint amountB
+    ) internal returns (uint) {
+        IERC20(params.tokenA).safeTransferFrom(msg.sender, pair, amountA);
+        IERC20(params.tokenB).safeTransferFrom(msg.sender, pair, amountB);
+
+        return IUniswapV2Pair(pair).mint(address(this));
+    }
+
+    function _doTokenTransfersWithEthAndMintLiquidity(
+        UniswapParams memory params,
+        address pair,
+        uint amountToken,
+        uint amountETH
+    ) internal returns (uint) {
+        IERC20(params.tokenA).safeTransferFrom(msg.sender, pair, amountToken);
+        IWETH(params.tokenB).deposit.value(amountETH)();
+        IERC20(params.tokenB).safeTransfer(pair, amountETH);
+
+        return IUniswapV2Pair(pair).mint(address(this));
     }
 
 }

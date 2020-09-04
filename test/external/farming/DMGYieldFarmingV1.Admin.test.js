@@ -32,6 +32,34 @@ describe('DMGYieldFarmingV1.Admin', () => {
     snapshotId = await resetChain(provider, snapshotId);
   });
 
+  it('approveGloballyTrustedProxy: should add proxy if owner', async () => {
+    (await this.yieldFarming.isGloballyTrustedProxy(this.tokenC.address)).should.eq(false);
+
+    const result = await this.yieldFarming.approveGloballyTrustedProxy(
+      this.tokenC.address,
+      true,
+      {from: owner}
+    );
+    expectEvent(
+      result,
+      'GlobalProxySet',
+      {
+        proxy: this.tokenC.address,
+        isTrusted: true,
+      }
+    );
+
+    (await this.yieldFarming.isGloballyTrustedProxy(this.tokenC.address)).should.eq(true);
+  });
+
+  it('approveGloballyTrustedProxy: should not add proxy if not owner', async () => {
+    (await this.yieldFarming.isGloballyTrustedProxy(this.tokenC.address)).should.eq(false);
+    await expectRevert(
+      this.yieldFarming.approveGloballyTrustedProxy(this.tokenC.address, true, {from: user}),
+      NOT_OWNER_ERROR,
+    );
+  });
+
   it('addAllowableToken: should add token if owner', async () => {
     const decimals = '18';
     const points = new BN('400');

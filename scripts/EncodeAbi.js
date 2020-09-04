@@ -5,6 +5,7 @@ const {setupLoader} = require('@openzeppelin/contract-loader');
 const {BN, MAX_INTEGER} = require('ethereumjs-util');
 const {callContract, deployContract} = require('./ContractUtils');
 const {createProposalForYieldFarming} = require('./encode_abi/EncodeGovernanceProposalAbi')
+const {approveGloballyTrustedProxy} = require('./encode_abi/EncodeFarming')
 
 const loader = setupLoader({provider: provider, defaultGasPrice: 8e9});
 
@@ -35,12 +36,13 @@ const wethAddress = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
 const mDaiAddress = "0x06301057D77D54B6e14c7FafFB11Ffc7Cab4eaa7";
 const mUsdcAddress = "0x3564ad35b9E95340E5Ace2D6251dbfC76098669B";
-const mUsdtAddress = "";
+const mUsdtAddress = "0x84d4AfE150dA7Ea1165B9e45Ff8Ee4798d7C38DA";
 const mWethAddress = "0xdF9307DFf0a1B57660F60f9457D32027a55ca0B2";
 
 const delayedOwnerAddress = "0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD";
 const dmgTokenAddress = "0xEd91879919B71bB6905f23af0A68d231EcF87b14";
-const yieldFarmingAddress = "0xEd91879919B71bB6905f23af0A68d231EcF87b14"; // TODO fix
+const yieldFarmingAddress = "0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975";
+const yieldFarmingRouterAddress = "0x85455Fc1428Ceee0072309f87a227D53783ba6a8";
 const dmmControllerAddress = "0x4CB120Dd1D33C9A3De8Bc15620C7Cd43418d77E2";
 const gnosisSafeAddress = "0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF";
 const governorAlphaAddress = "0x67Cb2868Ebf965b66d3dC81D0aDd6fd849BCF6D5"
@@ -65,11 +67,10 @@ const usdcTokenId = new BN(2);
 const wethTokenId = new BN(3);
 
 const main = async () => {
-  const privateKey = process.env.DEPLOYER;
-  const account = web3.eth.accounts.privateKeyToAccount('0x' + privateKey);
+  const account = web3.eth.accounts.privateKeyToAccount('0x' + process.env.DEPLOYER);
   web3.eth.accounts.wallet.add(account);
   web3.eth.defaultAccount = account.address;
-  const deployer = account.address;
+  const deployerAddress = account.address;
 
   const DelayedOwner = loader.truffle.fromArtifact('DelayedOwner');
   const DMGToken = loader.truffle.fromArtifact('DMGToken');
@@ -96,8 +97,17 @@ const main = async () => {
   const usdt = await ERC20.at(usdtAddress);
   const weth = await ERC20.at(wethAddress);
 
-  const farmSeasonAmount = new BN('6430041152');
-  await createProposalForYieldFarming(governorAlpha, gnosisSafeAddress, dmg, farmSeasonAmount.toString(), deployer, governorTimelockAddress, yieldFarming);
+  const oneWei = new BN('1000000000000000000');
+  const targetDurationDays = new BN('30');
+  const maxDebtCeiling = new BN('15000000').mul(new BN('2'));
+  const rewardAmountWei = new BN('1000000').mul(oneWei);
+
+
+  // const farmSeasonAmount = new BN('6430041152');
+  // const farmSeasonAmount = new BN('12860082304');
+  await approveGloballyTrustedProxy(yieldFarming, yieldFarmingRouterAddress, true);
+  console.log('--------------------------------------------------')
+  await createProposalForYieldFarming(governorAlpha, gnosisSafeAddress, dmg, deployerAddress, governorTimelockAddress, yieldFarming, rewardAmountWei, targetDurationDays, maxDebtCeiling);
 
   // const _1000_DAI = new BN('1000000000000000000000');
   // const usdcAmount = new BN('5929500000');

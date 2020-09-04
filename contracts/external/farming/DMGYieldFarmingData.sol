@@ -47,6 +47,7 @@ contract DMGYieldFarmingData is Initializable {
     mapping(address => uint8) internal _tokenToDecimalsMap;
     mapping(address => uint) internal _tokenToIndexPlusOneMap;
     mapping(address => mapping(address => uint)) internal _addressToTokenToBalanceMap;
+    mapping(address => bool) internal _globalProxyToIsTrustedMap;
 
     // /////////////////////////
     // END State Variables

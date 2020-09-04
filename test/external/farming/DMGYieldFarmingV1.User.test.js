@@ -7,11 +7,12 @@ const {snapshotChain, resetChain, _1, _10, _100, _10000} = require('../../helper
 const {doYieldFarmingBeforeEach, startFarmSeason, endFarmSeason} = require('../../helpers/YieldFarmingHelpers');
 
 // Use the different accounts, which are unlocked and funded with Ether
-const [admin, guardian, owner, user, spender, receiver] = accounts;
+const [admin, guardian, owner, user, spender, receiver, proxy] = accounts;
 
 describe('DMGYieldFarmingV1.User', () => {
   const timeBuffer = new BN('2');
   const points2 = new BN('3');
+  const pointsFactor = new BN('2');
   let snapshotId;
   let dmgGrowthCoefficient;
   before(async () => {
@@ -74,7 +75,41 @@ describe('DMGYieldFarmingV1.User', () => {
 
     (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
 
-    const expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1());
+    const expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1()).mul(pointsFactor);
+    (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
+  });
+
+  it('beginFarming: should farm properly for 1 token with 1 deposit from global proxy', async () => {
+    await this.yieldFarming.approveGloballyTrustedProxy(proxy, true, {from: owner})
+
+    // Prices are $1.01 and $0.99
+    await startFarmSeason(this);
+    const token = this.tokenA;
+
+    await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
+    await token.setBalance(user, _10000());
+    const deposit1 = _100();
+    result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: proxy});
+    expectEvent(
+      result,
+      'BeginFarming',
+      {owner: user, token: token.address, depositedAmount: deposit1},
+    );
+    (await token.balanceOf(user)).should.be.bignumber.eq(_10000().sub(deposit1));
+    (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
+
+    const _100Seconds = new BN('100');
+    await time.increase(_100Seconds);
+    const lastIndexTimestamp = await this.yieldFarming.getMostRecentDepositTimestampByOwnerAndToken(user, token.address);
+    const latestTimestamp = await this.yieldFarming.getMostRecentBlockTimestamp();
+    const timeDifference = latestTimestamp.sub(lastIndexTimestamp);
+
+    (timeDifference).should.be.bignumber.gte(_100Seconds);
+    (timeDifference).should.be.bignumber.lte(_100Seconds.add(timeBuffer));
+
+    (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
+
+    const expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1()).mul(pointsFactor);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
   });
 
@@ -106,7 +141,7 @@ describe('DMGYieldFarmingV1.User', () => {
 
     (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
 
-    let expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1());
+    let expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1()).mul(pointsFactor);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
 
     await endFarmSeason(this);
@@ -135,7 +170,7 @@ describe('DMGYieldFarmingV1.User', () => {
     (timeDifference).should.be.bignumber.gte(_100Seconds);
     (timeDifference).should.be.bignumber.lte(_100Seconds.add(timeBuffer));
 
-    expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1());
+    expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1()).mul(pointsFactor);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
   });
 
@@ -168,7 +203,7 @@ describe('DMGYieldFarmingV1.User', () => {
 
     (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
 
-    let expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1());
+    let expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1()).mul(pointsFactor);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
 
     await endFarmSeason(this);
@@ -197,7 +232,7 @@ describe('DMGYieldFarmingV1.User', () => {
     (timeDifference).should.be.bignumber.gte(_100Seconds);
     (timeDifference).should.be.bignumber.lte(_100Seconds.add(timeBuffer));
 
-    expectedRewardAmount = (deposit1.add(deposit2)).mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1());
+    expectedRewardAmount = (deposit1.add(deposit2)).mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1()).mul(pointsFactor);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
   });
 
@@ -233,7 +268,7 @@ describe('DMGYieldFarmingV1.User', () => {
 
     (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
 
-    const expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1());
+    const expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1()).mul(pointsFactor);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
   });
 
@@ -266,7 +301,7 @@ describe('DMGYieldFarmingV1.User', () => {
     (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
 
     const factor = new BN('10').pow(new BN('12')); // 18 - 6 == 12
-    const expectedRewardAmount = deposit1.mul(factor).mul(new BN('99')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1()).mul(points2);
+    const expectedRewardAmount = deposit1.mul(factor).mul(new BN('99')).div(new BN('100')).mul(timeDifference).mul(dmgGrowthCoefficient).div(_1()).mul(points2).mul(pointsFactor);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
   });
 
@@ -298,7 +333,7 @@ describe('DMGYieldFarmingV1.User', () => {
 
     (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
 
-    let expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference1).mul(dmgGrowthCoefficient).div(_1());
+    let expectedRewardAmount = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference1).mul(dmgGrowthCoefficient).div(_1()).mul(pointsFactor);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
 
     // Deposit #2
@@ -327,7 +362,7 @@ describe('DMGYieldFarmingV1.User', () => {
     const timeDifference1_1 = latestTimestamp.sub(lastIndexTimestamp1);
     expectedRewardAmount = (expectedRewardAmount).add(expectedRewardAmount.mul(timeDifference1_1.sub(timeDifference1)).div(timeDifference1));
 
-    const deposit2ValueAccrued = deposit2.mul(new BN('101')).div(new BN('100')).mul(timeDifference2).mul(dmgGrowthCoefficient).div(_1());
+    const deposit2ValueAccrued = deposit2.mul(new BN('101')).div(new BN('100')).mul(timeDifference2).mul(dmgGrowthCoefficient).div(_1()).mul(pointsFactor);
     expectedRewardAmount = (expectedRewardAmount).add(deposit2ValueAccrued);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
   });
@@ -361,7 +396,7 @@ describe('DMGYieldFarmingV1.User', () => {
     (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
     const tokenFactor = new BN('10').pow(new BN('12'));
 
-    let expectedRewardAmount = deposit1.mul(tokenFactor).mul(new BN('99')).div(new BN('100')).mul(timeDifference1).mul(dmgGrowthCoefficient).div(_1()).mul(points2);
+    let expectedRewardAmount = deposit1.mul(tokenFactor).mul(new BN('99')).div(new BN('100')).mul(timeDifference1).mul(dmgGrowthCoefficient).div(_1()).mul(points2).mul(pointsFactor);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
 
     // Deposit #2
@@ -390,7 +425,7 @@ describe('DMGYieldFarmingV1.User', () => {
     const timeDifference1_1 = latestTimestamp.sub(lastIndexTimestamp1);
     expectedRewardAmount = expectedRewardAmount.add(expectedRewardAmount.mul(timeDifference1_1.sub(timeDifference1)).div(timeDifference1));
 
-    const deposit2ValueAccrued = deposit2.mul(tokenFactor).mul(new BN('99')).div(new BN('100')).mul(timeDifference2).mul(dmgGrowthCoefficient).div(_1()).mul(points2);
+    const deposit2ValueAccrued = deposit2.mul(tokenFactor).mul(new BN('99')).div(new BN('100')).mul(timeDifference2).mul(dmgGrowthCoefficient).div(_1()).mul(points2).mul(pointsFactor);
     expectedRewardAmount = (expectedRewardAmount).add(deposit2ValueAccrued);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
   });
@@ -425,7 +460,7 @@ describe('DMGYieldFarmingV1.User', () => {
 
     (await this.yieldFarming.balanceOf(user, token1.address)).should.be.bignumber.eq(deposit1);
 
-    let expectedRewardAmount1 = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference1).mul(dmgGrowthCoefficient).div(_1());
+    let expectedRewardAmount1 = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference1).mul(dmgGrowthCoefficient).div(_1()).mul(pointsFactor);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount1);
 
     // Has 6 decimals
@@ -454,12 +489,12 @@ describe('DMGYieldFarmingV1.User', () => {
     (await this.yieldFarming.balanceOf(user, token2.address)).should.be.bignumber.eq(deposit2);
 
     const timeDifference1_1 = latestTimestamp.sub(lastIndexTimestamp1);
-    expectedRewardAmount1 = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference1_1).mul(dmgGrowthCoefficient).div(_1());
+    expectedRewardAmount1 = deposit1.mul(new BN('101')).div(new BN('100')).mul(timeDifference1_1).mul(dmgGrowthCoefficient).div(_1()).mul(pointsFactor);
 
     (await this.yieldFarming.getRewardBalanceByOwnerAndToken(user, token1.address)).should.be.bignumber.eq(expectedRewardAmount1);
 
     const factor = new BN('10').pow(new BN('12')); // 18 - 6 == 12
-    const expectedRewardAmount2 = deposit2.mul(factor).mul(new BN('99')).div(new BN('100')).mul(timeDifference2).mul(dmgGrowthCoefficient).div(_1()).mul(points2);
+    const expectedRewardAmount2 = deposit2.mul(factor).mul(new BN('99')).div(new BN('100')).mul(timeDifference2).mul(dmgGrowthCoefficient).div(_1()).mul(points2).mul(pointsFactor);
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount1.add(expectedRewardAmount2));
   });
 

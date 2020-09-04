@@ -1,24 +1,61 @@
-const createProposalForYieldFarming = async (governorAlpha, safeAddress, dmg, farmSeasonAmount, dmmDeployerAddress, timelockAddress, yieldFarming) => {
+const BN = require('BN.js');
+const Web3 = require('web3');
+
+const createProposalForYieldFarming = async (governorAlpha, safeAddress, dmg, dmmDeployerAddress, timelockAddress, yieldFarming, rewardAmountWei, targetDurationDays, maxDebtCeilingWei) => {
+  const dmgGrowthCoefficient = rewardAmountWei.div(new BN('86400')).div(targetDurationDays).div(maxDebtCeilingWei);
+  console.log('dmgGrowthCoefficient ', dmgGrowthCoefficient.toString());
+
+  const itersWei = new BN('1000000')
+  const apr = new BN('365').mul(itersWei).div(targetDurationDays).mul(rewardAmountWei).div(maxDebtCeilingWei).div(itersWei)
+  console.log(`Proposed APR for this campaign: ${new Web3('').utils.fromWei(apr)}`)
+
   const transferSignature = 'transferFrom(address,address,uint256)';
-  const transferCallData = dmg.contract.methods.transferFrom(dmmDeployerAddress, timelockAddress, farmSeasonAmount).encodeABI().substring(10);
+  const transferCallData = dmg.contract.methods.transferFrom(dmmDeployerAddress, timelockAddress, rewardAmountWei.toString()).encodeABI().substring(10);
 
   const approveSignature = 'approve(address,uint256)';
-  const approveCallData = dmg.contract.methods.approve(yieldFarming.address, farmSeasonAmount).encodeABI().substring(10);
+  const approveCallData = dmg.contract.methods.approve(yieldFarming.address, rewardAmountWei.toString()).encodeABI().substring(10);
+
+  const setDmgGrowthCoefficientSignature = 'setDmgGrowthCoefficient(uint256)';
+  const setDmgGrowthCoefficientCallData = yieldFarming.contract.methods.setDmgGrowthCoefficient(dmgGrowthCoefficient.toString()).encodeABI().substring(10);
 
   const beginFarmingCampaignSignature = 'beginFarmingSeason(uint256)';
-  const beginFarmingCampaignCallData = yieldFarming.contract.methods.beginFarmingSeason(farmSeasonAmount).encodeABI().substring(10);
+  const beginFarmingCampaignCallData = yieldFarming.contract.methods.beginFarmingSeason(rewardAmountWei.toString()).encodeABI().substring(10);
 
-  const targets = [dmg, dmg, yieldFarming];
-  const values = ['0', '0', '0'];
-  const signatures = [transferSignature, approveSignature, beginFarmingCampaignSignature]
-  const calldatas = [`0x${transferCallData}`, `0x${approveCallData}`, `0x${beginFarmingCampaignCallData}`];
+  const targets = [dmg, dmg, yieldFarming, yieldFarming];
+  const values = ['0', '0', '0', '0'];
+  const signatures = [transferSignature, approveSignature, setDmgGrowthCoefficientSignature, beginFarmingCampaignSignature]
+  const calldatas = [`0x${transferCallData}`, `0x${approveCallData}`, `0x${setDmgGrowthCoefficientCallData}`, `0x${beginFarmingCampaignCallData}`];
   const title = 'Introduce Yield Farming';
   const description = `
   Yield Farming is the process whereby mToken holders can deposit their mTokens, plus an equivalent amount of underlying 
-  tokens, into the \`DMM: Yield Farming\` contract to earn DMG. In doing so, ecosystem participants can be additionally 
-  incentivized to deposit funds into the protocol.
+  tokens, into the \`DMM: Yield Farming\` contract to earn DMG. The DMG that is earned from doing so, is said to be 
+  farmed into existence, since ecosystem participants are rewarded for depositing (planting) their stake in the 
+  farming contract. Essentially, yield farming incentivizes all users to deposit funds into the protocol to earn a 
+  higher ROI, because all deposits into the yield farming contract accrue DMG *on top of* the ordinary 6.25%.
   
-  For more information about yield farming and how it works, visit our Medium [article](https://medium.com).
+  Yield farming is partitioned by season, allowing the DAO to turn a growth "lever" on and off as it needs to 
+  encourage further growth of the ecosystem. This vote enables the first season by funding the yield farming contract
+  with 1,000,000 DMG. Assuming moderate to high levels of participation, this first season should last around 30 days.
+  This translates to an *additional* APR of about 30-60% (meaning, the effective APR of a user's active farm is 
+  36.25-66.25%). This APR is produced by the value of the DMG being distributed as a promotional incentive for each 
+  community member's contribution to the ecosystem, and it assumes the DMG price hovers around $1.00. The APR can also 
+  vary depending on the composition of the farm's tokens and its treasury. Depending on the  participation and success 
+  of this first season, the DMMF will likely propose different seasonal amounts in the future. There are no lock up 
+  periods with farming, and participants are free to withdraw their mTokens + earned DMG at any time.
+  
+  Risk: The smart contracts deployed for yield farming **have not been audited by a third party**. With that being said, 
+  we have architected these contracts using best practices and have robust test coverage for all functions to give us
+  a high degree of confidence that their implementation matches their intended use. Additionally, we have taken 
+  simplification steps to reduce attack vectors, such as making DMM yield farming contract **not** tokenized. Meaning, 
+  deposits are effectively a closed-loop; once they are made, there is no way to transfer deposits or mix them them with 
+  other dapps. All writeable functions use Open Zeppelin's Reentrancy Guard to prevent against possible re-entrancy 
+  attacks. Lastly, all token transfers utilize Open Zeppelin's \`safeTransfer\` or \`safeTransferFrom\` functions to 
+  ensure slight deviations from the ERC20 standard doesn't result in any hiccups.
+  
+  For additional information about yield farming and how it works, visit the DMMF's 
+  [Medium article](https://medium.com/dmm-dao/introducing-yield-farming-into-the-dmm-ecosystem-8e33a45fc226).
+  
+  The address of the verified Yield Farming contract is [${yieldFarming.address}}](https://etherscan.io/address/${yieldFarming.address}).
   `;
 
   await createGovernanceProposal(

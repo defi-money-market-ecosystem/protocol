@@ -90,6 +90,9 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | ~~Underlying Token Valuator V2~~ DEPRECATED   | 0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d    | [Etherscan](https://etherscan.io/address/0x693aa8ead81d2f88a45e870fa7e25f84ca93ca4d)
 | ~~Underlying Token Valuator V3~~ DEPRECATED   | 0x7812e0F5Da2F0917BD9054951415EDFF571964dB    | [Etherscan](https://etherscan.io/address/0x7812e0f5da2f0917bd9054951415edff571964db)
 | Underlying Token Valuator V4                  | 0x0c65c147aAf2DbD5109ba74e36f730D081489B5B    | [Etherscan](https://etherscan.io/address/0x0c65c147aAf2DbD5109ba74e36f730D081489B5B)
+| Yield Farming                                 | 0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975    | [Etherscan](https://etherscan.io/address/0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975)
+| Yield Farming Router                          | 0x85455Fc1428Ceee0072309f87a227D53783ba6a8    | [Etherscan](https://etherscan.io/address/0x85455Fc1428Ceee0072309f87a227D53783ba6a8)
+| Yield Farming Impl V1 (DO NOT INTERACT)       | 0x059AfB3B37a66868804ECF1a4a14Eaa2Be548880    | [Etherscan](https://etherscan.io/address/0x059AfB3B37a66868804ECF1a4a14Eaa2Be548880)
 
 #### Ropsten Testnet
 
