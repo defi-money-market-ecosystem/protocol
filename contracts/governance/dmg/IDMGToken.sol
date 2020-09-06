@@ -22,4 +22,6 @@ interface IDMGToken {
 
     function getPriorVotes(address account, uint blockNumber) external view returns (uint128);
 
+    function delegates(address delegator) external view returns (address);
+
 }

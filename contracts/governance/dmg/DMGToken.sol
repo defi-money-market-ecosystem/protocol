@@ -91,19 +91,22 @@ contract DMGToken is IDMGToken, IERC20 {
 
     /**
      * @notice Construct the DMG token
-     * @param account The initial account to receive all of the tokens
+     * @param _account The initial account to receive all of the tokens
+     * @param _totalSupply The total supply of all the tokens, which is sent to _account.
      */
-    constructor(address account) public {
-        // 250mm
-        totalSupply = 250000000e18;
-        require(totalSupply == uint128(totalSupply), "DMG: total supply exceeds 128 bits");
+    constructor(
+        address _account,
+        uint _totalSupply
+    ) public {
+        require(_totalSupply == uint128(_totalSupply), "DMG: total supply exceeds 128 bits");
+        totalSupply = _totalSupply;
 
         domainSeparator = keccak256(
             abi.encode(DOMAIN_TYPE_HASH, keccak256(bytes(name)), EvmUtil.getChainId(), address(this))
         );
 
-        balances[account] = uint128(totalSupply);
-        emit Transfer(address(0), account, totalSupply);
+        balances[_account] = uint128(_totalSupply);
+        emit Transfer(address(0), _account, _totalSupply);
     }
 
     /**
