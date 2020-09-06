@@ -81,7 +81,7 @@ contract WrappedDMGToken is DMGToken, Ownable {
             _delegate(receiver, dmgDelegatee);
         }
 
-        uint128 amount = SafeBitMath.safe128(rawAmount, "DMG::mint: amount exceeds 128 bits");
+        uint128 amount = SafeBitMath.safe128(rawAmount, "WrappedDMGToken::mint: amount exceeds 128 bits");
         _mintTokens(receiver, amount);
     }
 
@@ -91,7 +91,7 @@ contract WrappedDMGToken is DMGToken, Ownable {
     )
     onlyMinter
     public {
-        uint128 amount = SafeBitMath.safe128(rawAmount, "DMG::burn: amount exceeds 128 bits");
+        uint128 amount = SafeBitMath.safe128(rawAmount, "WrappedDMGToken::burn: amount exceeds 128 bits");
         _burnTokens(sender, amount);
     }
 
@@ -99,12 +99,12 @@ contract WrappedDMGToken is DMGToken, Ownable {
         address recipient,
         uint128 amount
     ) internal {
-        require(recipient != address(0), "DMG::_mintTokens: cannot mint to the zero address");
+        require(recipient != address(0), "WrappedDMGToken::_mintTokens: cannot mint to the zero address");
 
-        balances[recipient] = SafeBitMath.add128(balances[recipient], amount, "DMG::_mintTokens: balance overflows");
+        balances[recipient] = SafeBitMath.add128(balances[recipient], amount, "WrappedDMGToken::_mintTokens: balance overflows");
         emit Transfer(address(0), recipient, amount);
 
-        totalSupply = SafeBitMath.add128(uint128(totalSupply), amount, "DMG::_mintTokens: total supply overflows");
+        totalSupply = SafeBitMath.add128(uint128(totalSupply), amount, "WrappedDMGToken::_mintTokens: total supply overflows");
 
         _moveDelegates(address(0), delegates[recipient], amount);
     }
