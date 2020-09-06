@@ -22,6 +22,11 @@ import "../../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 
 import "./DMGToken.sol";
 
+/**
+ * A wrapped variant of DMG that is used by a minter to allow users to receive voting representation while otherwise
+ * locking up their underlying DMG tokens. Useful for things like staking, pooling contracts, and other forms of
+ * aggregation.
+ */
 contract WrappedDMGToken is DMGToken, Ownable {
 
     modifier onlyMinter() {
