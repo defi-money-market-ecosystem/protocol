@@ -5,12 +5,12 @@ const {setupLoader} = require('@openzeppelin/contract-loader');
 const {deployContract} = require('../ContractUtils');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 115e9;
+const defaultGasPrice = 125e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
 
-const dmgBurnerV1 = '0x9dB8044e2cca314b9E7d164A380C1C64b1107633';
+const dmgBurnerV1 = '0xE8d36D84C58Ba104C346726641D0DeCa05ad237C';
 const uniswapV2Router = '0x7a250d5630b4cf539739df2c5dacb4c659f2488d';
 const safeAddress = '0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF';
 const dmgToken = '0xEd91879919B71bB6905f23af0A68d231EcF87b14';
@@ -35,12 +35,12 @@ const main = async () => {
     dmgToken,
   ];
 
-  const DMGYieldFarmingProxy = loader.truffle.fromArtifact('DMGYieldFarmingProxy');
+  const DMGBurnerProxy = loader.truffle.fromArtifact('DMGBurnerProxy');
   await deployContract(
-    DMGYieldFarmingProxy,
+    DMGBurnerProxy,
     params,
     deployer,
-    5e6,
+    1e6,
     web3,
     defaultGasPrice,
   );

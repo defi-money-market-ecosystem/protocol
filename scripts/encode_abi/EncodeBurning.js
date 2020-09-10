@@ -1,20 +1,29 @@
 const {createGovernanceProposal} = require('./EncodeGovernanceProposalAbi')
 
-const burnTokens = async (governorAlpha, erc20Token, timelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmgToken) => {
+const createProposalForBurningTokens = async (
+  governorAlpha,
+  erc20Token,
+  timelockAddress,
+  deployerAddress,
+  burnAmountWei,
+  dmgBurner,
+  wethAddress,
+  dmgToken,
+) => {
   const targets = [erc20Token, erc20Token, dmgBurner];
   const values = ['0', '0', '0'];
   const transferFromCalldata = erc20Token.contract.methods.transferFrom(
     deployerAddress,
     timelockAddress,
-    burnAmountWei,
+    burnAmountWei.toString(),
   ).encodeABI();
   const approveCalldata = erc20Token.contract.methods.approve(
     dmgBurner.address,
-    burnAmountWei,
+    burnAmountWei.toString(),
   ).encodeABI();
   const burnDmgCalldata = dmgBurner.contract.methods.burnDmg(
     erc20Token.address,
-    burnAmountWei,
+    burnAmountWei.toString(),
     erc20Token.address.toLowerCase() === wethAddress.toLowerCase() ? [wethAddress, dmgToken.address] : [erc20Token.address, wethAddress, dmgToken.address],
   ).encodeABI();
 
@@ -28,7 +37,7 @@ const burnTokens = async (governorAlpha, erc20Token, timelockAddress, deployerAd
   
   The following table, shown below, showcases the estimated value of mTokens in circulation for the months of March 
   through August. Then, the amount burned is calculated by multiplying it by the monthly amortization of the burn 
-  percentage (which equals 4.74% / 12).
+  percentage (which equals 4.74% / 12). The total dollar amount of DMG to be burned is $35,147
   
   | Month   | Estimated AUM in all mTokens  | Burn Amount   |
   |-------- |------------------------------ |------------:  |
@@ -58,5 +67,5 @@ const burnTokens = async (governorAlpha, erc20Token, timelockAddress, deployerAd
 };
 
 module.exports = {
-  burnTokens,
+  createProposalForBurningTokens: createProposalForBurningTokens,
 };

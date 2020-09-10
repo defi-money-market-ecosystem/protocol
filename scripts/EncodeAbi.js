@@ -5,6 +5,7 @@ const {setupLoader} = require('@openzeppelin/contract-loader');
 const {BN, MAX_INTEGER} = require('ethereumjs-util');
 const {callContract, deployContract} = require('./ContractUtils');
 const {createProposalForYieldFarming} = require('./encode_abi/EncodeGovernanceProposalAbi')
+const {createProposalForBurningTokens} = require('./encode_abi/EncodeBurning')
 const {approveGloballyTrustedProxy} = require('./encode_abi/EncodeFarming')
 
 const loader = setupLoader({provider: provider, defaultGasPrice: 8e9});
@@ -51,6 +52,7 @@ const offChainAssetValuatorImplV1Address = "0xAcE9112EfE78D9E5018fd12164D30366cA
 const underlyingTokenValuatorImplV2Address = "0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d";
 const underlyingTokenValuatorImplV3Address = "0x7812e0F5Da2F0917BD9054951415EDFF571964dB";
 const underlyingTokenValuatorImplV4Address = "0x0c65c147aAf2DbD5109ba74e36f730D081489B5B";
+const dmgBurnerAddress = "0x51c9a18c87c89A34e1f3fE020b8f406F1300E909";
 
 const newDmmControllerAddress = '0xB07EB3426d742cda9120931e7028d54F9dF34A3e';
 const newDmmTokenFactoryAddress = '0x6Ce6C84Fe43Df6A28c209b36179bD84a52CAEEFe';
@@ -82,6 +84,7 @@ const main = async () => {
   const ERC20 = loader.truffle.fromArtifact('ERC20');
   const GovernorAlpha = loader.truffle.fromArtifact('GovernorAlpha');
   const OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
+  const DMGBurnerV1 = loader.truffle.fromArtifact('DMGBurnerV1');
 
   const dmg = await DMGToken.at(dmgTokenAddress);
   const delayedOwner = await DelayedOwner.at(delayedOwnerAddress);
@@ -90,6 +93,7 @@ const main = async () => {
   const governorAlpha = await GovernorAlpha.at(governorAlphaAddress);
   const offChainAssetValuatorImplV1 = await OffChainAssetValuatorImplV1.at(offChainAssetValuatorImplV1Address);
   const yieldFarming = await DMGYieldFarmingV1.at(yieldFarmingAddress);
+  const dmgBurner = await DMGBurnerV1.at(dmgBurnerAddress);
 
   const dai = await ERC20.at(daiAddress);
   const link = await ERC20.at(linkAddress);
@@ -102,12 +106,14 @@ const main = async () => {
   const maxDebtCeiling = new BN('15000000').mul(new BN('2'));
   const rewardAmountWei = new BN('1000000').mul(oneWei);
 
-
   // const farmSeasonAmount = new BN('6430041152');
   // const farmSeasonAmount = new BN('12860082304');
-  await approveGloballyTrustedProxy(yieldFarming, yieldFarmingRouterAddress, true);
-  console.log('--------------------------------------------------')
-  await createProposalForYieldFarming(governorAlpha, gnosisSafeAddress, dmg, deployerAddress, governorTimelockAddress, yieldFarming, rewardAmountWei, targetDurationDays, maxDebtCeiling);
+  // await approveGloballyTrustedProxy(yieldFarming, yieldFarmingRouterAddress, true);
+  // console.log('--------------------------------------------------')
+  // await createProposalForYieldFarming(governorAlpha, gnosisSafeAddress, dmg, deployerAddress, governorTimelockAddress, yieldFarming, rewardAmountWei, targetDurationDays, maxDebtCeiling);
+
+  const burnAmountWei = new BN('35147000000')
+  await createProposalForBurningTokens(governorAlpha, usdc, governorTimelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmg);
 
   // const _1000_DAI = new BN('1000000000000000000000');
   // const usdcAmount = new BN('5929500000');
