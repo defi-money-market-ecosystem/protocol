@@ -7,7 +7,7 @@ const {setupLoader} = require('@openzeppelin/contract-loader');
 const {deployContract} = require('../ContractUtils');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 160e9;
+const defaultGasPrice = 230e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
@@ -15,8 +15,6 @@ exports.web3 = web3;
 const dmgYieldFarmingProxy = '0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975';
 const uniswapV2Factory = '0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f';
 const weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
-
-'000000000000000000000000502e90e092Cd08e6630e8E1cE426fC6d8ADb39750000000000000000000000005c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
 
 const main = async () => {
   let deployer;

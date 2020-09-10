@@ -69,6 +69,8 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | DMG (Incentives Lockbox #1 2020-11-15)  	    | 0xaA96a7890097a63EfcdFaceAC9225E51c79AfF96    | [Etherscan](https://etherscan.io/address/0xaA96a7890097a63EfcdFaceAC9225E51c79AfF96)
 | DMG (Incentives Lockbox #2)  	                | 0x382c4fd48Fbac7b5E973504cca1458A66A84a94f    | [Etherscan](https://etherscan.io/address/0x382c4fd48Fbac7b5E973504cca1458A66A84a94f)
 | DMG (Incentives Forwarder #3)  	            | 0x704828d766181C906182C89CF1bC5A79bFf3a402    | [Etherscan](https://etherscan.io/address/0x704828d766181C906182C89CF1bC5A79bFf3a402)
+| DMG Burner Impl V1 (*DO NOT INTERACT*)  	    | 0xE8d36D84C58Ba104C346726641D0DeCa05ad237C    | [Etherscan](https://etherscan.io/address/0xE8d36D84C58Ba104C346726641D0DeCa05ad237C)
+| DMG Burner  	                                | 0x51c9a18c87c89A34e1f3fE020b8f406F1300E909    | [Etherscan](https://etherscan.io/address/0x51c9a18c87c89A34e1f3fE020b8f406F1300E909)
 | DMM Blacklist  	                            | 0x516d652E2f12876F5f0244aa661b1C262a2d96b1    | [Etherscan](https://etherscan.io/address/0x516d652e2f12876f5f0244aa661b1c262a2d96b1)
 | ~~DMM Controller V1~~ DEPRECATED 	            | 0x4CB120Dd1D33C9A3De8Bc15620C7Cd43418d77E2    | [Etherscan](https://etherscan.io/address/0x4cb120dd1d33c9a3de8bc15620c7cd43418d77e2)
 | DMM Controller V2 	                        | 0xB07EB3426d742cda9120931e7028d54F9dF34A3e    | [Etherscan](https://etherscan.io/address/0xB07EB3426d742cda9120931e7028d54F9dF34A3e)
@@ -92,7 +94,7 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | Underlying Token Valuator V4                  | 0x0c65c147aAf2DbD5109ba74e36f730D081489B5B    | [Etherscan](https://etherscan.io/address/0x0c65c147aAf2DbD5109ba74e36f730D081489B5B)
 | Yield Farming                                 | 0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975    | [Etherscan](https://etherscan.io/address/0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975)
 | Yield Farming Router                          | 0x85455Fc1428Ceee0072309f87a227D53783ba6a8    | [Etherscan](https://etherscan.io/address/0x85455Fc1428Ceee0072309f87a227D53783ba6a8)
-| Yield Farming Impl V1 (DO NOT INTERACT)       | 0x059AfB3B37a66868804ECF1a4a14Eaa2Be548880    | [Etherscan](https://etherscan.io/address/0x059AfB3B37a66868804ECF1a4a14Eaa2Be548880)
+| Yield Farming Impl V1 (*DO NOT INTERACT*)     | 0x059AfB3B37a66868804ECF1a4a14Eaa2Be548880    | [Etherscan](https://etherscan.io/address/0x059AfB3B37a66868804ECF1a4a14Eaa2Be548880)
 
 #### Ropsten Testnet
 

@@ -31,13 +31,16 @@ const createProposalForBurningTokens = async (
   const description = `
   The DMM DAO has been running at a surplus since its inception in March of 2020. Today, we would like to propose our 
   first token burn to the community, which will buy DMG from Uniswap using USDC. Then, the purchased DMG will be burned 
-  once by invoking DMG's native \`burn\` function. The surplus at which the DAO has been running at is 10.99% for each
+  once by invoking DMG's native \`burn\` function. The surplus at which the DAO has been running is 10.99% for each
   month, meaning there is a 4.74% overage. While running at a larger scale, we anticipate there being slightly larger
-  barriers in/out of crypto that may slightly eat into the overage.
+  barriers in/out of crypto that may slightly eat into the overage. A token burn would mean that this excess amount of 
+  interest would be used to purchase DMG tokens that would then be burned, which rewards all DMG token holders by 
+  making the token deflationary.In turn, this would lower the circulating supply and increase token demand, creating an 
+  incentive for people to HODL DMG tokens.
   
   The following table, shown below, showcases the estimated value of mTokens in circulation for the months of March 
   through August. Then, the amount burned is calculated by multiplying it by the monthly amortization of the burn 
-  percentage (which equals 4.74% / 12). The total dollar amount of DMG to be burned is $35,147
+  percentage (which equals 4.74% / 12). The total dollar amount of DMG to be burned is $35,147.
   
   | Month   | Estimated AUM in all mTokens  | Burn Amount   |
   |-------- |------------------------------ |------------:  |
@@ -49,10 +52,11 @@ const createProposalForBurningTokens = async (
   | August  | $3,483,289                    | $13,759       |
   
   This marks an important step forward for the DAO, as we display to all members how important accumulating deposits in
-  mTokens is. Moreover, we understand that this surplus calculation process is not transparent or trustless enough for
-  certain members of the DAO who would like to see the entire process done on-chain, and we agree! We will be speccing 
-  out a way to leverage the Chainlink Oracle Network to bring this data on-chain on a regular basis, so the burning 
-  process can be done by any entity holding enough tokens when a burn-oriented vote passes.
+  mTokens is and how it affects the deflationary attributes of DMG. Moreover, we understand that this surplus 
+  calculation process is not transparent or trustless enough for certain members of the DAO, who would like to see the 
+  entire process done on-chain - we agree! We will be designing a way to leverage the Chainlink Oracle Network to bring 
+  this data on-chain on a regular basis, so the burning process can be done in a trust-minimized manner whenever a 
+  burn-oriented vote passes.
   `;
 
   const signatures = [

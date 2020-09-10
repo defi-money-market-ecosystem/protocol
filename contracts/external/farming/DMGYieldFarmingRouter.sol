@@ -38,6 +38,7 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
     address public dmgYieldFarming;
     address public uniswapV2Factory;
     address public weth;
+    bytes32 public initCodeHash;
 
     // Used to prevent stack too deep errors.
     struct UniswapParams {
@@ -55,7 +56,7 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
 
     modifier ensurePairIsSupported(address tokenA, address tokenB) {
         require(
-            IDMGYieldFarmingV1(dmgYieldFarming).isSupportedToken(UniswapV2Library.pairFor(uniswapV2Factory, tokenA, tokenB)),
+            IDMGYieldFarmingV1(dmgYieldFarming).isSupportedToken(UniswapV2Library.pairFor(uniswapV2Factory, tokenA, tokenB, initCodeHash)),
             "DMGYieldFarmingFundingProxy: TOKEN_UNSUPPORTED"
         );
         _;
@@ -69,6 +70,7 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
         dmgYieldFarming = _dmgYieldFarming;
         uniswapV2Factory = _uniswapV2Factory;
         weth = _weth;
+        initCodeHash = bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f);
     }
 
     function() external payable {
@@ -82,7 +84,15 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
         address tokenA,
         address tokenB
     ) public view returns (address) {
-        return UniswapV2Library.pairFor(uniswapV2Factory, tokenA, tokenB);
+        return UniswapV2Library.pairFor(uniswapV2Factory, tokenA, tokenB, initCodeHash);
+    }
+
+    function setInitCodeHash(
+        bytes32 _initCodeHash
+    )
+    public
+    onlyOwner {
+        initCodeHash = _initCodeHash;
     }
 
     function enableTokens(
@@ -90,8 +100,7 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
         address[] calldata spenders
     )
     external
-    nonReentrant
-    onlyOwner {
+    nonReentrant {
         require(
             tokens.length == spenders.length,
             "DMGYieldFarmingFundingProxy::enableTokens: INVALID_LENGTH"
@@ -133,7 +142,7 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
             _uniswapV2Factory
         );
 
-        address pair = UniswapV2Library.pairFor(uniswapV2Factory, params.tokenA, params.tokenB);
+        address pair = UniswapV2Library.pairFor(uniswapV2Factory, params.tokenA, params.tokenB, initCodeHash);
         uint liquidity = _doTokenTransfersAndMintLiquidity(params, pair, amountA, amountB);
 
         IDMGYieldFarmingV1(dmgYieldFarming).beginFarming(msg.sender, address(this), pair, liquidity);
@@ -168,7 +177,7 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
             _uniswapV2Factory
         );
 
-        address pair = UniswapV2Library.pairFor(_uniswapV2Factory, token, params.tokenB);
+        address pair = UniswapV2Library.pairFor(_uniswapV2Factory, token, params.tokenB, initCodeHash);
 
         uint liquidity = _doTokenTransfersWithEthAndMintLiquidity(params, pair, amountToken, amountETH);
 
@@ -244,7 +253,7 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
         address tokenB
     ) internal view {
         require(
-            IDMGYieldFarmingV1(dmgYieldFarming).isSupportedToken(UniswapV2Library.pairFor(uniswapV2Factory, tokenA, tokenB)),
+            IDMGYieldFarmingV1(dmgYieldFarming).isSupportedToken(UniswapV2Library.pairFor(uniswapV2Factory, tokenA, tokenB, initCodeHash)),
             "DMGYieldFarmingFundingProxy::_verifyTokensAreSupported: TOKEN_UNSUPPORTED"
         );
     }
@@ -256,7 +265,7 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
         bool isInSeason
     )
     internal returns (uint amountA, uint amountB) {
-        address pair = UniswapV2Library.pairFor(uniswapV2Factory, params.tokenA, params.tokenB);
+        address pair = UniswapV2Library.pairFor(uniswapV2Factory, params.tokenA, params.tokenB, initCodeHash);
         uint liquidity;
         if (isInSeason) {
             (uint _liquidity, uint dmgEarned) = IDMGYieldFarmingV1(dmgYieldFarming).endFarmingByToken(farmer, address(this), pair);
@@ -287,7 +296,7 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
         address uniswapV2Factory
     )
     internal view returns (uint amountA, uint amountB) {
-        (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(uniswapV2Factory, params.tokenA, params.tokenB);
+        (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(uniswapV2Factory, params.tokenA, params.tokenB, initCodeHash);
         if (reserveA == 0 && reserveB == 0) {
             (amountA, amountB) = (amountADesired, amountBDesired);
         } else {
