@@ -1,20 +1,22 @@
 const {createGovernanceProposal} = require('./EncodeGovernanceProposalAbi')
 
-const burnTokens = async (governorAlpha, erc20Token, timelockAddress, deployerAddress, burnAmountWei, uniswapRouter, wethAddress, dmgToken) => {
+const burnTokens = async (governorAlpha, erc20Token, timelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmgToken) => {
+  const targets = [erc20Token, erc20Token, dmgBurner];
+  const values = ['0', '0', '0'];
   const transferFromCalldata = erc20Token.contract.methods.transferFrom(
     deployerAddress,
     timelockAddress,
-    burnAmountWei
-  ).encodeABI();
-  const approveCalldata = erc20Token.contract.methods.approve(uniswapRouter.address, burnAmountWei).encodeABI();
-  const swapCalldata = uniswapRouter.contract.methods.swapExactTokensForTokens(
     burnAmountWei,
-    '1',
-    erc20Token.address.toLowerCase() === wethAddress.toLowerCase() ? [wethAddress, dmgToken.address] : [erc20Token.address, wethAddress, dmgToken.address],
-    timelockAddress,
-    parseInt(Date.now() / 1000) + (86400 * 30)
   ).encodeABI();
-  const burnCalldata = dmgToken.contract.methods.burn().encodeABI();
+  const approveCalldata = erc20Token.contract.methods.approve(
+    dmgBurner.address,
+    burnAmountWei,
+  ).encodeABI();
+  const burnDmgCalldata = dmgBurner.contract.methods.burnDmg(
+    erc20Token.address,
+    burnAmountWei,
+    erc20Token.address.toLowerCase() === wethAddress.toLowerCase() ? [wethAddress, dmgToken.address] : [erc20Token.address, wethAddress, dmgToken.address],
+  ).encodeABI();
 
   const title = 'Token Burn #1: March 2020 - August 2020'
   const description = `
@@ -43,6 +45,14 @@ const burnTokens = async (governorAlpha, erc20Token, timelockAddress, deployerAd
   out a way to leverage the Chainlink Oracle Network to bring this data on-chain on a regular basis, so the burning 
   process can be done by any entity holding enough tokens when a burn-oriented vote passes.
   `;
+
+  const signatures = [
+    'approve(address,uint256)',
+    'transferFrom(address,address,uint256)',
+    'burnDmg(address,uint256,address[])',
+  ];
+
+  const calldatas = [approveCalldata, transferFromCalldata, burnDmgCalldata];
 
   await createGovernanceProposal(governorAlpha, targets, values, signatures, calldatas, title, description);
 };

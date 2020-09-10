@@ -9,3 +9,5 @@ node_modules
 ethereum-nodes.json
 
 deployment/
+
+./verify-contract.sh

@@ -4,9 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compile": "oz compile",
+    "compile": "oz compile --typechain truffle --typechain-outdir ./build/types",
     "deploy": "npm run compile && ENVIRONMENT=LOCAL node scripts/initial_deployment/index.js",
     "deploy-mainnet": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/initial_deployment/index.js",
+    "deploy-mainnet-burner-impl-v1": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_burner/DeployDMGBurnerImplV1.js",
+    "deploy-mainnet-burner-proxy": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_burner/DeployDMGBurnerProxy.js",
     "deploy-mainnet-dmg": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_dmg/DeployDmg.js",
     "deploy-mainnet-dmg-forwarder": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_dmg/DeployDmgTokenFowarder.js",
     "deploy-mainnet-dmg-lockup": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_dmg/DeployDmgTokenLockup.js",
@@ -70,17 +72,20 @@
     "@openzeppelin/cli": "^2.8.2",
     "@openzeppelin/contract-loader": "^0.6.1",
     "@openzeppelin/contracts": "^2.4.0",
+    "@openzeppelin/contracts-ethereum-package": "^3.0.0",
     "@openzeppelin/upgrades": "^2.8.0",
     "@uniswap/v2-core": "^1.0.1",
     "chainlink": "^0.8.2",
     "eslint": "^7.8.1",
     "ganache-cli": "^6.9.0",
-    "prompt": "^1.0.0"
+    "prompt": "^1.0.0",
+    "truffle-plugin-verify": "^0.4.0"
   },
   "devDependencies": {
     "@openzeppelin/test-environment": "^0.1.2",
     "@openzeppelin/test-helpers": "^0.5.4",
     "chai": "^4.2.0",
+    "dotenv-flow": "^3.2.0",
     "ethereumjs-util": "latest",
     "mocha": "^7.0.1",
     "mocha-parallel-tests": "^2.3.0"

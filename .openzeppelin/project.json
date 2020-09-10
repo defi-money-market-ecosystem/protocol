@@ -2,7 +2,8 @@
   "manifestVersion": "2.2",
   "contracts": {
     "InterestRateImplV1": "InterestRateImplV1",
-    "DmmToken": "DmmToken"
+    "DmmToken": "DmmToken",
+    "DMGBurnerV1": "DMGBurnerV1"
   },
   "dependencies": {},
   "name": "dmm-protocol",
@@ -21,7 +22,9 @@
     "artifactsDir": "build/contracts",
     "contractsDir": "contracts",
     "typechain": {
-      "enabled": false
+      "enabled": true,
+      "outDir": "./build/types",
+      "target": "truffle"
     }
   }
 }

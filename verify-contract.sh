@@ -1,0 +1,1 @@
+ETHERSCAN_API_KEY=P7K72PJ49NDC1KN76WUTYYXIVSP44D5XA7 truffle run etherscan DMGBurnerV1@@0xe8d36d84c58ba104c346726641d0deca05ad237c --network mainnet --debug
