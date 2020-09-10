@@ -94,7 +94,7 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | Underlying Token Valuator V4                  | 0x0c65c147aAf2DbD5109ba74e36f730D081489B5B    | [Etherscan](https://etherscan.io/address/0x0c65c147aAf2DbD5109ba74e36f730D081489B5B)
 | Yield Farming                                 | 0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975    | [Etherscan](https://etherscan.io/address/0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975)
 | Yield Farming Router                          | 0x8209eD0259F99Abd593E8cd26e6a14f224C6cccA    | [Etherscan](https://etherscan.io/address/0x8209eD0259F99Abd593E8cd26e6a14f224C6cccA)
-| Yield Farming Impl V1 (*DO NOT INTERACT*)     | 0x059AfB3B37a66868804ECF1a4a14Eaa2Be548880    | [Etherscan](https://etherscan.io/address/0x059AfB3B37a66868804ECF1a4a14Eaa2Be548880)
+| Yield Farming Impl V1 (*DO NOT INTERACT*)     | 0x061f57eA8383558A7E20F84948d0F11A6e1BcDe2    | [Etherscan](https://etherscan.io/address/0xe879f44E6e0002629A4EE8dC5bDfb8fB7d096f96)
 
 #### Ropsten Testnet
 

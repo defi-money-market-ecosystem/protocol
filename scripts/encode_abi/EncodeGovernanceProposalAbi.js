@@ -16,6 +16,7 @@ const createProposalForYieldFarming = async (governorAlpha, safeAddress, dmg, dm
   const approveCallData = dmg.contract.methods.approve(yieldFarming.address, rewardAmountWei.toString()).encodeABI().substring(10);
 
   const setDmgGrowthCoefficientSignature = 'setDmgGrowthCoefficient(uint256)';
+  console.log('dmgGrowthCoefficient.toString() ', dmgGrowthCoefficient.toString())
   const setDmgGrowthCoefficientCallData = yieldFarming.contract.methods.setDmgGrowthCoefficient(dmgGrowthCoefficient.toString()).encodeABI().substring(10);
 
   const beginFarmingCampaignSignature = 'beginFarmingSeason(uint256)';

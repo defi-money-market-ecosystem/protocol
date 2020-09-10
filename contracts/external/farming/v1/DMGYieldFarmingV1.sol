@@ -39,7 +39,14 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
             msg.sender == user || _globalProxyToIsTrustedMap[msg.sender] || _userToSpenderToIsApprovedMap[user][msg.sender],
             "DMGYieldFarmingV1: UNAPPROVED"
         );
+        _;
+    }
 
+    modifier onlyOwnerOrGuardian {
+        require(
+            msg.sender == _owner || msg.sender == _guardian,
+            "DMGYieldFarming: UNAUTHORIZED"
+        );
         _;
     }
 
@@ -59,59 +66,59 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
     }
 
     function initialize(
-        address dmgToken,
-        address guardian,
-        address dmmController,
-        uint dmgGrowthCoefficient,
-        address[] memory allowableTokens,
-        address[] memory underlyingTokens,
-        uint8[] memory tokenDecimals,
-        uint16[] memory points
+        address __dmgToken,
+        address __guardian,
+        address __dmmController,
+        uint __dmgGrowthCoefficient,
+        address[] memory __allowableTokens,
+        address[] memory __underlyingTokens,
+        uint8[] memory __tokenDecimals,
+        uint16[] memory __points
     )
     initializer
     public {
-        DMGYieldFarmingData.initialize(guardian);
+        DMGYieldFarmingData.initialize(__guardian);
 
         require(
-            allowableTokens.length == points.length,
+            __allowableTokens.length == __points.length,
             "DMGYieldFarming::initialize: INVALID_LENGTH"
         );
         require(
-            points.length == underlyingTokens.length,
+            __points.length == __underlyingTokens.length,
             "DMGYieldFarming::initialize: INVALID_LENGTH"
         );
         require(
-            underlyingTokens.length == tokenDecimals.length,
+            __underlyingTokens.length == __tokenDecimals.length,
             "DMGYieldFarming::initialize: INVALID_LENGTH"
         );
 
-        _dmgToken = dmgToken;
-        _guardian = guardian;
-        _dmmController = dmmController;
+        _dmgToken = __dmgToken;
+        _guardian = __guardian;
+        _dmmController = __dmmController;
 
-        _verifyDmgGrowthCoefficient(dmgGrowthCoefficient);
-        _dmgGrowthCoefficient = dmgGrowthCoefficient;
+        _verifyDmgGrowthCoefficient(__dmgGrowthCoefficient);
+        _dmgGrowthCoefficient = __dmgGrowthCoefficient;
         _seasonIndex = 1;
         // gas savings by starting it at 1.
         _isFarmActive = false;
 
-        for (uint i = 0; i < allowableTokens.length; i++) {
+        for (uint i = 0; i < __allowableTokens.length; i++) {
             require(
-                allowableTokens[i] != address(0),
+                __allowableTokens[i] != address(0),
                 "DMGYieldFarming::initialize: INVALID_UNDERLYING"
             );
             require(
-                underlyingTokens[i] != address(0),
+                __underlyingTokens[i] != address(0),
                 "DMGYieldFarming::initialize: INVALID_UNDERLYING"
             );
 
-            _supportedFarmTokens.push(allowableTokens[i]);
-            _tokenToIndexPlusOneMap[allowableTokens[i]] = i + 1;
-            _tokenToUnderlyingTokenMap[allowableTokens[i]] = underlyingTokens[i];
-            _tokenToDecimalsMap[allowableTokens[i]] = tokenDecimals[i];
+            _supportedFarmTokens.push(__allowableTokens[i]);
+            _tokenToIndexPlusOneMap[__allowableTokens[i]] = i + 1;
+            _tokenToUnderlyingTokenMap[__allowableTokens[i]] = __underlyingTokens[i];
+            _tokenToDecimalsMap[__allowableTokens[i]] = __tokenDecimals[i];
 
-            _verifyPoints(points[i]);
-            _tokenToRewardPointMap[allowableTokens[i]] = points[i];
+            _verifyPoints(__points[i]);
+            _tokenToRewardPointMap[__allowableTokens[i]] = __points[i];
         }
     }
 
@@ -125,7 +132,7 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
     )
     public
     nonReentrant
-    onlyOwner {
+    onlyOwnerOrGuardian {
         _globalProxyToIsTrustedMap[proxy] = isTrusted;
         emit GlobalProxySet(proxy, isTrusted);
     }
@@ -191,7 +198,7 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
     )
     public
     nonReentrant
-    onlyOwner {
+    onlyOwnerOrGuardian {
         _verifyDmgGrowthCoefficient(dmgGrowthCoefficient);
 
         _dmgGrowthCoefficient = dmgGrowthCoefficient;
@@ -202,8 +209,8 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
         uint dmgAmount
     )
     public
-    nonReentrant
-    onlyOwner {
+    onlyOwnerOrGuardian
+    nonReentrant {
         require(!_isFarmActive, "DMGYieldFarming::beginFarmingSeason: FARM_ALREADY_ACTIVE");
 
         _seasonIndex += 1;
@@ -222,7 +229,7 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
         // Anyone can end the farm if the DMG balance has been drawn down to 0.
         require(
             dmgBalance == 0 || msg.sender == owner() || msg.sender == _guardian,
-            "DMGYieldFarming: FARM_ACTIVE or INVALID_SENDER"
+            "DMGYieldFarming::endActiveFarmingSeason: FARM_ACTIVE_OR_INVALID_SENDER"
         );
 
         _isFarmActive = false;
@@ -618,10 +625,10 @@ contract DMGYieldFarmingV1 is IDMGYieldFarmingV1, IDMGYieldFarmingV1Initializabl
             // Perfect.
             return elapsedTime
             .mul(dmgGrowthCoefficient)
-            .div(DMG_GROWTH_COEFFICIENT_FACTOR)
             .mul(points)
+            .mul(usdValue)
             .div(POINTS_FACTOR)
-            .mul(usdValue);
+            .div(DMG_GROWTH_COEFFICIENT_FACTOR);
         }
     }
 

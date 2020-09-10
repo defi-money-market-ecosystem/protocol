@@ -27,7 +27,7 @@ pragma solidity ^0.5.0;
 interface IDMGYieldFarmingV1 {
 
     // ////////////////////
-    // Events
+    // Admin Events
     // ////////////////////
 
     event GlobalProxySet(address indexed proxy, bool isTrusted);
@@ -40,6 +40,10 @@ interface IDMGYieldFarmingV1 {
 
     event DmgGrowthCoefficientSet(uint coefficient);
     event RewardPointsSet(address indexed token, uint16 points);
+
+    // ////////////////////
+    // User Events
+    // ////////////////////
 
     event Approval(address indexed user, address indexed spender, bool isTrusted);
 
