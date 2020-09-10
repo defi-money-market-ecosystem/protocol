@@ -10,4 +10,4 @@ ethereum-nodes.json
 
 deployment/
 
-./verify-contract.sh
+verify-contract.sh
