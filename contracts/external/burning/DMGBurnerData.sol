@@ -15,15 +15,14 @@
  */
 
 
-pragma solidity ^0.5.13;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.5.0;
 
-interface IDMGToken {
+import "../../../node_modules/@openzeppelin/upgrades/contracts/Initializable.sol";
 
-    function getPriorVotes(address account, uint blockNumber) external view returns (uint128);
+contract DMGBurnerData is Initializable {
 
-    function delegates(address delegator) external view returns (address);
-
-    function burn(uint amount) external returns (bool);
+    address internal _uniswapV2Router;
+    address internal _dmg;
+    mapping(address => bool) _tokenToIsSetup;
 
 }

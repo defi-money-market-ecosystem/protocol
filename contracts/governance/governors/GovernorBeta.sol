@@ -31,7 +31,7 @@ contract GovernorBeta is GovernorAlpha {
     modifier onlyTrustedOperator(address voter) {
         require(
             _globalOperatorToIsSupportedMap[msg.sender] || _voterToLocalOperatorToIsSupportedMap[voter][msg.sender],
-            "GovernorBeta: UNAUTHORIZED"
+            "GovernorBeta: UNAUTHORIZED_OPERATOR"
         );
 
         _;
@@ -74,14 +74,14 @@ contract GovernorBeta is GovernorAlpha {
         address voter,
         address operator
     )
-    public returns (bool) {
+    public view returns (bool) {
         return _voterToLocalOperatorToIsSupportedMap[voter][operator];
     }
 
     function getIsGlobalOperator(
         address operator
     )
-    public returns (bool) {
+    public view returns (bool) {
         return _globalOperatorToIsSupportedMap[operator];
     }
 
@@ -90,6 +90,8 @@ contract GovernorBeta is GovernorAlpha {
      *
      * This function is mainly used to wrap around voting functionality with a proxy contract to perform additional
      * logic before or after voting.
+     *
+     * @return The amount of votes the user casted in favor of or against the proposal.
      */
     function castVote(
         address voter,
@@ -97,7 +99,7 @@ contract GovernorBeta is GovernorAlpha {
         bool support
     )
     onlyTrustedOperator(voter)
-    public {
+    public returns (uint128) {
         return _castVote(voter, proposalId, support);
     }
 

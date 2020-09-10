@@ -15,15 +15,14 @@
  */
 
 
-pragma solidity ^0.5.13;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.5.0;
 
-interface IDMGToken {
+import "./IDMGStakingV1.sol";
+import "./IDMGStakingV1Initializable.sol";
 
-    function getPriorVotes(address account, uint blockNumber) external view returns (uint128);
 
-    function delegates(address delegator) external view returns (address);
+contract DMGStakingV1 is IDMGStakingV1, IDMGStakingV1Initializable {
 
-    function burn(uint amount) external returns (bool);
+    function initialize() external;
 
 }

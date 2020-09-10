@@ -352,7 +352,8 @@ contract GovernorAlpha is GovernorAlphaData {
     function castVote(
         uint proposalId,
         bool support
-    ) public {
+    )
+    public returns (uint128) {
         return _castVote(msg.sender, proposalId, support);
     }
 
@@ -362,7 +363,8 @@ contract GovernorAlpha is GovernorAlphaData {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public {
+    )
+    public returns (uint128) {
         bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainId(), address(this)));
         bytes32 structHash = keccak256(abi.encode(BALLOT_TYPEHASH, proposalId, support));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
@@ -378,7 +380,7 @@ contract GovernorAlpha is GovernorAlphaData {
         address voter,
         uint proposalId,
         bool support
-    ) internal {
+    ) internal returns (uint128) {
         require(
             state(proposalId) == ProposalState.Active,
             "GovernorAlpha::_castVote: voting is closed"
@@ -404,6 +406,8 @@ contract GovernorAlpha is GovernorAlphaData {
         receipt.votes = votes;
 
         emit VoteCast(voter, proposalId, support, votes);
+
+        return votes;
     }
 
     function __acceptAdmin() public {

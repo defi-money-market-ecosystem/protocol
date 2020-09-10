@@ -270,4 +270,5 @@ module.exports = {
   createProposalForUpgradingController,
   createProposalForAddingUsdt,
   createProposalForDryRun,
+  createGovernanceProposal,
 };

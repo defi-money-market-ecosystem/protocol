@@ -35,6 +35,7 @@
     "send-tokens": "DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node scripts/playground/SendTokens.js",
     "start-chain": "ganache-cli --deterministic --port 8545 -l 10000000 -i 1337",
     "test": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/** --slow 2500",
+    "test-burner": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/burning/TestBurner*.test.js --slow 2500",
     "test-controller": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/protocol/DmmController*.test.js --slow 2500",
     "test-controller-admin-reserves": "npm run compile && npx mocha --exit --async-only --timeout 15000 --recursive test/protocol/DmmController.AdminReserves.test.js --slow 2500",
     "test-controller-collateralization": "npm run compile && npx mocha --exit --async-only --timeout 15000 --recursive test/protocol/DmmController.Collateralization.test.js --slow 2500",

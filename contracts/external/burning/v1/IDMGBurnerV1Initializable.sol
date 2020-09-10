@@ -15,15 +15,13 @@
  */
 
 
-pragma solidity ^0.5.13;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.5.0;
 
-interface IDMGToken {
+interface IDMGBurnerV1Initializable {
 
-    function getPriorVotes(address account, uint blockNumber) external view returns (uint128);
-
-    function delegates(address delegator) external view returns (address);
-
-    function burn(uint amount) external returns (bool);
+    function initialize(
+        address uniswapV2Router,
+        address dmg
+    ) external;
 
 }

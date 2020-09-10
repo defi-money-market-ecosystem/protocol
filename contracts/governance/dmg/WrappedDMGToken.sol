@@ -29,6 +29,9 @@ import "./DMGToken.sol";
  */
 contract WrappedDMGToken is DMGToken, Ownable {
 
+    event MinterAdded(address indexed minter);
+    event MinterRemoved(address indexed minter);
+
     modifier onlyMinter() {
         require(
             _minterMap[msg.sender],
@@ -62,6 +65,7 @@ contract WrappedDMGToken is DMGToken, Ownable {
     onlyOwner
     public {
         _minterMap[minter] = true;
+        emit MinterAdded(minter);
     }
 
     function removeMinter(
@@ -70,6 +74,7 @@ contract WrappedDMGToken is DMGToken, Ownable {
     onlyOwner
     public {
         _minterMap[minter] = false;
+        emit MinterRemoved(minter);
     }
 
     function mint(

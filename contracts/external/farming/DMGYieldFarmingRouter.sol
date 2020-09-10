@@ -25,7 +25,7 @@ import "../../../node_modules/@openzeppelin/contracts/utils/ReentrancyGuard.sol"
 import "../../protocol/interfaces/IWETH.sol";
 import "../../utils/AddressUtil.sol";
 
-import "./libs/UniswapV2Library.sol";
+import "../uniswap/libs/UniswapV2Library.sol";
 
 import "./v1/IDMGYieldFarmingV1.sol";
 

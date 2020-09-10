@@ -36,10 +36,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+
 pragma solidity ^0.5.13;
+pragma experimental ABIEncoderV2;
 
 import "../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
-pragma experimental ABIEncoderV2;
 
 contract Timelock {
     using SafeMath for uint;
