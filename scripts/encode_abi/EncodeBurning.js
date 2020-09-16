@@ -16,7 +16,7 @@ const createProposalForBurningTokens = async (
     deployerAddress,
     timelockAddress,
     burnAmountWei.toString(),
-  ).encodeABI();
+  );
   const approveCalldata = erc20Token.contract.methods.approve(
     dmgBurner.address,
     burnAmountWei.toString(),
@@ -25,7 +25,7 @@ const createProposalForBurningTokens = async (
     erc20Token.address,
     burnAmountWei.toString(),
     erc20Token.address.toLowerCase() === wethAddress.toLowerCase() ? [wethAddress, dmgToken.address] : [erc20Token.address, wethAddress, dmgToken.address],
-  ).encodeABI();
+  ).encodeABI()
 
   const title = 'Token Burn #1: March 2020 - August 2020'
   const description = `

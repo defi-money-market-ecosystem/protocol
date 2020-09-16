@@ -254,6 +254,25 @@ const createGovernanceProposal = async (governorAlpha, targets, values, signatur
     }
   })
 
+  calldatas.map((calldata, index) => {
+    const target = targets[index]
+    if (target.contract) {
+      if (!calldatas[index].startsWith('0x')) {
+        console.warn(`Appending 0x to calldata at ${index} and signature ${signatures[index]}`)
+        calldatas[index] = '0x' + calldatas[index];
+      }
+
+      if (target.contract.methods[calldatas[index].substring(0, 10).toLowerCase()]) {
+        console.warn(`Removing method ID from at index ${index} and signature ${signatures[index]}`)
+        return calldatas[index].substring(10);
+      } else {
+        return calldatas[index];
+      }
+    } else {
+      throw `Could not verify ${target} at index ${index}`
+    }
+  })
+
   const actualAbi = governorAlpha.contract.methods.propose(
     targets.map(target => target.address),
     values,

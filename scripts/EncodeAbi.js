@@ -110,7 +110,7 @@ const main = async () => {
   // const farmSeasonAmount = new BN('12860082304');
   // await approveGloballyTrustedProxy(yieldFarming, yieldFarmingRouterAddress, true);
   // console.log('--------------------------------------------------')
-  await createProposalForYieldFarming(governorAlpha, gnosisSafeAddress, dmg, deployerAddress, governorTimelockAddress, yieldFarming, rewardAmountWei, targetDurationDays, maxDebtCeiling);
+  // await createProposalForYieldFarming(governorAlpha, gnosisSafeAddress, dmg, deployerAddress, governorTimelockAddress, yieldFarming, rewardAmountWei, targetDurationDays, maxDebtCeiling);
 
   const burnAmountWei = new BN('35147000000')
   await createProposalForBurningTokens(governorAlpha, usdc, governorTimelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmg);
