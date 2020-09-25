@@ -4,7 +4,7 @@ require('chai').should();
 const {expectRevert, expectEvent} = require('@openzeppelin/test-helpers');
 
 const {snapshotChain, resetChain, _1} = require('../../helpers/DmmTokenTestHelpers');
-const {doYieldFarmingBeforeEach} = require('../../helpers/YieldFarmingHelpers');
+const {doYieldFarmingV1BeforeEach} = require('../../helpers/YieldFarmingHelpers');
 
 // Use the different accounts, which are unlocked and funded with Ether
 const [admin, guardian, user, owner] = accounts;
@@ -22,7 +22,7 @@ describe('DMGYieldFarming.Proxy', () => {
     await web3.eth.personal.importRawKey(this.wallet.privateKey, password);
     await web3.eth.personal.unlockAccount(this.wallet.address, password, 600);
 
-    await doYieldFarmingBeforeEach(this, contract, web3);
+    await doYieldFarmingV1BeforeEach(this, contract, web3);
 
     snapshotId = await snapshotChain(provider);
   });

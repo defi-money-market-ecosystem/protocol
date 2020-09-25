@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compile": "oz compile --typechain truffle --typechain-outdir ./build/types",
+    "compile": "oz compile",
+    "compile-with-chain": "oz compile --typechain truffle --typechain-outdir ./build/types",
     "deploy": "npm run compile && ENVIRONMENT=LOCAL node scripts/initial_deployment/index.js",
     "deploy-mainnet": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/initial_deployment/index.js",
     "deploy-mainnet-burner-impl-v1": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_burner/DeployDMGBurnerImplV1.js",
@@ -61,8 +62,9 @@
     "test-yield-farming": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarming.*.test.js --slow 2500",
     "test-yield-farming-proxy": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarming.Proxy.test.js --slow 2500",
     "test-yield-farming-v1-admin": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.Admin.test.js --slow 2500",
-    "test-yield-farming-v1-misc": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.Misc.test.js --slow 2500",
     "test-yield-farming-v1-user": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.User.test.js --slow 2500",
+    "test-yield-farming-v2-admin": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV2.Admin.test.js --slow 2500",
+    "test-yield-farming-v2-user": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV2.User.test.js --slow 2500",
     "test-yield-farming-external-proxy": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingRouter.test.js --slow 2500"
   },
   "keywords": [],

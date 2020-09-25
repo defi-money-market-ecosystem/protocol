@@ -31,7 +31,7 @@ const main = async () => {
     DMGYieldFarmingV1,
     [],
     deployer,
-    4e6,
+    5.5e6,
     web3,
     defaultGasPrice,
   );

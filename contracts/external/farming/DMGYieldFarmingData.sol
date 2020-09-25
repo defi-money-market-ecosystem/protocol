@@ -19,10 +19,12 @@ pragma solidity ^0.5.0;
 
 import "../../../node_modules/@openzeppelin/upgrades/contracts/Initializable.sol";
 
+import "./v2/DMGYieldFarmingV2Lib.sol";
+
 contract DMGYieldFarmingData is Initializable {
 
     // /////////////////////////
-    // BEGIN State Variables
+    // BEGIN V1 State Variables
     // /////////////////////////
 
     // counter to allow mutex lock with only one SSTORE operation
@@ -48,6 +50,16 @@ contract DMGYieldFarmingData is Initializable {
     mapping(address => uint) internal _tokenToIndexPlusOneMap;
     mapping(address => mapping(address => uint)) internal _addressToTokenToBalanceMap;
     mapping(address => bool) internal _globalProxyToIsTrustedMap;
+
+    // /////////////////////////
+    // BEGIN V2 State Variables
+    // /////////////////////////
+
+    address internal _underlyingTokenValuator;
+    address internal _uniswapV2Router;
+    address internal _weth;
+    mapping(address => DMGYieldFarmingV2Lib.TokenType) internal _tokenToTokenType;
+    mapping(address => uint16) internal _tokenToFeeAmountMap;
 
     // /////////////////////////
     // END State Variables
@@ -150,5 +162,9 @@ contract DMGYieldFarmingData is Initializable {
     uint8 public constant USD_VALUE_DECIMALS = 18;
 
     uint public constant USD_VALUE_FACTOR = 10 ** uint(USD_VALUE_DECIMALS);
+
+    uint8 public constant FEE_AMOUNT_DECIMALS = 4;
+
+    uint16 public constant FEE_AMOUNT_FACTOR = 10 ** uint16(FEE_AMOUNT_DECIMALS);
 
 }

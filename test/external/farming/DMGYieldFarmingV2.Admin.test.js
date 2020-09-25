@@ -3,14 +3,16 @@ require('@openzeppelin/test-helpers/src/config/web3').getWeb3 = () => web3;
 require('chai').should();
 const {BN, constants, expectRevert, expectEvent, time} = require('@openzeppelin/test-helpers');
 
-const {snapshotChain, resetChain, _100, _10000} = require('../../helpers/DmmTokenTestHelpers');
-const {doYieldFarmingV1BeforeEach} = require('../../helpers/YieldFarmingHelpers');
+const {snapshotChain, resetChain, _1, _10, _100, _10000} = require('../../helpers/DmmTokenTestHelpers');
+const {doYieldFarmingExternalProxyBeforeEach} = require('../../helpers/YieldFarmingHelpers');
 
 // Use the different accounts, which are unlocked and funded with Ether
 const [admin, guardian, owner, user] = accounts;
 
-describe('DMGYieldFarmingV1.Admin', () => {
-  const NOT_OWNER_ERROR = 'DMGYieldFarmingData: NOT_OWNER';
+describe('DMGYieldFarmingV2.Admin', () => {
+  const NOT_OWNER_ERROR = 'DMGYieldFarmingV2: UNAUTHORIZED';
+  const timeBuffer = new BN('2');
+  const UniswapLpToken = new BN('1');
   let snapshotId;
   before(async () => {
     this.admin = admin;
@@ -23,7 +25,7 @@ describe('DMGYieldFarmingV1.Admin', () => {
     await web3.eth.personal.importRawKey(this.wallet.privateKey, password);
     await web3.eth.personal.unlockAccount(this.wallet.address, password, 600);
 
-    await doYieldFarmingV1BeforeEach(this, contract, web3);
+    await doYieldFarmingExternalProxyBeforeEach(this, contract, web3, provider);
 
     snapshotId = await snapshotChain(provider);
   });
@@ -63,11 +65,14 @@ describe('DMGYieldFarmingV1.Admin', () => {
   it('addAllowableToken: should add token if owner', async () => {
     const decimals = '18';
     const points = new BN('400');
+    const fees = new BN('100');
     const result = await this.yieldFarming.addAllowableToken(
       this.tokenC.address,
       this.underlyingTokenC.address,
       decimals,
       points,
+      fees,
+      UniswapLpToken,
       {from: owner}
     );
     expectEvent(
@@ -77,7 +82,8 @@ describe('DMGYieldFarmingV1.Admin', () => {
         token: this.tokenC.address,
         underlyingToken: this.underlyingTokenC.address,
         underlyingTokenDecimals: decimals,
-        points: points
+        points: points,
+        fees: fees,
       }
     );
 
@@ -89,12 +95,15 @@ describe('DMGYieldFarmingV1.Admin', () => {
   it('addAllowableToken: should not add token if not owner', async () => {
     const decimals = '18';
     const points = new BN('400');
+    const fees = new BN('50');
     await expectRevert(
       this.yieldFarming.addAllowableToken(
         this.tokenC.address,
         this.underlyingTokenC.address,
         decimals,
         points,
+        fees,
+        UniswapLpToken,
         {from: user}
       ),
       NOT_OWNER_ERROR,
@@ -104,11 +113,14 @@ describe('DMGYieldFarmingV1.Admin', () => {
   it('addAllowableToken: should not add token if it already exists', async () => {
     const decimals = '18';
     const points = new BN('400');
+    const fees = new BN('100');
     const result = await this.yieldFarming.addAllowableToken(
       this.tokenC.address,
       this.underlyingTokenC.address,
       decimals,
       points,
+      fees,
+      UniswapLpToken,
       {from: owner}
     );
     expectEvent(
@@ -118,7 +130,8 @@ describe('DMGYieldFarmingV1.Admin', () => {
         token: this.tokenC.address,
         underlyingToken: this.underlyingTokenC.address,
         underlyingTokenDecimals: decimals,
-        points: points
+        points: points,
+        fees: fees,
       }
     );
 
@@ -128,9 +141,11 @@ describe('DMGYieldFarmingV1.Admin', () => {
         this.underlyingTokenC.address,
         decimals,
         points,
+        fees,
+        UniswapLpToken,
         {from: owner}
       ),
-      'DMGYieldFarming::addAllowableToken: TOKEN_ALREADY_SUPPORTED'
+      'DMGYieldFarmingV2::addAllowableToken: TOKEN_ALREADY_SUPPORTED'
     );
   });
 
@@ -153,7 +168,7 @@ describe('DMGYieldFarmingV1.Admin', () => {
   it('removeAllowableToken: should not remove token if it does not already exist', async () => {
     await expectRevert(
       this.yieldFarming.removeAllowableToken(this.tokenC.address, {from: owner}),
-      'DMGYieldFarming::removeAllowableToken: TOKEN_NOT_SUPPORTED'
+      'DMGYieldFarmingV2::removeAllowableToken: TOKEN_NOT_SUPPORTED'
     );
   });
 
@@ -164,7 +179,7 @@ describe('DMGYieldFarmingV1.Admin', () => {
 
     await expectRevert(
       this.yieldFarming.removeAllowableToken(this.tokenC.address, {from: owner}),
-      'DMGYieldFarming: FARM_IS_ACTIVE'
+      'DMGYieldFarmingV2: FARM_IS_ACTIVE'
     );
   });
 
@@ -188,7 +203,7 @@ describe('DMGYieldFarmingV1.Admin', () => {
     const points = new BN('0');
     await expectRevert(
       this.yieldFarming.setRewardPointsByToken(this.tokenA.address, points, {from: owner}),
-      'DMGYieldFarming::_verifyPoints: INVALID_POINTS'
+      'DMGYieldFarmingV2::_verifyPoints: INVALID_POINTS'
     )
   });
 
@@ -211,7 +226,7 @@ describe('DMGYieldFarmingV1.Admin', () => {
     const coefficient = new BN('0');
     await expectRevert(
       this.yieldFarming.setDmgGrowthCoefficient(coefficient, {from: owner}),
-      'DMGYieldFarming::_verifyDmgGrowthCoefficient: INVALID_GROWTH_COEFFICIENT'
+      'DMGYieldFarmingV2::_verifyDmgGrowthCoefficient: INVALID_GROWTH_COEFFICIENT'
     )
   });
 
@@ -233,16 +248,12 @@ describe('DMGYieldFarmingV1.Admin', () => {
 
     await expectRevert(
       this.yieldFarming.beginFarmingSeason(_100(), {from: owner}),
-      'DMGYieldFarming::beginFarmingSeason: FARM_ALREADY_ACTIVE',
+      'DMGYieldFarmingV2::beginFarmingSeason: FARM_ALREADY_ACTIVE',
     );
   });
 
-  it('beginFarmingSeason: should fail if called by guardian', async () => {
-    await expectRevert(this.yieldFarming.beginFarmingSeason(_100(), {from: guardian}), NOT_OWNER_ERROR);
-  });
-
-  it('beginFarmingSeason: should fail if not called by owner', async () => {
-    await expectRevert(this.yieldFarming.beginFarmingSeason(_100(), {from: guardian}), NOT_OWNER_ERROR);
+  it('beginFarmingSeason: should fail if not called by owner or guardian', async () => {
+    await expectRevert(this.yieldFarming.beginFarmingSeason(_100(), {from: user}), NOT_OWNER_ERROR);
   });
 
   it('endActiveFarmingSeason: should succeed if the farm is active and sent by owner', async () => {
@@ -273,30 +284,62 @@ describe('DMGYieldFarmingV1.Admin', () => {
 
   it('endActiveFarmingSeason: should succeed if the farm is depleted and called by a user', async () => {
     await this.dmgToken.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: owner});
-    let result = await this.yieldFarming.beginFarmingSeason(_100(), {from: owner});
-    expectEvent(result, 'FarmSeasonBegun', {seasonIndex: new BN('2'), dmgAmount: _100()});
+    let result = await this.yieldFarming.beginFarmingSeason(_10000(), {from: owner});
+    expectEvent(result, 'FarmSeasonBegun', {seasonIndex: new BN('2'), dmgAmount: _10000()});
 
     (await this.yieldFarming.isFarmActive()).should.eq(true);
-    (await this.dmgToken.balanceOf(owner)).should.be.bignumber.eq(_10000().sub(_100()));
+    (await this.dmgToken.balanceOf(owner)).should.be.bignumber.eq(new BN('0'));
+
+    await this.underlyingTokenA.setBalance(user, _1(), {from: user});
+    await this.underlyingTokenA_2.setBalance(user, _1(), {from: user});
+
+    await this.underlyingTokenA.approve(this.uniswapV2Router.address, constants.MAX_UINT256, {from: user});
+    await this.underlyingTokenA_2.approve(this.uniswapV2Router.address, constants.MAX_UINT256, {from: user});
+
+    await this.uniswapV2Router.addLiquidity(
+      this.underlyingTokenA.address,
+      this.underlyingTokenA_2.address,
+      _1(),
+      _1(),
+      _1(),
+      _1(),
+      user,
+      (await time.latest()).add(timeBuffer),
+      {from: user}
+    );
 
     await this.tokenA.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
-    await this.tokenA.setBalance(user, _10000());
-    result = await this.yieldFarming.beginFarming(user, user, this.tokenA.address, _10000(), {from: user});
-    (result.receipt.status).should.eq(true)
+    const tokenABalance = await this.tokenA.balanceOf(user);
+    result = await this.yieldFarming.beginFarming(user, user, this.tokenA.address, tokenABalance, {from: user});
+    expectEvent(
+      result,
+      'BeginFarming',
+      {owner: user, token: this.tokenA.address, depositedAmount: tokenABalance},
+    );
 
-    const _100Seconds = new BN('100');
-    await time.increase(_100Seconds);
+    const _10Seconds = new BN('10');
+    await time.increase(_10Seconds);
 
     result = await this.yieldFarming.endFarmingByToken(user, user, this.tokenA.address, {from: user});
     expectEvent(
       result,
-      'EndFarming',
-      {owner: user, token: this.tokenA.address, withdrawnAmount: _10000(), earnedDmgAmount: _100()},
+      'HarvestFeePaid',
+      {owner: user, token: this.tokenA.address, tokenAmountToConvert: tokenABalance.mul(new BN('50')).div(new BN('10000'))},
     );
+    expectEvent(
+      result,
+      'EndFarming',
+      {
+        owner: user,
+        token: this.tokenA.address,
+        withdrawnAmount: tokenABalance.mul(new BN('10000').sub(new BN('50'))).div(new BN('10000')),
+      },
+    );
+    const endFarmingEvent = result.logs[1].args.earnedDmgAmount;
 
-    result = await this.yieldFarming.endActiveFarmingSeason(guardian, {from: user});
+    result = await this.yieldFarming.endActiveFarmingSeason(guardian, {from: owner});
     expectEvent(result, 'FarmSeasonEnd', {seasonIndex: new BN('2'), dustRecipient: guardian});
-    (await this.dmgToken.balanceOf(guardian)).should.be.bignumber.eq(new BN('0'));
+    (await this.dmgToken.balanceOf(guardian)).should.be.bignumber.eq(_10000().sub(endFarmingEvent));
   });
 
   it('endActiveFarmingSeason: should fail if the farm is active and sent by a user', async () => {
@@ -309,7 +352,7 @@ describe('DMGYieldFarmingV1.Admin', () => {
 
     await expectRevert(
       this.yieldFarming.endActiveFarmingSeason(user, {from: user}),
-      'DMGYieldFarming: FARM_ACTIVE or INVALID_SENDER'
+      'DMGYieldFarmingV2::endActiveFarmingSeason: FARM_ACTIVE_OR_INVALID_SENDER'
     )
   });
 

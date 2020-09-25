@@ -297,10 +297,13 @@ contract ERC20 is Context, IERC20, ReentrancyGuard, Ownable {
     * - `address(this)` must have at least `amount` tokens.
     */
     function burnFromThisContract(uint256 amount) internal {
-        address account = address(this);
-        _balances[account] = _balances[account].sub(amount, "BURN_EXCEEDS_BALANCE");
+        _burn(address(this), amount);
+    }
+
+    function _burn(address from, uint256 amount) internal {
+        _balances[from] = _balances[from].sub(amount, "BURN_EXCEEDS_BALANCE");
         _totalSupply = _totalSupply.sub(amount);
-        emit Transfer(account, address(0), amount);
+        emit Transfer(from, address(0), amount);
     }
 
 }
