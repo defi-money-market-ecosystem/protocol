@@ -94,7 +94,7 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | ~~Underlying Token Valuator V3~~ DEPRECATED   | 0x7812e0F5Da2F0917BD9054951415EDFF571964dB    | [Etherscan](https://etherscan.io/address/0x7812e0f5da2f0917bd9054951415edff571964db)
 | ~~Underlying Token Valuator V4~~ DEPRECATED   | 0x0c65c147aAf2DbD5109ba74e36f730D081489B5B    | [Etherscan](https://etherscan.io/address/0x0c65c147aAf2DbD5109ba74e36f730D081489B5B)
 | Underlying Token Valuator Proxy               | 0xaC7e5e3b589D55a43D62b90c6b4C4ef28Ea35573    | [Etherscan](https://etherscan.io/address/0xaC7e5e3b589D55a43D62b90c6b4C4ef28Ea35573)
-| Yield Farming                                 | 0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975    | [Etherscan](https://etherscan.io/address/0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975)
+| Yield Farming Proxy                           | 0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975    | [Etherscan](https://etherscan.io/address/0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975)
 | Yield Farming Router                          | 0x8209eD0259F99Abd593E8cd26e6a14f224C6cccA    | [Etherscan](https://etherscan.io/address/0x8209eD0259F99Abd593E8cd26e6a14f224C6cccA)
 | ~~Yield Farming Impl V1~~ DEPRECATED          | 0x061f57eA8383558A7E20F84948d0F11A6e1BcDe2    | [Etherscan](https://etherscan.io/address/0x061f57eA8383558A7E20F84948d0F11A6e1BcDe2)
 | Yield Farming Impl V2 (*DO NOT INTERACT*)     | 0x4BC1143b887Bb0A1d8C435e3c44CEBb75F3BB24b    | [Etherscan](https://etherscan.io/address/0x4BC1143b887Bb0A1d8C435e3c44CEBb75F3BB24b)
