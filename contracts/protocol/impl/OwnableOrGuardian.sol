@@ -17,21 +17,19 @@
 
 pragma solidity ^0.5.0;
 
-import "../interfaces/IOffChainAssetValuatorV1.sol";
+import "../interfaces/IOwnableOrGuardian.sol";
 
-contract DmmOffChainAssetValuatorMock is IOffChainAssetValuatorV1 {
+/**
+ * NOTE:    THE STATE VARIABLES IN THIS CONTRACT CANNOT CHANGE NAME OR POSITION BECAUSE THIS CONTRACT IS USED IN
+ *          UPGRADEABLE CONTRACTS.
+ */
+contract OwnableOrGuardian is IOwnableOrGuardian {
 
-    uint private _collateralValue = 10000000e18;
-
-    constructor() public {
-    }
-
-    function getOffChainAssetsValue() public view returns (uint) {
-        return _collateralValue;
-    }
-
-    function setCollateralValue(uint collateralValue) public {
-        _collateralValue = collateralValue;
+    constructor(
+        address owner,
+        address guardian
+    ) public {
+        IOwnableOrGuardian.initialize(owner, guardian);
     }
 
 }

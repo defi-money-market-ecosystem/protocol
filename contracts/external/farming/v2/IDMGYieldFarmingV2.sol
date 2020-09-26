@@ -102,6 +102,11 @@ interface IDMGYieldFarmingV2 {
         DMGYieldFarmingV2Lib.TokenType tokenType
     ) external;
 
+    function setUnderlyingTokenByFarmToken(
+        address farmToken,
+        address underlyingToken
+    ) external;
+
     /**
      * @param token     The address of the token that will be removed from farming.
      */
@@ -168,6 +173,8 @@ interface IDMGYieldFarmingV2 {
         address token,
         DMGYieldFarmingV2Lib.TokenType tokenType
     ) external;
+
+    function initializeDmgBalance() external;
 
     // ////////////////////
     // User Functions

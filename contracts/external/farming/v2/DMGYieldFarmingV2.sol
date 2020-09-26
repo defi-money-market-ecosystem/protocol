@@ -110,14 +110,26 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
             "DMGYieldFarmingV2::addAllowableToken: TOKEN_ALREADY_SUPPORTED"
         );
         _verifyTokenFees(fees);
-        _verifyTokenType(tokenType, token, underlyingToken);
+        _verifyTokenType(tokenType, underlyingToken);
         _verifyPoints(points);
 
         _tokenToIndexPlusOneMap[token] = _supportedFarmTokens.push(token);
         _tokenToRewardPointMap[token] = points;
         _tokenToDecimalsMap[token] = underlyingTokenDecimals;
         _tokenToTokenType[token] = tokenType;
+        _tokenToUnderlyingTokenMap[token] = underlyingToken;
         emit TokenAdded(token, underlyingToken, underlyingTokenDecimals, points, fees);
+    }
+
+    function setUnderlyingTokenByFarmToken(
+        address farmToken,
+        address underlyingToken
+    )
+    onlyOwnerOrGuardian
+    requireIsFarmToken(farmToken)
+    nonReentrant
+    public {
+        _tokenToUnderlyingTokenMap[farmToken] = underlyingToken;
     }
 
     function removeAllowableToken(
@@ -264,9 +276,18 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
     nonReentrant
     requireIsFarmToken(token)
     public {
-        _verifyTokenType(tokenType, token, _tokenToUnderlyingTokenMap[token]);
+        _verifyTokenType(tokenType, _tokenToUnderlyingTokenMap[token]);
         _tokenToTokenType[token] = tokenType;
         emit TokenTypeChanged(token, tokenType);
+    }
+
+    function initializeDmgBalance() nonReentrant external {
+        require(
+            !_isDmgBalanceInitialized,
+            "DMGYieldFarmingV2::initializeDmgBalance: ALREADY_INITIALIZED"
+        );
+        _isDmgBalanceInitialized = true;
+        _addressToTokenToBalanceMap[ZERO_ADDRESS][_dmgToken] = IERC20(_dmgToken).balanceOf(address(this));
     }
 
     // ////////////////////
@@ -398,7 +419,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
 
         {
             // To avoid the "stack too deep" error
-            uint feeAmount = _payHarvestFee(user, recipient, token, scaledTokenBalance);
+            uint feeAmount = _payHarvestFee(user, token, scaledTokenBalance);
             // The user withdraws (balance - fee) amount.
             tokenBalance = tokenBalance.sub(feeAmount);
             IERC20(token).safeTransfer(recipient, tokenBalance);
@@ -580,7 +601,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken] = _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken].sub(earnedDmgAmount);
 
         {
-            uint feeAmount = _payHarvestFee(user, recipient, token, scaledTokenBalance);
+            uint feeAmount = _payHarvestFee(user, token, scaledTokenBalance);
             _addressToTokenToBalanceMap[user][token] = _addressToTokenToBalanceMap[user][token].sub(feeAmount);
         }
 
@@ -603,7 +624,6 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
      */
     function _payHarvestFee(
         address user,
-        address refundRecipient,
         address token,
         uint tokenAmount
     ) internal returns (uint) {
@@ -617,7 +637,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
             );
 
             if (tokenType == DMGYieldFarmingV2Lib.TokenType.UniswapLpToken) {
-                _payFeesWithUniswapToken(user, refundRecipient, token, tokenFeeAmount);
+                _payFeesWithUniswapToken(user, token, tokenFeeAmount);
             } else {
                 revert("DMGYieldFarmingV2::_payHarvestFee UNCAUGHT_TOKEN_TYPE");
             }
@@ -630,7 +650,6 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
 
     function _payFeesWithUniswapToken(
         address user,
-        address refundRecipient,
         address token,
         uint tokenFeeAmount
     ) internal {
@@ -680,7 +699,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         } else {
             IDMGToken(dmgToken).burn(amountsOut[amountsOut.length - 1]);
             // Refund the rest of the mTokens
-            IERC20(refundToken).safeTransfer(refundRecipient, amountToRefund);
+            IERC20(refundToken).safeTransfer(user, amountToRefund);
             emit HarvestFeePaid(user, token, tokenFeeAmount, amountsOut[amountsOut.length - 1]);
         }
     }
@@ -696,7 +715,6 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
 
     function _verifyTokenType(
         DMGYieldFarmingV2Lib.TokenType tokenType,
-        address token,
         address underlyingToken
     ) internal {
         require(

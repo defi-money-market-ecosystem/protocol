@@ -19,12 +19,12 @@ pragma solidity ^0.5.0;
 
 import "../../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 import "../../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "../interfaces/IOffChainAssetValuator.sol";
+import "../interfaces/IOffChainAssetValuatorV1.sol";
 import "./AtmLike.sol";
 
 import "../../../node_modules/chainlink/v0.5/contracts/ChainlinkClient.sol";
 
-contract OffChainAssetValuatorImplV1 is IOffChainAssetValuator, ChainlinkClient, Ownable, AtmLike {
+contract OffChainAssetValuatorImplV1 is IOffChainAssetValuatorV1, ChainlinkClient, Ownable, AtmLike {
 
     /// The amount of LINK to be paid per request
     uint private _oraclePayment;

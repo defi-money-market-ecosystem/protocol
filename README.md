@@ -86,15 +86,18 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | Loopring Protocol V2 (for Trading DMG)  	    | 0xC0b569Ff46EEA7BfbB130bd6d7af0a0A7f513C6F    | [Etherscan](https://etherscan.io/address/0xC0b569Ff46EEA7BfbB130bd6d7af0a0A7f513C6F)
 | Interest Rate Setter V1  	                    | 0x6F2A3b2EFa07D264EA79Ce0b96d3173a8feAcD35    | [Etherscan](https://etherscan.io/address/0x6f2a3b2efa07d264ea79ce0b96d3173a8feacd35)
 | Off-Chain Assets Valuator V1  	            | 0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4    | [Etherscan](https://etherscan.io/address/0xace9112efe78d9e5018fd12164d30366ca629ab4)
+| Off-Chain Assets Valuator V2  	            | 0xf31D3f919A0b986D3655Fd6c1Cfda2edF2dAcCB5    | [Etherscan](https://etherscan.io/address/0xf31D3f919A0b986D3655Fd6c1Cfda2edF2dAcCB5)
 | Off-Chain Currency Valuator V1  	            | 0x35cceb6ED6EB90d0c89a8F8b28E00aE23545312b    | [Etherscan](https://etherscan.io/address/0x35cceb6ed6eb90d0c89a8f8b28e00ae23545312b)
 | Referral Program Proxy Factory                | 0x926ebD23E6d5fD38dC6A4FD79C58B6A2b543e9aC    | [Etherscan](https://etherscan.io/address/0x926ebd23e6d5fd38dc6a4fd79c58b6a2b543e9ac)
 | ~~Underlying Token Valuator V1~~ DEPRECATED   | 0xe8B313e7BfdC0eCB23e4BE47062dB0A65AE5705c    | [Etherscan](https://etherscan.io/address/0xe8b313e7bfdc0ecb23e4be47062db0a65ae5705c)
 | ~~Underlying Token Valuator V2~~ DEPRECATED   | 0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d    | [Etherscan](https://etherscan.io/address/0x693aa8ead81d2f88a45e870fa7e25f84ca93ca4d)
 | ~~Underlying Token Valuator V3~~ DEPRECATED   | 0x7812e0F5Da2F0917BD9054951415EDFF571964dB    | [Etherscan](https://etherscan.io/address/0x7812e0f5da2f0917bd9054951415edff571964db)
-| Underlying Token Valuator V4                  | 0x0c65c147aAf2DbD5109ba74e36f730D081489B5B    | [Etherscan](https://etherscan.io/address/0x0c65c147aAf2DbD5109ba74e36f730D081489B5B)
+| ~~Underlying Token Valuator V4~~ DEPRECATED   | 0x0c65c147aAf2DbD5109ba74e36f730D081489B5B    | [Etherscan](https://etherscan.io/address/0x0c65c147aAf2DbD5109ba74e36f730D081489B5B)
+| Underlying Token Valuator Proxy               | 0xaC7e5e3b589D55a43D62b90c6b4C4ef28Ea35573    | [Etherscan](https://etherscan.io/address/0xaC7e5e3b589D55a43D62b90c6b4C4ef28Ea35573)
 | Yield Farming                                 | 0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975    | [Etherscan](https://etherscan.io/address/0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975)
 | Yield Farming Router                          | 0x8209eD0259F99Abd593E8cd26e6a14f224C6cccA    | [Etherscan](https://etherscan.io/address/0x8209eD0259F99Abd593E8cd26e6a14f224C6cccA)
-| Yield Farming Impl V1 (*DO NOT INTERACT*)     | 0x061f57eA8383558A7E20F84948d0F11A6e1BcDe2    | [Etherscan](https://etherscan.io/address/0xe879f44E6e0002629A4EE8dC5bDfb8fB7d096f96)
+| ~~Yield Farming Impl V1~~ DEPRECATED          | 0x061f57eA8383558A7E20F84948d0F11A6e1BcDe2    | [Etherscan](https://etherscan.io/address/0x061f57eA8383558A7E20F84948d0F11A6e1BcDe2)
+| Yield Farming Impl V2 (*DO NOT INTERACT*)     | 0x4BC1143b887Bb0A1d8C435e3c44CEBb75F3BB24b    | [Etherscan](https://etherscan.io/address/0x4BC1143b887Bb0A1d8C435e3c44CEBb75F3BB24b)
 
 #### Ropsten Testnet
 

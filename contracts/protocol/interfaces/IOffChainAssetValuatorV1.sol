@@ -17,7 +17,7 @@
 
 pragma solidity ^0.5.0;
 
-interface IOffChainAssetValuator {
+interface IOffChainAssetValuatorV1 {
 
     event AssetsValueUpdated(uint newAssetsValue);
 

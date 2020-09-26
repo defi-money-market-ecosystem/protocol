@@ -60,6 +60,7 @@ contract DMGYieldFarmingData is Initializable {
     address internal _weth;
     mapping(address => DMGYieldFarmingV2Lib.TokenType) internal _tokenToTokenType;
     mapping(address => uint16) internal _tokenToFeeAmountMap;
+    bool internal _isDmgBalanceInitialized;
 
     // /////////////////////////
     // END State Variables

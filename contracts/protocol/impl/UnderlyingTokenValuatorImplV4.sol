@@ -52,7 +52,6 @@ contract UnderlyingTokenValuatorImplV4 is UnderlyingTokenValuatorImplV3 {
     function setUsdtEthAggregator(address _usdtEthAggregator) public onlyOwner {
         address oldAggregator = address(usdtEthAggregator);
         usdtEthAggregator = IUsdAggregatorV2(_usdtEthAggregator);
-
         emit UsdtEthAggregatorChanged(oldAggregator, _usdtEthAggregator);
     }
 

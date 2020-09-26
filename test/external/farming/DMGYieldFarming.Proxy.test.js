@@ -28,9 +28,8 @@ describe('DMGYieldFarming.Proxy', () => {
   });
 
   beforeEach(async () => {
-    (this.yieldFarming.address).should.eq(this.proxy.address);
     await resetChain(provider, snapshotId);
-  })
+  });
 
   it('admin: should get admin on proxy contract', async () => {
     const result = await this.proxy.admin({from: admin});

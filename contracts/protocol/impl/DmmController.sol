@@ -25,7 +25,7 @@ import "../../../node_modules/@openzeppelin/contracts/utils/Address.sol";
 
 import "../constants/CommonConstants.sol";
 import "../impl/DmmBlacklistable.sol";
-import "../interfaces/IOffChainAssetValuator.sol";
+import "../interfaces/IOffChainAssetValuatorV1.sol";
 import "../interfaces/IDmmController.sol";
 import "../interfaces/IDmmToken.sol";
 import "../interfaces/InterestRateInterface.sol";
@@ -68,7 +68,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
     address public guardian;
     InterestRateInterface public interestRateInterface;
-    IOffChainAssetValuator public offChainAssetsValuator;
+    IOffChainAssetValuatorV1 public offChainAssetsValuator;
     IOffChainCurrencyValuator public offChainCurrencyValuator;
     IUnderlyingTokenValuator public underlyingTokenValuator;
     IDmmTokenFactory public dmmEtherFactory;
@@ -114,7 +114,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     ) public {
         guardian = _guardian;
         interestRateInterface = InterestRateInterface(_interestRateInterface);
-        offChainAssetsValuator = IOffChainAssetValuator(_offChainAssetsValuator);
+        offChainAssetsValuator = IOffChainAssetValuatorV1(_offChainAssetsValuator);
         offChainCurrencyValuator = IOffChainCurrencyValuator(_offChainCurrencyValuator);
         underlyingTokenValuator = IUnderlyingTokenValuator(_underlyingTokenValuator);
         dmmTokenFactory = IDmmTokenFactory(_dmmTokenFactory);
@@ -289,7 +289,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
     function setOffChainAssetValuator(address newOffChainAssetValuator) public whenNotPaused onlyOwner {
         address oldOffChainAssetValuator = address(offChainAssetsValuator);
-        offChainAssetsValuator = IOffChainAssetValuator(newOffChainAssetValuator);
+        offChainAssetsValuator = IOffChainAssetValuatorV1(newOffChainAssetValuator);
         emit OffChainAssetValuatorChanged(oldOffChainAssetValuator, address(offChainAssetsValuator));
     }
 

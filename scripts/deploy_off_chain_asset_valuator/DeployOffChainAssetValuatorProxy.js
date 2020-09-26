@@ -6,7 +6,10 @@ const {callContract, deployContract} = require('../ContractUtils');
 const {BN} = require('ethereumjs-util');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 5e9;
+const defaultGasPrice = 100e9;
+
+const implementationAddress = '0xf31D3f919A0b986D3655Fd6c1Cfda2edF2dAcCB5';
+const governorAddress = '0xE679eBf544A6BE5Cb8747012Ea6B08F04975D264';
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
@@ -36,17 +39,14 @@ const main = async () => {
 
   const loader = setupLoader({provider: web3, defaultSender: deployer, defaultGasPrice: 8e9});
 
-  delayedOwner = loader.truffle.fromArtifact('DelayedOwner', '0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD');
-  delayedOwner.methods = delayedOwner.contract.methods;
-
   const linkAddress = '0x514910771af9ca656af840dff83e8264ecf986ca';
   const _0_5 = new BN('500000000000000000');
-  const initialCollateralValue = new BN('1000000000000000000');
-  const chainlinkJobId = '0x11cdfd87ac17f6fc2aea9ca5c77544f33decb571339a31f546c2b6a36a406f15';
+  const initialCollateralValue = new BN('8792879000000000000000000');
+  const chainlinkJobId = '0x2017ac2b3b5b37d2fbb5fef6193d6eef0cb50a4c6b3796c5b5c44bd1cca83aa0';
 
-  const OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
-  const offChainAssetValuatorImplV1 = await deployContract(OffChainAssetValuatorImplV1, [linkAddress, _0_5, initialCollateralValue, chainlinkJobId], deployer, 4e6, web3, defaultGasPrice);
-  await callContract(offChainAssetValuatorImplV1, 'transferOwnership', delayedOwner.address, deployer, 4e5, 0, web3, defaultGasPrice)
+  const OffChainAssetValuatorProxy = loader.truffle.fromArtifact('OffChainAssetValuatorProxy');
+  const params = [implementationAddress, multiSigWallet, governorAddress, multiSigWallet, linkAddress, _0_5, initialCollateralValue, chainlinkJobId];
+  await deployContract(OffChainAssetValuatorProxy, params, deployer, 2e6, web3, defaultGasPrice);
 };
 
 main()
