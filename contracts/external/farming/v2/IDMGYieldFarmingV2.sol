@@ -108,7 +108,7 @@ interface IDMGYieldFarmingV2 {
     ) external;
 
     /**
-     * @param token     The address of the token that will be removed from farming.
+     * @param token The address of the token that will be removed from farming.
      */
     function removeAllowableToken(
         address token
@@ -116,7 +116,8 @@ interface IDMGYieldFarmingV2 {
 
     /**
      * Changes the reward points for the provided token. Reward points are a weighting system that enables certain
-     * tokens to accrue DMG faster than others, allowing the protocol to prioritize certain deposits.
+     * tokens to accrue DMG faster than others, allowing the protocol to prioritize certain deposits. At the start of
+     * season 1, mETH had points of 100 (equalling 1) and the stablecoins had 200, doubling their weight against mETH.
      */
     function setRewardPointsByToken(
         address token,
@@ -125,7 +126,7 @@ interface IDMGYieldFarmingV2 {
 
     /**
      * Sets the DMG growth coefficient to use the new parameter provided. This variable is used to define how much
-     * DMG is earned every second, for each point accrued.
+     * DMG is earned every second, for each dollar being farmed accrued.
      */
     function setDmgGrowthCoefficient(
         uint dmgGrowthCoefficient
@@ -174,6 +175,9 @@ interface IDMGYieldFarmingV2 {
         DMGYieldFarmingV2Lib.TokenType tokenType
     ) external;
 
+    /**
+     * Used to initialize the protocol, mid-season since the Protocol kept track of DMG balances differently on v1.
+     */
     function initializeDmgBalance() external;
 
     // ////////////////////

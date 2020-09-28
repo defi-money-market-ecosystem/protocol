@@ -576,6 +576,10 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         return fee == 0 ? 100 : fee;
     }
 
+    // ////////////////////
+    // Internal Functions
+    // ////////////////////
+
     function _harvestDmgByUserAndToken(
         address user,
         address recipient,
@@ -614,10 +618,6 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
 
         return earnedDmgAmount;
     }
-
-    // ////////////////////
-    // Internal Functions
-    // ////////////////////
 
     /**
      * @return The amount of `token` paid for the burn.

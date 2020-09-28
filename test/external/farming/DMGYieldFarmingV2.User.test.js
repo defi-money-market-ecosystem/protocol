@@ -616,8 +616,8 @@ describe('DMGYieldFarmingV2.User', () => {
     (await this.yieldFarming.getRewardBalanceByOwnerAndToken(user, token.address)).should.be.bignumber.eq(_0());
     (await token.balanceOf(user)).should.be.bignumber.eq(balance.sub(deposit1));
     (await token.balanceOf(receiver)).should.be.bignumber.eq(_0());
-    (await underlyingToken_1.balanceOf(receiver)).should.be.bignumber.eq(_0()); // Dust is sold, so balance should be zero
-    (await underlyingToken_2.balanceOf(receiver)).should.be.bignumber.eq(deposit1.mul(feesA).div(feesFactor)); // Dust is sent to the user
+    (await underlyingToken_1.balanceOf(user)).should.be.bignumber.eq(_0()); // Dust is sold, so balance should be zero
+    (await underlyingToken_2.balanceOf(user)).should.be.bignumber.eq(deposit1.mul(feesA).div(feesFactor)); // Dust is sent to the user
   });
 
   it('endFarmingByToken: should redeem for 1 token with 1 deposit', async () => {
@@ -650,8 +650,8 @@ describe('DMGYieldFarmingV2.User', () => {
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(_0());
     (await this.yieldFarming.getRewardBalanceByOwnerAndToken(user, token.address)).should.be.bignumber.eq(_0());
     (await token.balanceOf(receiver)).should.be.bignumber.eq(deposit1.mul(oneMinusFeesA).div(feesFactor));
-    (await underlyingToken_1.balanceOf(receiver)).should.be.bignumber.eq(_0()); // Dust is sold, so balance should be zero
-    (await underlyingToken_2.balanceOf(receiver)).should.be.bignumber.eq(deposit1.mul(feesA).div(feesFactor)); // Dust is sent to the user
+    (await underlyingToken_1.balanceOf(user)).should.be.bignumber.eq(_0()); // Dust is sold, so balance should be zero
+    (await underlyingToken_2.balanceOf(user)).should.be.bignumber.eq(deposit1.mul(feesA).div(feesFactor)); // Dust is sent to the user
   });
 
   it('endFarmingByToken: should redeem for 1 token with 1 deposit using a trusted spender', async () => {

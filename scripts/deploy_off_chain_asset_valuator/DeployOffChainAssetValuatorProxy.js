@@ -46,7 +46,12 @@ const main = async () => {
 
   const OffChainAssetValuatorProxy = loader.truffle.fromArtifact('OffChainAssetValuatorProxy');
   const params = [implementationAddress, multiSigWallet, governorAddress, multiSigWallet, linkAddress, _0_5, initialCollateralValue, chainlinkJobId];
-  await deployContract(OffChainAssetValuatorProxy, params, deployer, 2e6, web3, defaultGasPrice);
+  const result = web3.eth.abi.encodeParameters(
+    ['address','address','address','address','address','uint256','uint256','bytes32'],
+    params
+  );
+  console.log('result ', result)
+  // await deployContract(OffChainAssetValuatorProxy, params, deployer, 2e6, web3, defaultGasPrice);
 };
 
 main()
