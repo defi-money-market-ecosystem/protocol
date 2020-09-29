@@ -75,7 +75,9 @@ contract IOwnableOrGuardian is Initializable {
     function initialize(
         address owner,
         address guardian
-    ) public initializer {
+    )
+    public
+    initializer {
         _transferOwnership(owner);
         _transferGuardian(guardian);
     }

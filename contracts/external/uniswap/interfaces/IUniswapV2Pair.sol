@@ -31,8 +31,19 @@ interface IUniswapV2Pair {
 
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
 
-    event Mint(address indexed sender, uint amount0, uint amount1);
-    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+    event Mint(
+        address indexed sender,
+        uint amount0,
+        uint amount1
+    );
+
+    event Burn(
+        address indexed sender,
+        uint amount0,
+        uint amount1,
+        address indexed to
+    );
+
     event Swap(
         address indexed sender,
         uint amount0In,
@@ -41,6 +52,7 @@ interface IUniswapV2Pair {
         uint amount1Out,
         address indexed to
     );
+
     event Sync(uint112 reserve0, uint112 reserve1);
 
     function MINIMUM_LIQUIDITY() external pure returns (uint);

@@ -72,14 +72,14 @@ describe('DMGYieldFarmingV2.User', () => {
       {from: user}
     );
 
-    const reserves_1 = await underlyingToken_1.balanceOf(token.address);
-    const reserves_2 = await underlyingToken_2.balanceOf(token.address);
+    // const reserves_1 = await underlyingToken_1.balanceOf(token.address);
+    // const reserves_2 = await underlyingToken_2.balanceOf(token.address);
 
     await token.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: user});
     const balance = await token.balanceOf(user);
-    const totalSupply = await token.totalSupply();
-    const balance_underlying_1 = balance.mul(reserves_1).div(totalSupply)
-    const balance_underlying_2 = balance.mul(reserves_2).div(totalSupply)
+    // const totalSupply = await token.totalSupply();
+    // const balance_underlying_1 = balance.mul(reserves_1).div(totalSupply)
+    // const balance_underlying_2 = balance.mul(reserves_2).div(totalSupply)
 
     // return {balance, balance_underlying_1, balance_underlying_2}
     return balance
@@ -617,7 +617,7 @@ describe('DMGYieldFarmingV2.User', () => {
     (await token.balanceOf(user)).should.be.bignumber.eq(balance.sub(deposit1));
     (await token.balanceOf(receiver)).should.be.bignumber.eq(_0());
     (await underlyingToken_1.balanceOf(user)).should.be.bignumber.eq(_0()); // Dust is sold, so balance should be zero
-    (await underlyingToken_2.balanceOf(user)).should.be.bignumber.eq(deposit1.mul(feesA).div(feesFactor)); // Dust is sent to the user
+    (await underlyingToken_2.balanceOf(user)).should.be.bignumber.eq(_0()); // Dust is sold, so balance should be zero
   });
 
   it('endFarmingByToken: should redeem for 1 token with 1 deposit', async () => {
@@ -651,7 +651,7 @@ describe('DMGYieldFarmingV2.User', () => {
     (await this.yieldFarming.getRewardBalanceByOwnerAndToken(user, token.address)).should.be.bignumber.eq(_0());
     (await token.balanceOf(receiver)).should.be.bignumber.eq(deposit1.mul(oneMinusFeesA).div(feesFactor));
     (await underlyingToken_1.balanceOf(user)).should.be.bignumber.eq(_0()); // Dust is sold, so balance should be zero
-    (await underlyingToken_2.balanceOf(user)).should.be.bignumber.eq(deposit1.mul(feesA).div(feesFactor)); // Dust is sent to the user
+    (await underlyingToken_2.balanceOf(user)).should.be.bignumber.eq(_0()); // Dust is sold, so balance should be zero
   });
 
   it('endFarmingByToken: should redeem for 1 token with 1 deposit using a trusted spender', async () => {

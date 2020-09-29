@@ -33,11 +33,13 @@ import "./IDMGYieldFarmingV2.sol";
 import "../DMGYieldFarmingData.sol";
 import "../v1/IDMGYieldFarmingV1.sol";
 import "../v1/IDMGYieldFarmingV1Initializable.sol";
+import "../../uniswap/libs/UniswapV2Library.sol";
 
 contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
 
     using SafeMath for uint;
     using SafeERC20 for IERC20;
+    using UniswapV2Library for *;
 
     address constant public ZERO_ADDRESS = address(0);
 
@@ -119,17 +121,6 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         _tokenToTokenType[token] = tokenType;
         _tokenToUnderlyingTokenMap[token] = underlyingToken;
         emit TokenAdded(token, underlyingToken, underlyingTokenDecimals, points, fees);
-    }
-
-    function setUnderlyingTokenByFarmToken(
-        address farmToken,
-        address underlyingToken
-    )
-    onlyOwnerOrGuardian
-    requireIsFarmToken(farmToken)
-    nonReentrant
-    public {
-        _tokenToUnderlyingTokenMap[farmToken] = underlyingToken;
     }
 
     function removeAllowableToken(
@@ -302,19 +293,19 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         return _tokenToIndexPlusOneMap[token] > 0;
     }
 
-    function isFarmActive() public view returns (bool) {
+    function isFarmActive() external view returns (bool) {
         return _isFarmActive;
     }
 
-    function guardian() public view returns (address) {
+    function guardian() external view returns (address) {
         return _guardian;
     }
 
-    function dmgToken() public view returns (address) {
+    function dmgToken() external view returns (address) {
         return _dmgToken;
     }
 
-    function dmgGrowthCoefficient() public view returns (uint) {
+    function dmgGrowthCoefficient() external view returns (uint) {
         return _dmgGrowthCoefficient;
     }
 
@@ -559,15 +550,15 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         return _tokenToUnderlyingTokenMap[farmToken];
     }
 
-    function underlyingTokenValuator() public view returns (address) {
+    function underlyingTokenValuator() external view returns (address) {
         return _underlyingTokenValuator;
     }
 
-    function weth() public view returns (address) {
+    function weth() external view returns (address) {
         return _weth;
     }
 
-    function uniswapV2Router() public view returns (address) {
+    function uniswapV2Router() external view returns (address) {
         return _uniswapV2Router;
     }
 
@@ -655,23 +646,60 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
     ) internal {
         address underlyingToken = _tokenToUnderlyingTokenMap[token];
 
-        address refundToken;
+        address tokenToSwap;
+        address token0;
         uint amountToBurn;
-        uint amountToRefund;
+        uint amountToSwap;
         {
             // New context - to prevent the stack too deep error
             IERC20(token).safeTransfer(token, tokenFeeAmount);
             (uint amount0, uint amount1) = IUniswapV2Pair(token).burn(address(this));
-            address token0 = IUniswapV2Pair(token).token0();
+            token0 = IUniswapV2Pair(token).token0();
             address token1 = IUniswapV2Pair(token).token1();
 
-            refundToken = token0 == underlyingToken ? token1 : token0;
+            tokenToSwap = token0 == underlyingToken ? token1 : token0;
+
             amountToBurn = token0 == underlyingToken ? amount0 : amount1;
-            amountToRefund = token1 == underlyingToken ? amount0 : amount1;
+            amountToSwap = token1 == underlyingToken ? amount0 : amount1;
         }
 
         address dmgToken = _dmgToken;
+
+        if (tokenToSwap != dmgToken) {
+            IERC20(tokenToSwap).safeTransfer(token, amountToSwap);
+            (uint reserve0, uint reserve1,) = IUniswapV2Pair(token).getReserves();
+            uint amountOut = UniswapV2Library.getAmountOut(
+                amountToSwap,
+                tokenToSwap == token0 ? reserve0 : reserve1,
+                tokenToSwap != token0 ? reserve0 : reserve1
+            );
+            (uint amount0Out, uint amount1Out) = tokenToSwap == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
+            IUniswapV2Pair(token).swap(amount0Out, amount1Out, address(this), new bytes(0));
+            amountToBurn = amountToBurn.add(amountOut);
+        }
+
         address weth = _weth;
+        uint dmgToBurn = _swapTokensForDmgViaUniswap(amountToBurn, underlyingToken, weth, dmgToken);
+
+        if (tokenToSwap == dmgToken) {
+            amountToSwap = amountToSwap.add(dmgToBurn);
+            IDMGToken(dmgToken).burn(amountToSwap);
+            emit HarvestFeePaid(user, token, tokenFeeAmount, amountToSwap);
+        } else {
+            IDMGToken(dmgToken).burn(dmgToBurn);
+            emit HarvestFeePaid(user, token, tokenFeeAmount, dmgToBurn);
+        }
+    }
+
+    /**
+     * @return  The amount of DMG received from the swap
+     */
+    function _swapTokensForDmgViaUniswap(
+        uint amountToBurn,
+        address underlyingToken,
+        address weth,
+        address dmgToken
+    ) internal returns (uint) {
         address[] memory paths;
         if (underlyingToken == weth) {
             paths = new address[](2);
@@ -692,16 +720,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
             block.timestamp
         );
 
-        if (refundToken == dmgToken) {
-            amountToRefund = amountToRefund.add(amountsOut[amountsOut.length - 1]);
-            IDMGToken(dmgToken).burn(amountToRefund);
-            emit HarvestFeePaid(user, token, tokenFeeAmount, amountToRefund);
-        } else {
-            IDMGToken(dmgToken).burn(amountsOut[amountsOut.length - 1]);
-            // Refund the rest of the mTokens
-            IERC20(refundToken).safeTransfer(user, amountToRefund);
-            emit HarvestFeePaid(user, token, tokenFeeAmount, amountsOut[amountsOut.length - 1]);
-        }
+        return amountsOut[amountsOut.length - 1];
     }
 
     function _verifyDmgGrowthCoefficient(
@@ -721,6 +740,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
             tokenType != DMGYieldFarmingV2Lib.TokenType.Unknown,
             "DMGYieldFarmingV2::_verifyTokenType: INVALID_TYPE"
         );
+
         if (tokenType == DMGYieldFarmingV2Lib.TokenType.UniswapLpToken) {
             address uniswapV2Router = _uniswapV2Router;
             if (IERC20(underlyingToken).allowance(address(this), uniswapV2Router) == 0) {

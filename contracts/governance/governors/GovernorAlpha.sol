@@ -145,7 +145,7 @@ contract GovernorAlpha is GovernorAlphaData {
     }
 
     /**
-     * @return  The delay before voting on a proposal may take place, once proposed
+     * @return  The delay (represented as number of blocks) before voting on a proposal may take place, once proposed
      */
     function votingDelay() public pure returns (uint) {
         // 1 block
@@ -461,12 +461,12 @@ contract GovernorAlpha is GovernorAlphaData {
 
     function add256(uint256 a, uint256 b) internal pure returns (uint) {
         uint c = a + b;
-        require(c >= a, "addition overflow");
+        require(c >= a, "GovernorAlpha::add256: ADDITION_OVERFLOW");
         return c;
     }
 
     function sub256(uint256 a, uint256 b) internal pure returns (uint) {
-        require(b <= a, "subtraction underflow");
+        require(b <= a, "GovernorAlpha::add256: SUBTRACTION_UNDERFLOW");
         return a - b;
     }
 

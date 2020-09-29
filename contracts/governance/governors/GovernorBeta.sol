@@ -30,13 +30,17 @@ contract GovernorBeta is GovernorAlpha {
 
     modifier onlyTrustedOperator(address voter) {
         require(
-            _globalOperatorToIsSupportedMap[msg.sender] || _voterToLocalOperatorToIsSupportedMap[voter][msg.sender],
+            _globalOperatorToIsSupportedMap[msg.sender] ||
+            _voterToLocalOperatorToIsSupportedMap[voter][msg.sender] ||
+            msg.sender == voter,
             "GovernorBeta: UNAUTHORIZED_OPERATOR"
         );
 
         _;
     }
 
+    /// A wrapped variant of DMG for when the user stakes DMG in an official contract and still needs access to their
+    /// ballots
     IDMGToken public wDmg;
     mapping(address => mapping(address => bool)) internal _voterToLocalOperatorToIsSupportedMap;
     mapping(address => bool) internal _globalOperatorToIsSupportedMap;
@@ -49,20 +53,16 @@ contract GovernorBeta is GovernorAlpha {
         wDmg = IDMGToken(wDmg_);
     }
 
-    function setLocalOperator(
-        address operator,
-        bool isTrusted
-    ) public {
-        _voterToLocalOperatorToIsSupportedMap[msg.sender][operator] = isTrusted;
-        emit LocalOperatorSet(msg.sender, operator, isTrusted);
-    }
+    // *************************
+    // ***** Admin Functions
+    // *************************
 
     function setGlobalOperator(
         address operator,
         bool isTrusted
     ) public {
         require(
-            address(timelock) == msg.sender,
+            address(timelock) == msg.sender || guardian == msg.sender,
             "GovernorBeta::setGlobalOperator: UNAUTHORIZED"
         );
 
@@ -70,19 +70,16 @@ contract GovernorBeta is GovernorAlpha {
         emit GlobalOperatorSet(operator, isTrusted);
     }
 
-    function getIsLocalOperator(
-        address voter,
-        address operator
-    )
-    public view returns (bool) {
-        return _voterToLocalOperatorToIsSupportedMap[voter][operator];
-    }
+    // *************************
+    // ***** User Functions
+    // *************************
 
-    function getIsGlobalOperator(
-        address operator
-    )
-    public view returns (bool) {
-        return _globalOperatorToIsSupportedMap[operator];
+    function setLocalOperator(
+        address operator,
+        bool isTrusted
+    ) public {
+        _voterToLocalOperatorToIsSupportedMap[msg.sender][operator] = isTrusted;
+        emit LocalOperatorSet(msg.sender, operator, isTrusted);
     }
 
     /**
@@ -102,6 +99,29 @@ contract GovernorBeta is GovernorAlpha {
     public returns (uint128) {
         return _castVote(voter, proposalId, support);
     }
+
+    // *************************
+    // ***** Misc Functions
+    // *************************
+
+    function getIsLocalOperator(
+        address voter,
+        address operator
+    )
+    public view returns (bool) {
+        return _voterToLocalOperatorToIsSupportedMap[voter][operator];
+    }
+
+    function getIsGlobalOperator(
+        address operator
+    )
+    public view returns (bool) {
+        return _globalOperatorToIsSupportedMap[operator];
+    }
+
+    // *************************
+    // ***** Internal Functions
+    // *************************
 
     function _getVotes(
         address user,
