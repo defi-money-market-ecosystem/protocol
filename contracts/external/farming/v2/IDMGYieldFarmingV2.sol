@@ -125,6 +125,16 @@ interface IDMGYieldFarmingV2 {
     ) external;
 
     /**
+     * Changes the reward points for the provided tokens. Reward points are a weighting system that enables certain
+     * tokens to accrue DMG faster than others, allowing the protocol to prioritize certain deposits. At the start of
+     * season 1, mETH had points of 100 (equalling 1) and the stablecoins had 200, doubling their weight against mETH.
+     */
+    function setRewardPointsByTokens(
+        address[] calldata tokens,
+        uint16[] calldata points
+    ) external;
+
+    /**
      * Sets the DMG growth coefficient to use the new parameter provided. This variable is used to define how much
      * DMG is earned every second, for each dollar being farmed accrued.
      */
@@ -168,6 +178,11 @@ interface IDMGYieldFarmingV2 {
     function setFeesByToken(
         address token,
         uint16 fees
+    ) external;
+
+    function setFeesByTokens(
+        address[] calldata tokens,
+        uint16[] calldata fees
     ) external;
 
     function setTokenTypeByToken(

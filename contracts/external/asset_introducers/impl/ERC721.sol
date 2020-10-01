@@ -344,7 +344,7 @@ contract ERC721Token is IERC721, AssetIntroducerData {
     /**
      * @dev Removes a NFT from owner.
      * @notice Use and override this function with caution. Wrong usage can have serious consequences.
-     * @param _from Address from wich we want to remove the NFT.
+     * @param _from Address from which we want to remove the NFT.
      * @param _tokenId Which NFT we want to remove.
      */
     function _removeToken(
