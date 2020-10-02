@@ -21,19 +21,25 @@ import "../../../../node_modules/@openzeppelin/upgrades/contracts/Initializable.
 import "../../../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 
+import "../../uniswap/interfaces/IUniswapV2Pair.sol";
+import "../../uniswap/interfaces/IUniswapV2Router02.sol";
+import "../../uniswap/libs/UniswapV2Library.sol";
+
+import "../../../governance/dmg/IDMGToken.sol";
 import "../../../protocol/interfaces/IDmmController.sol";
 import "../../../protocol/interfaces/IUnderlyingTokenValuator.sol";
 
-import "./IDMGYieldFarmingV2.sol";
-import "../DMGYieldFarmingData.sol";
 import "../v1/IDMGYieldFarmingV1.sol";
 import "../v1/IDMGYieldFarmingV1Initializable.sol";
-import "./DmgYieldFarmingFeePayment.sol";
+import "../DMGYieldFarmingData.sol";
+import "./IDMGYieldFarmingV2.sol";
+import "../../uniswap/UniswapV2Router02.sol";
 
-contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DmgYieldFarmingFeePayment {
+contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
 
     using SafeMath for uint;
     using SafeERC20 for IERC20;
+    using UniswapV2Library for *;
 
     address constant public ZERO_ADDRESS = address(0);
 
@@ -185,16 +191,6 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DmgYieldFarmingFeePayment {
         emit DmgGrowthCoefficientSet(dmgGrowthCoefficient);
     }
 
-    function setRewardPointsByToken(
-        address token,
-        uint16 points
-    )
-    public
-    nonReentrant
-    onlyOwnerOrGuardian {
-        _setRewardPointsByToken(token, points);
-    }
-
     function setRewardPointsByTokens(
         address[] calldata tokens,
         uint16[] calldata points
@@ -253,18 +249,6 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DmgYieldFarmingFeePayment {
         address oldUniswapV2Router = _uniswapV2Router;
         _uniswapV2Router = uniswapV2Router;
         emit UniswapV2RouterChanged(uniswapV2Router, oldUniswapV2Router);
-    }
-
-    function setFeesByToken(
-        address token,
-        uint16 fees
-    )
-    onlyOwnerOrGuardian
-    nonReentrant
-    public {
-        _verifyTokenFee(fees);
-        _tokenToFeeAmountMap[token] = fees;
-        emit FeesChanged(token, fees);
     }
 
     function setFeesByTokens(
@@ -833,6 +817,120 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DmgYieldFarmingFeePayment {
         emit WithdrawOutOfSeason(user, token, recipient, amount);
 
         return amount;
+    }
+
+    /**
+     * @return The amount of `token` paid for the burn.
+     */
+    function _payHarvestFee(
+        address user,
+        address token,
+        uint tokenAmount
+    ) internal returns (uint) {
+        uint fees = getFeesByToken(token);
+        if (fees > 0) {
+            uint tokenFeeAmount = tokenAmount.mul(fees).div(uint(FEE_AMOUNT_FACTOR));
+            DMGYieldFarmingV2Lib.TokenType tokenType = _tokenToTokenType[token];
+            require(
+                tokenType != DMGYieldFarmingV2Lib.TokenType.Unknown,
+                "DMGYieldFarmingV2::_payHarvestFee: UNKNOWN_TOKEN_TYPE"
+            );
+
+            if (tokenType == DMGYieldFarmingV2Lib.TokenType.UniswapLpToken) {
+                _payFeesWithUniswapToken(user, token, tokenFeeAmount);
+            } else {
+                revert("DMGYieldFarmingV2::_payHarvestFee UNCAUGHT_TOKEN_TYPE");
+            }
+
+            return tokenFeeAmount;
+        } else {
+            return 0;
+        }
+    }
+
+    function _payFeesWithUniswapToken(
+        address user,
+        address token,
+        uint tokenFeeAmount
+    ) internal {
+        address underlyingToken = _tokenToUnderlyingTokenMap[token];
+
+        address tokenToSwap;
+        address token0;
+        uint amountToBurn;
+        uint amountToSwap;
+        {
+            // New context - to prevent the stack too deep error
+            IERC20(token).safeTransfer(token, tokenFeeAmount);
+            (uint amount0, uint amount1) = IUniswapV2Pair(token).burn(address(this));
+            token0 = IUniswapV2Pair(token).token0();
+
+            tokenToSwap = token0 == underlyingToken ? IUniswapV2Pair(token).token1() : token0;
+
+            amountToBurn = token0 == underlyingToken ? amount0 : amount1;
+            amountToSwap = token0 != underlyingToken ? amount0 : amount1;
+        }
+
+        address dmgToken = _dmgToken;
+
+        if (tokenToSwap != dmgToken) {
+            // This code is taken from the `UniswapV2Router02` to more efficiently swap *TO* the underlying token
+            IERC20(tokenToSwap).safeTransfer(token, amountToSwap);
+            (uint reserve0, uint reserve1,) = IUniswapV2Pair(token).getReserves();
+            uint amountOut = UniswapV2Library.getAmountOut(
+                amountToSwap,
+                tokenToSwap == token0 ? reserve0 : reserve1,
+                tokenToSwap != token0 ? reserve0 : reserve1
+            );
+            (uint amount0Out, uint amount1Out) = tokenToSwap == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
+            IUniswapV2Pair(token).swap(amount0Out, amount1Out, address(this), new bytes(0));
+            amountToBurn = amountToBurn.add(amountOut);
+        }
+
+        address weth = _weth;
+        uint dmgToBurn = _swapTokensForDmgViaUniswap(amountToBurn, underlyingToken, weth, dmgToken);
+
+        if (tokenToSwap == dmgToken) {
+            // We can just add the DMG to be swapped with the amount to burn.
+            amountToSwap = amountToSwap.add(dmgToBurn);
+            IDMGToken(dmgToken).burn(amountToSwap);
+            emit HarvestFeePaid(user, token, tokenFeeAmount, amountToSwap);
+        } else {
+            IDMGToken(dmgToken).burn(dmgToBurn);
+            emit HarvestFeePaid(user, token, tokenFeeAmount, dmgToBurn);
+        }
+    }
+
+    /**
+     * @return  The amount of DMG received from the swap
+     */
+    function _swapTokensForDmgViaUniswap(
+        uint amountToBurn,
+        address underlyingToken,
+        address weth,
+        address dmgToken
+    ) internal returns (uint) {
+        address[] memory paths;
+        if (underlyingToken == weth) {
+            paths = new address[](2);
+            paths[0] = weth;
+            paths[1] = dmgToken;
+        } else {
+            paths = new address[](3);
+            paths[0] = underlyingToken;
+            paths[1] = weth;
+            paths[2] = dmgToken;
+        }
+        // We sell the non-mToken to DMG and burn it.
+        uint[] memory amountsOut = IUniswapV2Router02(_uniswapV2Router).swapExactTokensForTokens(
+            amountToBurn,
+        /* amountOutMin */ 1,
+            paths,
+            address(this),
+            block.timestamp
+        );
+
+        return amountsOut[amountsOut.length - 1];
     }
 
 }

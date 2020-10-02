@@ -18,6 +18,8 @@
     "deploy-mainnet-governor-alpha": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_governance/DeployGovernorAlpha.js",
     "deploy-mainnet-off-chain-asset-valuator-proxy": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_off_chain_asset_valuator/DeployOffChainAssetValuatorProxy.js",
     "deploy-mainnet-off-chain-asset-valuator-v2": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_off_chain_asset_valuator/DeployOffChainAssetValuatorImplV2.js",
+    "deploy-mainnet-off-chain-currency-valuator-proxy": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_off_chain_currency_valuator/DeployOffChainCurrencyValuatorProxy.js",
+    "deploy-mainnet-off-chain-currency-valuator-v2": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_off_chain_currency_valuator/DeployOffChainCurrencyValuatorImplV2.js",
     "deploy-mainnet-referral-tracker-proxy": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_referral_tracker_proxy/DeployReferralTrackerProxy.js",
     "deploy-mainnet-timelock": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_governance/DeployTimelock.js",
     "deploy-mainnet-underlying-token-valuator-proxy": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_underlying_token_valuator/DeployUnderlyingTokenValuatorProxy.js",
@@ -70,7 +72,7 @@
     "test-yield-farming-v1-user": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV1.User.test.js --slow 2500",
     "test-yield-farming-v2-admin": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV2.Admin.test.js --slow 2500",
     "test-yield-farming-v2-user": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingV2.User.test.js --slow 2500",
-    "test-yield-farming-external-proxy": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingRouter.test.js --slow 2500"
+    "test-yield-farming-router": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/farming/DMGYieldFarmingRouter.test.js --slow 2500"
   },
   "keywords": [],
   "author": "",

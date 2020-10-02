@@ -288,7 +288,8 @@ describe('DMGYieldFarmingRouter', () => {
     const originalBalanceUnderlyingA = await this.underlyingTokenA.balanceOf(user);
     const originalBalanceUnderlyingA_2 = await this.underlyingTokenA_2.balanceOf(user);
     const gasPrice = new BN('1000000000');
-    const gasFees = new BN('1000000').mul(gasPrice);
+    const gasFees = new BN('2000000').mul(gasPrice);
+    const withdrawalFee = _1().mul(new BN('100')).div(new BN('10000'));
     const originalEthBalance = await balance.current(user);
 
     let result = await this.contract.addLiquidityETH(
@@ -316,11 +317,11 @@ describe('DMGYieldFarmingRouter', () => {
     );
     (result.receipt.status).should.eq(true);
 
-    const uniswapFees = new BN('1000');
+    const uniswapFees = new BN('1500');
     (await this.tokenA.balanceOf(user)).should.be.bignumber.eq(originalBalanceA);
     (await this.underlyingTokenA.balanceOf(user)).should.be.bignumber.gte(originalBalanceUnderlyingA.sub(uniswapFees));
     (await this.underlyingTokenA_2.balanceOf(user)).should.be.bignumber.gte(originalBalanceUnderlyingA_2.sub(uniswapFees));
-    (await balance.current(user)).should.be.bignumber.gt(originalEthBalance.sub(gasFees));
+    (await balance.current(user)).should.be.bignumber.gt(originalEthBalance.sub(gasFees).sub(withdrawalFee));
     (await this.dmgToken.balanceOf(user)).should.be.bignumber.gt(new BN('0'));
   });
 

@@ -152,84 +152,45 @@ const createProposalForAddingUsdt = async (governorAlpha, dmmController, usdtAdd
 const createProposalForUpgradingController = async (
   governorAlpha,
   dmmController,
-  usdt,
-  newDmmController,
-  gnosisSafeAddress,
-  newDmmTokenFactoryAddress,
-  daiAddress,
-  usdcAddress,
-  wethAddress,
-  mDaiAddress,
-  mUsdcAddress,
-  mWethAddress,
+  newOffChainAssetValuatorAddress,
+  newOffChainCurrencyValuatorAddress,
+  newUnderlyingTokenValuatorAddress,
 ) => {
-  const setMinReserveRatio = 'setMinReserveRatio(uint256)';
-  const adminWithdrawFunds = 'adminWithdrawFunds(uint256,uint256)';
-  const transferFunds = 'transfer(address,uint256)';
-  const transferOwnershipToNewController = 'transferOwnershipToNewController(address)';
-  const addMarketFromExistingDmmToken = 'addMarketFromExistingDmmToken(address,address)';
+  const targets = [dmmController, dmmController, dmmController];
+  const values = ['0', '0', '0'];
+  const setOffChainAssetValuator = 'setOffChainAssetValuator(address)';
+  const setOffChainCurrencyValuator = 'setOffChainCurrencyValuator(address)';
+  const setUnderlyingTokenValuator = 'setUnderlyingTokenValuator(address)';
+  const signatures = [
+    setOffChainAssetValuator,
+    setOffChainCurrencyValuator,
+    setUnderlyingTokenValuator
+  ];
 
-  if (!dmmController.contract.methods[setMinReserveRatio]) {
-    throw Error('Invalid setMinReserveRatio, found ' + setMinReserveRatio)
-  }
-  if (!dmmController.contract.methods[adminWithdrawFunds]) {
-    throw Error('Invalid adminWithdrawFunds, found ' + adminWithdrawFunds)
-  }
-  if (!usdt.contract.methods[transferFunds]) {
-    throw Error('Invalid transferFunds, found ' + transferFunds)
-  }
-  if (!dmmController.contract.methods[transferOwnershipToNewController]) {
-    throw Error('Invalid transferOwnershipToNewController, found ' + transferOwnershipToNewController)
-  }
-  if (!dmmController.contract.methods[addMarketFromExistingDmmToken]) {
-    throw Error('Invalid addMarketFromExistingDmmToken, found ' + addMarketFromExistingDmmToken)
-  }
+  const setOffChainAssetValuatorCalldata = dmmController.contract.methods
+    .setOffChainAssetValuator(newOffChainAssetValuatorAddress).encodeABI().substring(10);
 
-  const setMinReserveRatioCalldata = '0x' + dmmController.contract.methods.setMinReserveRatio(
-    '0',
-  ).encodeABI().substring(10);
-  const adminWithdrawFundsCalldata = '0x' + dmmController.contract.methods.adminWithdrawFunds(
-    '4',
-    '489827072240',
-  ).encodeABI().substring(10);
-  const transferFundsCalldata = '0x' + usdt.contract.methods.transfer(
-    gnosisSafeAddress,
-    '489827072240'
-  ).encodeABI().substring(10);
-  const transferOwnershipToNewControllerCalldata = '0x' + dmmController.contract.methods.transferOwnershipToNewController(
-    newDmmController.address,
-  ).encodeABI().substring(10);
-  const daiMigrationCalldata = '0x' + dmmController.contract.methods.addMarketFromExistingDmmToken(
-    mDaiAddress,
-    daiAddress,
-  ).encodeABI().substring(10);
-  const usdcMigrationCalldata = '0x' + dmmController.contract.methods.addMarketFromExistingDmmToken(
-    mUsdcAddress,
-    usdcAddress,
-  ).encodeABI().substring(10);
-  const wethMigrationCalldata = '0x' + dmmController.contract.methods.addMarketFromExistingDmmToken(
-    mWethAddress,
-    wethAddress,
-  ).encodeABI().substring(10);
+  const setOffChainCurrencyValuatorCalldata = dmmController.contract.methods
+    .setOffChainCurrencyValuator(newOffChainCurrencyValuatorAddress).encodeABI().substring(10);
 
-  const targets = [dmmController, dmmController, usdt, dmmController, newDmmController, newDmmController, newDmmController];
-  const values = ['0', '0', '0', '0', '0', '0', '0'];
-  const signatures = [setMinReserveRatio, adminWithdrawFunds, transferFunds, transferOwnershipToNewController, addMarketFromExistingDmmToken, addMarketFromExistingDmmToken, addMarketFromExistingDmmToken]
-  const calldatas = [setMinReserveRatioCalldata, adminWithdrawFundsCalldata, transferFundsCalldata, transferOwnershipToNewControllerCalldata, daiMigrationCalldata, usdcMigrationCalldata, wethMigrationCalldata];
-  const title = 'Upgrade the DMM Ecosystem';
+  const setUnderlyingTokenValuatorCalldata = dmmController.contract.methods
+    .setUnderlyingTokenValuator(newUnderlyingTokenValuatorAddress).encodeABI().substring(10);
+
+  const calldatas = [
+    setOffChainAssetValuatorCalldata,
+    setOffChainCurrencyValuatorCalldata,
+    setUnderlyingTokenValuatorCalldata
+  ];
+
+  const title = 'Upgrade the DMM Ecosystem Chainlink Oracles';
   const description = `
-  The DMM Ecosystem Controller is missing some utility functions that could greatly improve the usability of the 
-  protocol. In addition, interest payments, which are currently brought on-chain via the Foundation must be voted into 
-  the ecosystem. Rather, the new controller introduces the concept of a "guardian" which has the privilege to deposit 
-  interest payments, in addition to the DAO.
+  The DMM Ecosystem Controller needs to be updated to support new functionality that will be needed as we onboard the 
+  first principals and affiliates into the ecosystem. This vote strictly centers around updating the off-chain asset 
+  valuator, currency valuator, and token valuator. Each of the prior needed an upgrade for one of two reasons: 
   
-  The last fix revolves around tokens that do not conform to the ERC20 standard exactly. We have upgraded the DMM Token 
-  Factory contract to use new source code that utilizes the Open Zeppelin "safeTransfer" function when transferring the 
-  underlying funds out of the DMM mToken contract.
-  
-  The address of the new and verified controller is [${newDmmController.address}}](https://etherscan.io/address/${newDmmController.address}).
-  
-  The address of the new and verified DMM Token Factory is [${newDmmTokenFactoryAddress}](https://etherscan.io/address/${newDmmTokenFactoryAddress}).
+  1. Chainlink is updating its oracles to point to new contract addresses (which requires the DMM DAO to do the same)
+  2. We needed to add the ability to partition funds and permissions depending on asset introducer IDs - this is 
+  essential for the DMM ecosystem's growth and transparently displaying the ecosystem's health.
   `;
 
   await createGovernanceProposal(
@@ -271,7 +232,7 @@ const createGovernanceProposal = async (governorAlpha, targets, values, signatur
     } else {
       throw `Could not verify ${target} at index ${index}`
     }
-  })
+  });
 
   const actualAbi = governorAlpha.contract.methods.propose(
     targets.map(target => target.address),

@@ -4,7 +4,7 @@ const Web3 = require('web3');
 const {setupLoader} = require('@openzeppelin/contract-loader');
 const {BN, MAX_INTEGER} = require('ethereumjs-util');
 const {callContract, deployContract} = require('./ContractUtils');
-const {createProposalForYieldFarming} = require('./encode_abi/EncodeGovernanceProposalAbi')
+const {createProposalForUpgradingController} = require('./encode_abi/EncodeGovernanceProposalAbi')
 const {createProposalForBurningTokens} = require('./encode_abi/EncodeBurning')
 const {approveGloballyTrustedProxy} = require('./encode_abi/EncodeFarming')
 
@@ -44,18 +44,15 @@ const delayedOwnerAddress = "0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD";
 const dmgTokenAddress = "0xEd91879919B71bB6905f23af0A68d231EcF87b14";
 const yieldFarmingAddress = "0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975";
 const yieldFarmingRouterAddress = "0x8209eD0259F99Abd593E8cd26e6a14f224C6cccA";
-const dmmControllerAddress = "0x4CB120Dd1D33C9A3De8Bc15620C7Cd43418d77E2";
+const dmmControllerAddress = "0xB07EB3426d742cda9120931e7028d54F9dF34A3e";
 const gnosisSafeAddress = "0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF";
 const governorAlphaAddress = "0x67Cb2868Ebf965b66d3dC81D0aDd6fd849BCF6D5"
 const governorTimelockAddress = "0xE679eBf544A6BE5Cb8747012Ea6B08F04975D264"
 const offChainAssetValuatorImplV1Address = "0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4";
-const underlyingTokenValuatorImplV2Address = "0x693AA8eAD81D2F88A45e870Fa7E25f84Ca93Ca4d";
-const underlyingTokenValuatorImplV3Address = "0x7812e0F5Da2F0917BD9054951415EDFF571964dB";
-const underlyingTokenValuatorImplV4Address = "0x0c65c147aAf2DbD5109ba74e36f730D081489B5B";
+const offChainAssetValuatorProxyAddress = "0x4F9c3332D352F1ef22F010ba93A9653261e1634b";
+const offChainCurrencyValuatorProxyAddress = "0x826d758AF2FeD387ac15843327e143b2CAfE9047";
+const underlyingTokenValuatorProxy = "0xaC7e5e3b589D55a43D62b90c6b4C4ef28Ea35573";
 const dmgBurnerAddress = "0x51c9a18c87c89A34e1f3fE020b8f406F1300E909";
-
-const newDmmControllerAddress = '0xB07EB3426d742cda9120931e7028d54F9dF34A3e';
-const newDmmTokenFactoryAddress = '0x6Ce6C84Fe43Df6A28c209b36179bD84a52CAEEFe';
 
 const jobId = '0x2017ac2b3b5b37d2fbb5fef6193d6eef0cb50a4c6b3796c5b5c44bd1cca83aa0';
 const oracleAddress = '0x59bbE8CFC79c76857fE0eC27e67E4957370d72B5';
@@ -89,7 +86,6 @@ const main = async () => {
   const dmg = await DMGToken.at(dmgTokenAddress);
   const delayedOwner = await DelayedOwner.at(delayedOwnerAddress);
   const dmmController = await DmmController.at(dmmControllerAddress);
-  const newDmmController = await DmmController.at(newDmmControllerAddress);
   const governorAlpha = await GovernorAlpha.at(governorAlphaAddress);
   const offChainAssetValuatorImplV1 = await OffChainAssetValuatorImplV1.at(offChainAssetValuatorImplV1Address);
   const yieldFarming = await DMGYieldFarmingV1.at(yieldFarmingAddress);
@@ -112,8 +108,16 @@ const main = async () => {
   // console.log('--------------------------------------------------')
   // await createProposalForYieldFarming(governorAlpha, gnosisSafeAddress, dmg, deployerAddress, governorTimelockAddress, yieldFarming, rewardAmountWei, targetDurationDays, maxDebtCeiling);
 
-  const burnAmountWei = new BN('35147000000')
-  await createProposalForBurningTokens(governorAlpha, usdc, governorTimelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmg);
+  // const burnAmountWei = new BN('35147000000')
+  // await createProposalForBurningTokens(governorAlpha, usdc, governorTimelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmg);
+
+  await createProposalForUpgradingController(
+    governorAlpha,
+    dmmController,
+    offChainAssetValuatorProxyAddress,
+    offChainCurrencyValuatorProxyAddress,
+    underlyingTokenValuatorProxy,
+  );
 
   // const _1000_DAI = new BN('1000000000000000000000');
   // const usdcAmount = new BN('5929500000');

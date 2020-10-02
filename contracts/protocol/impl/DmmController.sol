@@ -32,7 +32,7 @@ import "../interfaces/InterestRateInterface.sol";
 import "../interfaces/IUnderlyingTokenValuator.sol";
 import "../interfaces/IDmmTokenFactory.sol";
 import "../interfaces/IPausable.sol";
-import "../interfaces/IOffChainCurrencyValuator.sol";
+import "../interfaces/IOffChainCurrencyValuatorV1.sol";
 
 import "../../utils/Blacklistable.sol";
 
@@ -69,7 +69,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
     address public guardian;
     InterestRateInterface public interestRateInterface;
     IOffChainAssetValuatorV1 public offChainAssetsValuator;
-    IOffChainCurrencyValuator public offChainCurrencyValuator;
+    IOffChainCurrencyValuatorV1 public offChainCurrencyValuator;
     IUnderlyingTokenValuator public underlyingTokenValuator;
     IDmmTokenFactory public dmmEtherFactory;
     IDmmTokenFactory public dmmTokenFactory;
@@ -115,7 +115,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
         guardian = _guardian;
         interestRateInterface = InterestRateInterface(_interestRateInterface);
         offChainAssetsValuator = IOffChainAssetValuatorV1(_offChainAssetsValuator);
-        offChainCurrencyValuator = IOffChainCurrencyValuator(_offChainCurrencyValuator);
+        offChainCurrencyValuator = IOffChainCurrencyValuatorV1(_offChainCurrencyValuator);
         underlyingTokenValuator = IUnderlyingTokenValuator(_underlyingTokenValuator);
         dmmTokenFactory = IDmmTokenFactory(_dmmTokenFactory);
         dmmEtherFactory = IDmmTokenFactory(_dmmEtherFactory);
@@ -295,7 +295,7 @@ contract DmmController is IPausable, Pausable, CommonConstants, IDmmController, 
 
     function setOffChainCurrencyValuator(address newOffChainCurrencyValuator) public whenNotPaused onlyOwner {
         address oldOffChainCurrencyValuator = address(offChainCurrencyValuator);
-        offChainCurrencyValuator = IOffChainCurrencyValuator(newOffChainCurrencyValuator);
+        offChainCurrencyValuator = IOffChainCurrencyValuatorV1(newOffChainCurrencyValuator);
         emit OffChainCurrencyValuatorChanged(oldOffChainCurrencyValuator, address(offChainCurrencyValuator));
     }
 

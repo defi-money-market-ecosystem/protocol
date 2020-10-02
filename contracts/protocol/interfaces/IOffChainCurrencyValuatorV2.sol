@@ -17,22 +17,14 @@
 
 pragma solidity ^0.5.0;
 
-import "../interfaces/IOffChainCurrencyValuatorV1.sol";
-import "../interfaces/IOffChainCurrencyValuatorV2.sol";
-
-import "./data/OffChainCurrencyValuatorData.sol";
-
-contract OffChainCurrencyValuatorImplV2 is IOffChainCurrencyValuatorV1, IOffChainCurrencyValuatorV2, OffChainCurrencyValuatorData {
+/**
+ * Gets the value of any currencies that are residing off-chain, but are NOT yet allocated to a revenue-producing asset.
+ */
+interface IOffChainCurrencyValuatorV2 {
 
     function initialize(
         address owner,
         address guardian
-    ) public initializer {
-        super.initialize(owner, guardian);
-    }
-
-    function getOffChainCurrenciesValue() external view returns (uint) {
-        return 0;
-    }
+    ) external;
 
 }

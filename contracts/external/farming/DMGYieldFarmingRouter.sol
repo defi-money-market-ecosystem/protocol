@@ -29,6 +29,12 @@ import "../uniswap/libs/UniswapV2Library.sol";
 
 import "./v1/IDMGYieldFarmingV1.sol";
 
+/**
+ * This file is heavily based on Uniswap's V2 Router, because it wraps the user's tokens into LP tokens for them before
+ * depositing them into the Yield Farming Protocol contract.
+ *
+ * https://github.com/Uniswap/uniswap-v2-periphery/blob/master/contracts/UniswapV2Router02.sol
+ */
 contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
 
     using AddressUtil for address payable;
@@ -65,12 +71,13 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
     constructor(
         address _dmgYieldFarming,
         address _uniswapV2Factory,
-        address _weth
+        address _weth,
+        bytes32 _initCodeHash
     ) public {
         dmgYieldFarming = _dmgYieldFarming;
         uniswapV2Factory = _uniswapV2Factory;
         weth = _weth;
-        initCodeHash = bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f);
+        initCodeHash = _initCodeHash;
     }
 
     function() external payable {
@@ -289,6 +296,8 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
         require(amountB >= params.amountBMin, 'DMGYieldFarmingFundingProxy::removeLiquidity: INSUFFICIENT_B_AMOUNT');
     }
 
+    /// This function is based on UniswapV2Router02.sol:
+    /// https://github.com/Uniswap/uniswap-v2-periphery/blob/master/contracts/UniswapV2Router02.sol#L33
     function _getAmounts(
         UniswapParams memory params,
         uint amountADesired,

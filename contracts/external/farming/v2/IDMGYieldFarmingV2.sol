@@ -102,26 +102,11 @@ interface IDMGYieldFarmingV2 {
         DMGYieldFarmingV2Lib.TokenType tokenType
     ) external;
 
-    function setUnderlyingTokenByFarmToken(
-        address farmToken,
-        address underlyingToken
-    ) external;
-
     /**
      * @param token The address of the token that will be removed from farming.
      */
     function removeAllowableToken(
         address token
-    ) external;
-
-    /**
-     * Changes the reward points for the provided token. Reward points are a weighting system that enables certain
-     * tokens to accrue DMG faster than others, allowing the protocol to prioritize certain deposits. At the start of
-     * season 1, mETH had points of 100 (equalling 1) and the stablecoins had 200, doubling their weight against mETH.
-     */
-    function setRewardPointsByToken(
-        address token,
-        uint16 points
     ) external;
 
     /**
@@ -173,11 +158,6 @@ interface IDMGYieldFarmingV2 {
 
     function setUniswapV2Router(
         address uniswapV2Router
-    ) external;
-
-    function setFeesByToken(
-        address token,
-        uint16 fees
     ) external;
 
     function setFeesByTokens(
