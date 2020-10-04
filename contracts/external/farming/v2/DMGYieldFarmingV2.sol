@@ -337,6 +337,12 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         return _tokenToIndexPlusOneMap[token];
     }
 
+    function getTokenTypeByToken(
+        address token
+    ) public view returns (DMGYieldFarmingV2Lib.TokenType) {
+        return _tokenToTokenType[token];
+    }
+
     // ////////////////////
     // User Functions
     // ////////////////////
@@ -619,7 +625,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         if (tokenType == DMGYieldFarmingV2Lib.TokenType.UniswapLpToken) {
             address uniswapV2Router = _uniswapV2Router;
             if (IERC20(underlyingToken).allowance(address(this), uniswapV2Router) == 0) {
-                IERC20(underlyingToken).approve(uniswapV2Router, uint(- 1));
+                IERC20(underlyingToken).safeApprove(uniswapV2Router, uint(- 1));
             }
         }
     }

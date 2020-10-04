@@ -20,6 +20,18 @@ pragma experimental ABIEncoderV2;
 
 interface IDMGToken {
 
+    /// @notice A checkpoint for marking number of votes from a given block
+    struct Checkpoint {
+        uint64 fromBlock;
+        uint128 votes;
+    }
+
+    /// @notice An event thats emitted when an account changes its delegate
+    event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
+
+    /// @notice An event thats emitted when a delegate account's vote balance changes
+    event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
+
     function getPriorVotes(address account, uint blockNumber) external view returns (uint128);
 
     function delegates(address delegator) external view returns (address);

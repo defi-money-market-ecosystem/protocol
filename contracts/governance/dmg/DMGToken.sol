@@ -24,6 +24,8 @@ import "./SafeBitMath.sol";
 
 import "../../utils/EvmUtil.sol";
 import "./IDMGToken.sol";
+import "./DMGTokenData.sol";
+import "./DMGTokenConstants.sol";
 
 /**
  * This contract is mainly based on Compound's COMP token
@@ -35,69 +37,21 @@ import "./IDMGToken.sol";
  * of 96, increasing the number of bits for a checkpoint to 64, adding a burn function, and creating an initial
  * totalSupply of 250mm.
  */
-contract DMGToken is IDMGToken, IERC20 {
+contract DMGToken is IDMGToken, IERC20, DMGTokenConstants, DMGTokenData {
 
     string public constant name = "DMM: Governance";
-
-    string public constant symbol = "DMG";
-
-    uint8 public constant decimals = 18;
-
-    uint public totalSupply;
-
-    /// @notice Allowance amounts on behalf of others
-    mapping(address => mapping(address => uint128)) internal allowances;
-
-    /// @notice Official record of token balances for each account
-    mapping(address => uint128) internal balances;
-
-    /// @notice A record of each account's delegate
-    mapping(address => address) public delegates;
-
-    /// @notice A checkpoint for marking number of votes from a given block
-    struct Checkpoint {
-        uint64 fromBlock;
-        uint128 votes;
-    }
-
-    /// @notice A record of votes checkpoints for each account, by index
-    mapping(address => mapping(uint64 => Checkpoint)) public checkpoints;
-
-    /// @notice The number of checkpoints for each account
-    mapping(address => uint64) public numCheckpoints;
-
-    bytes32 public domainSeparator;
-
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPE_HASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-
-    /// @notice The EIP-712 typehash for the delegation struct used by the contract
-    bytes32 public constant DELEGATION_TYPE_HASH = keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
-
-    /// @notice The EIP-712 typehash for the transfer struct used by the contract
-    bytes32 public constant TRANSFER_TYPE_HASH = keccak256("Transfer(address recipient,uint256 rawAmount,uint256 nonce,uint256 expiry)");
-
-    /// @notice The EIP-712 typehash for the approve struct used by the contract
-    bytes32 public constant APPROVE_TYPE_HASH = keccak256("Approve(address spender,uint256 rawAmount,uint256 nonce,uint256 expiry)");
-
-    /// @notice A record of states for signing / validating signatures
-    mapping(address => uint) public nonces;
-
-    /// @notice An event thats emitted when an account changes its delegate
-    event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
-
-    /// @notice An event thats emitted when a delegate account's vote balance changes
-    event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
 
     /**
      * @notice Construct the DMG token
      * @param _account The initial account to receive all of the tokens
      * @param _totalSupply The total supply of all the tokens, which is sent to _account.
      */
-    constructor(
+    function initialize(
         address _account,
         uint _totalSupply
-    ) public {
+    )
+    public
+    initializer {
         require(_totalSupply == uint128(_totalSupply), "DMG: total supply exceeds 128 bits");
         totalSupply = _totalSupply;
 

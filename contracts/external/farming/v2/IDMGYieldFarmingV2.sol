@@ -361,6 +361,11 @@ interface IDMGYieldFarmingV2 {
     function getTokenDecimalsByToken(address token) external view returns (uint8);
 
     /**
+     * @return  The type of token this farm token is.
+     */
+    function getTokenTypeByToken(address token) external view returns (DMGYieldFarmingV2Lib.TokenType);
+
+    /**
      * @return  The index into the array returned from `getFarmTokens`, plus 1. 0 if the token isn't found. If the
      *          index returned is non-zero, subtract 1 from it to get the real index into the array.
      */
