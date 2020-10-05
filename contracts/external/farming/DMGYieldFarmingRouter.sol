@@ -55,29 +55,29 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
         uint amountBMin;
     }
 
-    modifier ensureDeadline(uint deadline) {
-        require(deadline >= block.timestamp, "DMGYieldFarmingFundingProxy: EXPIRED");
+    modifier ensureDeadline(uint __deadline) {
+        require(__deadline >= block.timestamp, "DMGYieldFarmingFundingProxy: EXPIRED");
         _;
     }
 
-    modifier ensurePairIsSupported(address tokenA, address tokenB) {
+    modifier ensurePairIsSupported(address __tokenA, address __tokenB) {
         require(
-            IDMGYieldFarmingV1(dmgYieldFarming).isSupportedToken(UniswapV2Library.pairFor(uniswapV2Factory, tokenA, tokenB, initCodeHash)),
+            IDMGYieldFarmingV1(dmgYieldFarming).isSupportedToken(UniswapV2Library.pairFor(uniswapV2Factory, __tokenA, __tokenB, initCodeHash)),
             "DMGYieldFarmingFundingProxy: TOKEN_UNSUPPORTED"
         );
         _;
     }
 
     constructor(
-        address _dmgYieldFarming,
-        address _uniswapV2Factory,
-        address _weth,
-        bytes32 _initCodeHash
+        address __dmgYieldFarming,
+        address __uniswapV2Factory,
+        address __weth,
+        bytes32 __initCodeHash
     ) public {
-        dmgYieldFarming = _dmgYieldFarming;
-        uniswapV2Factory = _uniswapV2Factory;
-        weth = _weth;
-        initCodeHash = _initCodeHash;
+        dmgYieldFarming = __dmgYieldFarming;
+        uniswapV2Factory = __uniswapV2Factory;
+        weth = __weth;
+        initCodeHash = __initCodeHash;
     }
 
     function() external payable {
@@ -88,64 +88,64 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
     }
 
     function getPair(
-        address tokenA,
-        address tokenB
+        address __tokenA,
+        address __tokenB
     ) public view returns (address) {
-        return UniswapV2Library.pairFor(uniswapV2Factory, tokenA, tokenB, initCodeHash);
+        return UniswapV2Library.pairFor(uniswapV2Factory, __tokenA, __tokenB, initCodeHash);
     }
 
     function setInitCodeHash(
-        bytes32 _initCodeHash
+        bytes32 __initCodeHash
     )
     public
     onlyOwner {
-        initCodeHash = _initCodeHash;
+        initCodeHash = __initCodeHash;
     }
 
     function enableTokens(
-        address[] calldata tokens,
-        address[] calldata spenders
+        address[] calldata __tokens,
+        address[] calldata __spenders
     )
     external
     nonReentrant {
         require(
-            tokens.length == spenders.length,
+            __tokens.length == __spenders.length,
             "DMGYieldFarmingFundingProxy::enableTokens: INVALID_LENGTH"
         );
 
-        for (uint i = 0; i < tokens.length; i++) {
-            IERC20(tokens[i]).safeApprove(spenders[i], uint(- 1));
+        for (uint i = 0; i < __tokens.length; i++) {
+            IERC20(__tokens[i]).safeApprove(__spenders[i], uint(- 1));
         }
     }
 
     function addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint amountADesired,
-        uint amountBDesired,
-        uint amountAMin,
-        uint amountBMin,
-        uint deadline
+        address __tokenA,
+        address __tokenB,
+        uint __amountADesired,
+        uint __amountBDesired,
+        uint __amountAMin,
+        uint __amountBMin,
+        uint __deadline
     )
     public
     nonReentrant
-    ensureDeadline(deadline) {
-        _verifyTokensAreSupported(tokenA, tokenB);
+    ensureDeadline(__deadline) {
+        _verifyTokensAreSupported(__tokenA, __tokenB);
 
         address _uniswapV2Factory = uniswapV2Factory;
 
         UniswapParams memory params = UniswapParams({
-        tokenA : tokenA,
-        tokenB : tokenB,
+        tokenA : __tokenA,
+        tokenB : __tokenB,
         liquidity : 0,
-        amountAMin : amountAMin,
-        amountBMin : amountBMin
+        amountAMin : __amountAMin,
+        amountBMin : __amountBMin
         });
 
         (uint amountA, uint amountB) = _getAmounts(
             params,
-            amountADesired,
-            amountBDesired,
+            __amountADesired,
+            __amountBDesired,
             _uniswapV2Factory
         );
 
@@ -156,35 +156,35 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
     }
 
     function addLiquidityETH(
-        address token,
-        uint amountTokenDesired,
-        uint amountTokenMin,
-        uint amountETHMin,
-        uint deadline
+        address __token,
+        uint __amountTokenDesired,
+        uint __amountTokenMin,
+        uint __amountETHMin,
+        uint __deadline
     )
     public payable
     nonReentrant
-    ensureDeadline(deadline) {
+    ensureDeadline(__deadline) {
         UniswapParams memory params = UniswapParams({
-        tokenA : token,
+        tokenA : __token,
         tokenB : weth,
         liquidity : 0,
-        amountAMin : amountTokenMin,
-        amountBMin : amountETHMin
+        amountAMin : __amountTokenMin,
+        amountBMin : __amountETHMin
         });
 
-        _verifyTokensAreSupported(token, params.tokenB);
+        _verifyTokensAreSupported(__token, params.tokenB);
 
         address _uniswapV2Factory = uniswapV2Factory;
 
         (uint amountToken, uint amountETH) = _getAmounts(
             params,
-            amountTokenDesired,
+            __amountTokenDesired,
             msg.value,
             _uniswapV2Factory
         );
 
-        address pair = UniswapV2Library.pairFor(_uniswapV2Factory, token, params.tokenB, initCodeHash);
+        address pair = UniswapV2Library.pairFor(_uniswapV2Factory, __token, params.tokenB, initCodeHash);
 
         uint liquidity = _doTokenTransfersWithEthAndMintLiquidity(params, pair, amountToken, amountETH);
 
@@ -200,52 +200,52 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
     }
 
     function removeLiquidity(
-        address tokenA,
-        address tokenB,
-        uint liquidity,
-        uint amountAMin,
-        uint amountBMin,
-        uint deadline,
-        bool isInSeason
+        address __tokenA,
+        address __tokenB,
+        uint __liquidity,
+        uint __amountAMin,
+        uint __amountBMin,
+        uint __deadline,
+        bool __isInSeason
     )
     public
     nonReentrant
-    ensureDeadline(deadline) {
-        _verifyTokensAreSupported(tokenA, tokenB);
+    ensureDeadline(__deadline) {
+        _verifyTokensAreSupported(__tokenA, __tokenB);
 
         UniswapParams memory params = UniswapParams({
-        tokenA : tokenA,
-        tokenB : tokenB,
-        liquidity : liquidity,
-        amountAMin : amountAMin,
-        amountBMin : amountBMin
+        tokenA : __tokenA,
+        tokenB : __tokenB,
+        liquidity : __liquidity,
+        amountAMin : __amountAMin,
+        amountBMin : __amountBMin
         });
 
-        _removeLiquidity(params, msg.sender, msg.sender, isInSeason);
+        _removeLiquidity(params, msg.sender, msg.sender, __isInSeason);
     }
 
     function removeLiquidityETH(
-        address token,
-        uint liquidity,
-        uint amountTokenMin,
-        uint amountETHMin,
-        uint deadline,
-        bool isInSeason
+        address __token,
+        uint __liquidity,
+        uint __amountTokenMin,
+        uint __amountETHMin,
+        uint __deadline,
+        bool __isInSeason
     )
     public
     nonReentrant
-    ensureDeadline(deadline) {
+    ensureDeadline(__deadline) {
         UniswapParams memory params = UniswapParams({
-        tokenA : token,
+        tokenA : __token,
         tokenB : weth,
-        liquidity : liquidity,
-        amountAMin : amountTokenMin,
-        amountBMin : amountETHMin
+        liquidity : __liquidity,
+        amountAMin : __amountTokenMin,
+        amountBMin : __amountETHMin
         });
 
         _verifyTokensAreSupported(params.tokenA, params.tokenB);
 
-        (uint amountToken, uint amountETH) = _removeLiquidity(params, msg.sender, address(this), isInSeason);
+        (uint amountToken, uint amountETH) = _removeLiquidity(params, msg.sender, address(this), __isInSeason);
 
         IERC20(params.tokenA).safeTransfer(msg.sender, amountToken);
         IWETH(params.tokenB).withdraw(amountETH);
@@ -256,103 +256,103 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
     }
 
     function _verifyTokensAreSupported(
-        address tokenA,
-        address tokenB
+        address __tokenA,
+        address __tokenB
     ) internal view {
         require(
-            IDMGYieldFarmingV1(dmgYieldFarming).isSupportedToken(UniswapV2Library.pairFor(uniswapV2Factory, tokenA, tokenB, initCodeHash)),
+            IDMGYieldFarmingV1(dmgYieldFarming).isSupportedToken(UniswapV2Library.pairFor(uniswapV2Factory, __tokenA, __tokenB, initCodeHash)),
             "DMGYieldFarmingFundingProxy::_verifyTokensAreSupported: TOKEN_UNSUPPORTED"
         );
     }
 
     function _removeLiquidity(
-        UniswapParams memory params,
-        address farmer,
-        address liquidityRecipient,
-        bool isInSeason
+        UniswapParams memory __params,
+        address __farmer,
+        address __liquidityRecipient,
+        bool __isInSeason
     )
     internal returns (uint amountA, uint amountB) {
-        address pair = UniswapV2Library.pairFor(uniswapV2Factory, params.tokenA, params.tokenB, initCodeHash);
+        address pair = UniswapV2Library.pairFor(uniswapV2Factory, __params.tokenA, __params.tokenB, initCodeHash);
         uint liquidity;
-        if (isInSeason) {
-            (uint _liquidity, uint dmgEarned) = IDMGYieldFarmingV1(dmgYieldFarming).endFarmingByToken(farmer, address(this), pair);
+        if (__isInSeason) {
+            (uint _liquidity, uint dmgEarned) = IDMGYieldFarmingV1(dmgYieldFarming).endFarmingByToken(__farmer, address(this), pair);
             liquidity = _liquidity;
             // Forward the DMG along to the farmer
-            IERC20(IDMGYieldFarmingV1(dmgYieldFarming).dmgToken()).safeTransfer(farmer, dmgEarned);
+            IERC20(IDMGYieldFarmingV1(dmgYieldFarming).dmgToken()).safeTransfer(__farmer, dmgEarned);
         } else {
             liquidity = IDMGYieldFarmingV1(dmgYieldFarming).withdrawByTokenWhenOutOfSeason(
-                farmer,
+                __farmer,
                 address(this),
                 pair
             );
         }
 
         IERC20(pair).safeTransfer(pair, liquidity);
-        (uint amount0, uint amount1) = IUniswapV2Pair(pair).burn(liquidityRecipient);
-        (address token0,) = UniswapV2Library.sortTokens(params.tokenA, params.tokenB);
-        (amountA, amountB) = params.tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
+        (uint amount0, uint amount1) = IUniswapV2Pair(pair).burn(__liquidityRecipient);
+        (address token0,) = UniswapV2Library.sortTokens(__params.tokenA, __params.tokenB);
+        (amountA, amountB) = __params.tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
 
-        require(amountA >= params.amountAMin, 'DMGYieldFarmingFundingProxy::removeLiquidity: INSUFFICIENT_A_AMOUNT');
-        require(amountB >= params.amountBMin, 'DMGYieldFarmingFundingProxy::removeLiquidity: INSUFFICIENT_B_AMOUNT');
+        require(amountA >= __params.amountAMin, 'DMGYieldFarmingFundingProxy::removeLiquidity: INSUFFICIENT_A_AMOUNT');
+        require(amountB >= __params.amountBMin, 'DMGYieldFarmingFundingProxy::removeLiquidity: INSUFFICIENT_B_AMOUNT');
     }
 
     /// This function is based on UniswapV2Router02.sol:
     /// https://github.com/Uniswap/uniswap-v2-periphery/blob/master/contracts/UniswapV2Router02.sol#L33
     function _getAmounts(
-        UniswapParams memory params,
-        uint amountADesired,
-        uint amountBDesired,
-        address uniswapV2Factory
+        UniswapParams memory __params,
+        uint __amountADesired,
+        uint __amountBDesired,
+        address __uniswapV2Factory
     )
     internal view returns (uint amountA, uint amountB) {
-        (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(uniswapV2Factory, params.tokenA, params.tokenB, initCodeHash);
+        (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(__uniswapV2Factory, __params.tokenA, __params.tokenB, initCodeHash);
         if (reserveA == 0 && reserveB == 0) {
-            (amountA, amountB) = (amountADesired, amountBDesired);
+            (amountA, amountB) = (__amountADesired, __amountBDesired);
         } else {
-            uint amountBOptimal = UniswapV2Library.quote(amountADesired, reserveA, reserveB);
-            if (amountBOptimal <= amountBDesired) {
+            uint amountBOptimal = UniswapV2Library.quote(__amountADesired, reserveA, reserveB);
+            if (amountBOptimal <= __amountBDesired) {
                 require(
-                    amountBOptimal >= params.amountBMin,
+                    amountBOptimal >= __params.amountBMin,
                     "DMGYieldFarmingFundingProxy::_getAmounts: INSUFFICIENT_B_AMOUNT"
                 );
 
-                (amountA, amountB) = (amountADesired, amountBOptimal);
+                (amountA, amountB) = (__amountADesired, amountBOptimal);
             } else {
-                uint amountAOptimal = UniswapV2Library.quote(amountBDesired, reserveB, reserveA);
-                assert(amountAOptimal <= amountADesired);
+                uint amountAOptimal = UniswapV2Library.quote(__amountBDesired, reserveB, reserveA);
+                assert(amountAOptimal <= __amountADesired);
                 require(
-                    amountAOptimal >= params.amountAMin,
+                    amountAOptimal >= __params.amountAMin,
                     "DMGYieldFarmingFundingProxy::_getAmounts: INSUFFICIENT_A_AMOUNT"
                 );
 
-                (amountA, amountB) = (amountAOptimal, amountBDesired);
+                (amountA, amountB) = (amountAOptimal, __amountBDesired);
             }
         }
     }
 
     function _doTokenTransfersAndMintLiquidity(
-        UniswapParams memory params,
-        address pair,
-        uint amountA,
-        uint amountB
+        UniswapParams memory __params,
+        address __pair,
+        uint __amountA,
+        uint __amountB
     ) internal returns (uint) {
-        IERC20(params.tokenA).safeTransferFrom(msg.sender, pair, amountA);
-        IERC20(params.tokenB).safeTransferFrom(msg.sender, pair, amountB);
+        IERC20(__params.tokenA).safeTransferFrom(msg.sender, __pair, __amountA);
+        IERC20(__params.tokenB).safeTransferFrom(msg.sender, __pair, __amountB);
 
-        return IUniswapV2Pair(pair).mint(address(this));
+        return IUniswapV2Pair(__pair).mint(address(this));
     }
 
     function _doTokenTransfersWithEthAndMintLiquidity(
-        UniswapParams memory params,
-        address pair,
-        uint amountToken,
-        uint amountETH
+        UniswapParams memory __params,
+        address __pair,
+        uint __amountToken,
+        uint __amountETH
     ) internal returns (uint) {
-        IERC20(params.tokenA).safeTransferFrom(msg.sender, pair, amountToken);
-        IWETH(params.tokenB).deposit.value(amountETH)();
-        IERC20(params.tokenB).safeTransfer(pair, amountETH);
+        IERC20(__params.tokenA).safeTransferFrom(msg.sender, __pair, __amountToken);
+        IWETH(__params.tokenB).deposit.value(__amountETH)();
+        IERC20(__params.tokenB).safeTransfer(__pair, __amountETH);
 
-        return IUniswapV2Pair(pair).mint(address(this));
+        return IUniswapV2Pair(__pair).mint(address(this));
     }
 
 }

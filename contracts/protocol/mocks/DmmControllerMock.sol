@@ -48,11 +48,11 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
         _isMarketsEnabled = true;
     }
 
-    function enableMarket(uint dmmTokenId) public {
+    function enableMarket(uint) public {
         _isMarketsEnabled = true;
     }
 
-    function disableMarket(uint dmmTokenId) public {
+    function disableMarket(uint) public {
         _isMarketsEnabled = false;
     }
 
@@ -60,23 +60,23 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
         _isMarketsEnabled = isMarketsEnabled;
     }
 
-    function isMarketEnabledByDmmTokenId(uint dmmTokenId) public view returns (bool) {
+    function isMarketEnabledByDmmTokenId(uint) public view returns (bool) {
         return _isMarketsEnabled;
     }
 
-    function isMarketEnabledByDmmTokenAddress(address dmmToken) public view returns (bool) {
+    function isMarketEnabledByDmmTokenAddress(address) public view returns (bool) {
         return _isMarketsEnabled;
     }
 
-    function getUnderlyingTokenForDmm(address dmmToken) public view returns (address) {
+    function getUnderlyingTokenForDmm(address) public view returns (address) {
         return _token;
     }
 
-    function getDmmTokenForUnderlying(address dmmToken) public view returns (address) {
+    function getDmmTokenForUnderlying(address) public view returns (address) {
         revert("NOT_IMPLEMENTED");
     }
 
-    function getInterestRateByDmmTokenAddress(address dmmToken) public view returns (uint) {
+    function getInterestRateByDmmTokenAddress(address) public view returns (uint) {
         return _interestRate;
     }
 
@@ -84,47 +84,47 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
         _interestRate = interestRate;
     }
 
-    function setGuardian(address newGuardian) public {
+    function setGuardian(address) public {
         revert("NOT_IMPLEMENTED");
     }
 
-    function setDmmTokenFactory(address newDmmTokenFactory) public {
+    function setDmmTokenFactory(address) public {
         revert("NOT_IMPLEMENTED");
     }
 
-    function setDmmEtherFactory(address newDmmEtherFactory) public {
+    function setDmmEtherFactory(address) public {
         revert("NOT_IMPLEMENTED");
     }
 
-    function setInterestRateInterface(address unused) public {
+    function setInterestRateInterface(address) public {
     }
 
-    function setOffChainAssetValuator(address unused) public {
+    function setOffChainAssetValuator(address) public {
     }
 
-    function setOffChainCurrencyValuator(address unused) public {
+    function setOffChainCurrencyValuator(address) public {
     }
 
     function setUnderlyingTokenValuator(address underlyingTokenValuator) public {
         _underlyingTokenValuator = underlyingTokenValuator;
     }
 
-    function setMinCollateralization(uint unused) public {
+    function setMinCollateralization(uint) public {
     }
 
-    function setMinReserveRatio(uint unused) public {
+    function setMinReserveRatio(uint) public {
     }
 
-    function increaseTotalSupply(uint dmmTokenId, uint amount) public {
+    function increaseTotalSupply(uint, uint) public {
     }
 
-    function decreaseTotalSupply(uint dmmTokenId, uint amount) public {
+    function decreaseTotalSupply(uint, uint) public {
     }
 
-    function adminWithdrawFunds(uint dmmTokenId, uint256 underlyingAmount) public {
+    function adminWithdrawFunds(uint, uint) public {
     }
 
-    function adminDepositFunds(uint dmmTokenId, uint256 underlyingAmount) public {
+    function adminDepositFunds(uint, uint) public {
     }
 
     function getTotalCollateralization() public view returns (uint) {
@@ -135,11 +135,11 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
         return 1e18;
     }
 
-    function getInterestRateByUnderlyingTokenAddress(address underlyingToken) public view returns (uint) {
+    function getInterestRateByUnderlyingTokenAddress(address) public view returns (uint) {
         return _interestRate;
     }
 
-    function getInterestRateByDmmTokenId(uint dmmTokenId) public view returns (uint) {
+    function getInterestRateByDmmTokenId(uint) public view returns (uint) {
         return _interestRate;
     }
 
@@ -147,43 +147,43 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
         return new uint[](0);
     }
 
-    function getExchangeRateByUnderlying(address underlyingTokenAddress) public view returns (uint) {
+    function getExchangeRateByUnderlying(address) public view returns (uint) {
         revert("NOT_IMPLEMENTED");
     }
 
-    function getExchangeRate(address dmmTokenAddress) public view returns (uint) {
+    function getExchangeRate(address) public view returns (uint) {
         revert("NOT_IMPLEMENTED");
     }
 
-    function getTokenIdFromDmmTokenAddress(address dmmTokenAddress) public view returns (uint) {
+    function getTokenIdFromDmmTokenAddress(address) public view returns (uint) {
         revert("NOT_IMPLEMENTED");
     }
 
-    function getDmmTokenAddressByDmmTokenId(uint dmmTokenId) public view returns (address) {
+    function getDmmTokenAddressByDmmTokenId(uint) public view returns (address) {
         revert("NOT_IMPLEMENTED");
     }
 
     function addMarket(
-        address underlyingToken,
-        string memory symbol,
-        string memory name,
-        uint8 decimals,
-        uint minMintAmount,
-        uint minRedeemAmount,
-        uint totalSupply
+        address,
+        string memory,
+        string memory,
+        uint8,
+        uint,
+        uint,
+        uint
     ) public {
         revert("NOT_IMPLEMENTED");
     }
 
     function addMarketFromExistingDmmToken(
-        address dmmToken,
-        address underlyingToken
+        address,
+        address
     ) public {
         revert("NOT_IMPLEMENTED");
     }
 
     function transferOwnershipToNewController(
-        address newController
+        address
     ) public {
         revert("NOT_IMPLEMENTED");
     }

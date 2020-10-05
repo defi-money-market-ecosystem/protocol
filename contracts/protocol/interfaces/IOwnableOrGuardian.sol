@@ -25,8 +25,16 @@ import "../../../node_modules/@openzeppelin/upgrades/contracts/Initializable.sol
  */
 contract IOwnableOrGuardian is Initializable {
 
+    // *************************
+    // ***** Events
+    // *************************
+
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event GuardianTransferred(address indexed previousGuardian, address indexed newGuardian);
+
+    // *************************
+    // ***** Modifiers
+    // *************************
 
     modifier onlyOwnerOrGuardian {
         require(
@@ -73,25 +81,25 @@ contract IOwnableOrGuardian is Initializable {
     // ******************************
 
     function initialize(
-        address owner,
-        address guardian
+        address __owner,
+        address __guardian
     )
     public
     initializer {
-        _transferOwnership(owner);
-        _transferGuardian(guardian);
+        _transferOwnership(__owner);
+        _transferGuardian(__guardian);
     }
 
     function transferOwnership(
-        address owner
+        address __owner
     )
     public
     onlyOwner {
         require(
-            owner != address(0),
+            __owner != address(0),
             "OwnableOrGuardian::transferOwnership: INVALID_OWNER"
         );
-        _transferOwnership(owner);
+        _transferOwnership(__owner);
     }
 
     function renounceOwnership() public onlyOwner {
@@ -99,15 +107,15 @@ contract IOwnableOrGuardian is Initializable {
     }
 
     function transferGuardian(
-        address guardian
+        address __guardian
     )
     public
     onlyOwner {
         require(
-            guardian != address(0),
+            __guardian != address(0),
             "OwnableOrGuardian::transferGuardian: INVALID_OWNER"
         );
-        _transferGuardian(guardian);
+        _transferGuardian(__guardian);
     }
 
     function renounceGuardian() public onlyOwnerOrGuardian {
@@ -119,21 +127,21 @@ contract IOwnableOrGuardian is Initializable {
     // ******************************
 
     function _transferOwnership(
-        address owner
+        address __owner
     )
     internal {
         address previousOwner = _owner;
-        _owner = owner;
-        emit OwnershipTransferred(previousOwner, owner);
+        _owner = __owner;
+        emit OwnershipTransferred(previousOwner, __owner);
     }
 
     function _transferGuardian(
-        address guardian
+        address __guardian
     )
     internal {
         address previousGuardian = _guardian;
-        _guardian = guardian;
-        emit GuardianTransferred(previousGuardian, guardian);
+        _guardian = __guardian;
+        emit GuardianTransferred(previousGuardian, __guardian);
     }
 
 }

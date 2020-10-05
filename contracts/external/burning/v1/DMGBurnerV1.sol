@@ -32,8 +32,6 @@ contract DMGBurnerV1 is IDMGBurnerV1, IDMGBurnerV1Initializable, DMGBurnerData {
 
     using SafeERC20 for IERC20;
 
-    event DmgBurned(address indexed burner, uint amount);
-
     function initialize(
         address __uniswapV2Router,
         address __dmg
@@ -53,67 +51,67 @@ contract DMGBurnerV1 is IDMGBurnerV1, IDMGBurnerV1Initializable, DMGBurnerData {
     }
 
     function isTokenEnabled(
-        address token
+        address __token
     )
     public
     view returns (bool)  {
-        return _tokenToIsSetup[token];
+        return _tokenToIsSetup[__token];
     }
 
     function enableToken(
-        address token
+        address __token
     )
     public {
         require(
-            !_tokenToIsSetup[token],
+            !_tokenToIsSetup[__token],
             "DMGBurner::setupToken: TOKEN_ALREADY_SETUP"
         );
-        IERC20(token).safeApprove(_uniswapV2Router, uint(- 1));
-        _tokenToIsSetup[token] = true;
+        IERC20(__token).safeApprove(_uniswapV2Router, uint(- 1));
+        _tokenToIsSetup[__token] = true;
     }
 
     function enableTokens(
-        address[] memory tokens
+        address[] memory __tokens
     )
     public {
-        for (uint i = 0; i < tokens.length; i++) {
-            enableToken(tokens[i]);
+        for (uint i = 0; i < __tokens.length; i++) {
+            enableToken(__tokens[i]);
         }
     }
 
     function burnDmg(
-        address token,
-        uint amount,
-        address[] memory path
+        address __token,
+        uint __amount,
+        address[] memory __path
     )
     public
     returns (uint) {
-        address dmg = _dmg;
+        address dmgToken = _dmg;
         require(
-            path.length >= 2,
+            __path.length >= 2,
             "DMGBurnerV1::burnDmg: INVALID_LENGTH"
         );
         require(
-            path[0] == token,
+            __path[0] == __token,
             "DMGBurnerV1::burnDmg: INVALID_HEAD_TOKEN"
         );
         require(
-            path[path.length - 1] == dmg,
+            __path[__path.length - 1] == dmgToken,
             "DMGBurnerV1::burnDmg: INVALID_LAST_TOKEN"
         );
 
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(__token).safeTransferFrom(msg.sender, address(this), __amount);
 
         uint[] memory amounts = IUniswapV2Router01(_uniswapV2Router).swapExactTokensForTokens(
-            amount,
+            __amount,
             1e18 /* We should get at least 1 DMG back, or else this is a pointless burn */,
-            path,
+            __path,
             address(this),
             block.timestamp + 1
         );
         uint burnAmount = amounts[amounts.length - 1];
 
-        IDMGToken(dmg).burn(burnAmount);
+        IDMGToken(dmgToken).burn(burnAmount);
 
         emit DmgBurned(msg.sender, burnAmount);
 

@@ -17,133 +17,40 @@
 
 pragma solidity ^0.5.0;
 
-import "../../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
-import "../../../node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "../../../node_modules/@openzeppelin/upgrades/contracts/upgradeability/AdminUpgradeabilityProxy.sol";
 
-import "../../protocol/interfaces/IDmmEther.sol";
-import "../../protocol/interfaces/IDmmToken.sol";
+import "./v1/IReferralTrackerV1Initializable.sol";
 
-/**
- * @dev This proxy contract is used for industry partners so we can track their usage of the protocol.
- */
-contract ReferralTrackerProxy is Ownable {
+contract ReferralTrackerProxy is AdminUpgradeabilityProxy {
 
-    using SafeERC20 for IERC20;
+    /**
+     * @param __logic   The address of the initial implementation.
+     * @param __admin   The address of the proxy administrator.
+     * @param __owner   The address of the owner of the implementation contract.
+     * @param __weth    The address of WETH.
+     */
+    constructor(
+        address __logic,
+        address __admin,
+        address __owner,
+        address __weth
+    )
+    AdminUpgradeabilityProxy(
+        __logic,
+        __admin,
+        abi.encodePacked(
+            IReferralTrackerV1Initializable(address(0)).initialize.selector,
+            abi.encode(__owner, __weth)
+        )
+    )
+    public {}
 
-    address public weth;
-
-    event ProxyMint(address indexed minter, address indexed receiver, uint amount, uint underlyingAmount);
-    event ProxyRedeem(address indexed redeemer, address indexed receiver, uint amount, uint underlyingAmount);
-
-    constructor (address _weth) public {
-        weth = _weth;
+    function getImplementation() public view returns (address) {
+        return _implementation();
     }
 
-    function() external {
-        revert("NO_DEFAULT");
-    }
-
-    function mintViaEther(address mETH) public payable returns (uint) {
-        require(
-            IDmmEther(mETH).wethToken() == weth,
-            "INVALID_TOKEN"
-        );
-        uint amount = IDmmEther(mETH).mintViaEther.value(msg.value)();
-        IERC20(mETH).safeTransfer(msg.sender, amount);
-        emit ProxyMint(msg.sender, msg.sender, amount, msg.value);
-        return amount;
-    }
-
-    function mint(address mToken, uint underlyingAmount) public {
-        address underlyingToken = IDmmToken(mToken).controller().getUnderlyingTokenForDmm(mToken);
-        IERC20(underlyingToken).safeTransferFrom(_msgSender(), address(this), underlyingAmount);
-
-        _checkApprovalAndIncrementIfNecessary(underlyingToken, mToken);
-
-        uint amountMinted = IDmmToken(mToken).mint(underlyingAmount);
-        IERC20(mToken).safeTransfer(_msgSender(), amountMinted);
-
-        emit ProxyMint(_msgSender(), _msgSender(), amountMinted, underlyingAmount);
-    }
-
-    function mintFromGaslessRequest(
-        address mToken,
-        address owner,
-        address recipient,
-        uint nonce,
-        uint expiry,
-        uint amount,
-        uint feeAmount,
-        address feeRecipient,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (uint) {
-        uint dmmAmount = IDmmToken(mToken).mintFromGaslessRequest(
-            owner,
-            recipient,
-            nonce,
-            expiry,
-            amount,
-            feeAmount,
-            feeRecipient,
-            v,
-            r,
-            s
-        );
-
-        emit ProxyMint(owner, recipient, dmmAmount, amount);
-        return dmmAmount;
-    }
-
-    function redeem(address mToken, uint amount) public {
-        IERC20(mToken).safeTransferFrom(_msgSender(), address(this), amount);
-
-        // We don't need an allowance to perform a redeem using mTokens. Therefore, no allowance check is placed here.
-        uint underlyingAmountRedeemed = IDmmToken(mToken).redeem(amount);
-
-        address underlyingToken = IDmmToken(mToken).controller().getUnderlyingTokenForDmm(mToken);
-        IERC20(underlyingToken).safeTransfer(_msgSender(), underlyingAmountRedeemed);
-
-        emit ProxyRedeem(_msgSender(), _msgSender(), amount, underlyingAmountRedeemed);
-    }
-
-    function redeemFromGaslessRequest(
-        address mToken,
-        address owner,
-        address recipient,
-        uint nonce,
-        uint expiry,
-        uint amount,
-        uint feeAmount,
-        address feeRecipient,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (uint) {
-        uint underlyingAmount = IDmmToken(mToken).redeemFromGaslessRequest(
-            owner,
-            recipient,
-            nonce,
-            expiry,
-            amount,
-            feeAmount,
-            feeRecipient,
-            v,
-            r,
-            s
-        );
-
-        emit ProxyRedeem(owner, recipient, amount, underlyingAmount);
-        return underlyingAmount;
-    }
-
-    function _checkApprovalAndIncrementIfNecessary(address token, address mToken) internal {
-        uint allowance = IERC20(token).allowance(address(this), mToken);
-        if (allowance != uint(- 1)) {
-            IERC20(token).safeApprove(mToken, uint(- 1));
-        }
+    function _willFallback() internal {
+        // Don't call super. We want the admin to be able to call-through to the implementation contract
     }
 
 }

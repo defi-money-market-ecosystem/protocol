@@ -28,6 +28,7 @@ import "../../uniswap/libs/UniswapV2Library.sol";
 import "../../../governance/dmg/IDMGToken.sol";
 import "../../../protocol/interfaces/IDmmController.sol";
 import "../../../protocol/interfaces/IUnderlyingTokenValuator.sol";
+import "../../../utils/IERC20WithDecimals.sol";
 
 import "../v1/IDMGYieldFarmingV1.sol";
 import "../v1/IDMGYieldFarmingV1Initializable.sol";
@@ -43,9 +44,9 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
 
     address constant public ZERO_ADDRESS = address(0);
 
-    modifier isSpenderApproved(address user) {
+    modifier isSpenderApproved(address __user) {
         require(
-            msg.sender == user || _globalProxyToIsTrustedMap[msg.sender] || _userToSpenderToIsApprovedMap[user][msg.sender],
+            msg.sender == __user || _globalProxyToIsTrustedMap[msg.sender] || _userToSpenderToIsApprovedMap[__user][msg.sender],
             "DMGYieldFarmingV2: UNAPPROVED"
         );
         _;
@@ -64,8 +65,8 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         _;
     }
 
-    modifier requireIsFarmToken(address token) {
-        require(_tokenToIndexPlusOneMap[token] != 0, "DMGYieldFarmingV2: TOKEN_UNSUPPORTED");
+    modifier requireIsFarmToken(address __token) {
+        require(_tokenToIndexPlusOneMap[__token] != 0, "DMGYieldFarmingV2: TOKEN_UNSUPPORTED");
         _;
     }
 
@@ -79,70 +80,70 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
     // ////////////////////
 
     function approveGloballyTrustedProxy(
-        address proxy,
-        bool isTrusted
+        address __proxy,
+        bool __isTrusted
     )
     public
     nonReentrant
     onlyOwnerOrGuardian {
-        _globalProxyToIsTrustedMap[proxy] = isTrusted;
-        emit GlobalProxySet(proxy, isTrusted);
+        _globalProxyToIsTrustedMap[__proxy] = __isTrusted;
+        emit GlobalProxySet(__proxy, __isTrusted);
     }
 
     function isGloballyTrustedProxy(
-        address proxy
+        address __proxy
     ) public view returns (bool) {
-        return _globalProxyToIsTrustedMap[proxy];
+        return _globalProxyToIsTrustedMap[__proxy];
     }
 
     function addAllowableToken(
-        address token,
-        address underlyingToken,
-        uint8 underlyingTokenDecimals,
-        uint16 points,
-        uint16 fees,
-        DMGYieldFarmingV2Lib.TokenType tokenType
+        address __token,
+        address __underlyingToken,
+        uint8 __underlyingTokenDecimals,
+        uint16 __points,
+        uint16 __fees,
+        DMGYieldFarmingV2Lib.TokenType __tokenType
     )
     public
     onlyOwnerOrGuardian
     nonReentrant {
-        uint index = _tokenToIndexPlusOneMap[token];
+        uint index = _tokenToIndexPlusOneMap[__token];
         require(
             index == 0,
             "DMGYieldFarmingV2::addAllowableToken: TOKEN_ALREADY_SUPPORTED"
         );
-        _verifyTokenFee(fees);
-        _verifyTokenType(tokenType, underlyingToken);
-        _verifyPoints(points);
+        _verifyTokenFee(__fees);
+        _verifyTokenType(__tokenType, __underlyingToken);
+        _verifyPoints(__points);
 
-        _tokenToIndexPlusOneMap[token] = _supportedFarmTokens.push(token);
-        _tokenToRewardPointMap[token] = points;
-        _tokenToDecimalsMap[token] = underlyingTokenDecimals;
-        _tokenToTokenType[token] = tokenType;
-        _tokenToUnderlyingTokenMap[token] = underlyingToken;
-        emit TokenAdded(token, underlyingToken, underlyingTokenDecimals, points, fees);
+        _tokenToIndexPlusOneMap[__token] = _supportedFarmTokens.push(__token);
+        _tokenToRewardPointMap[__token] = __points;
+        _tokenToDecimalsMap[__token] = __underlyingTokenDecimals;
+        _tokenToTokenType[__token] = __tokenType;
+        _tokenToUnderlyingTokenMap[__token] = __underlyingToken;
+        emit TokenAdded(__token, __underlyingToken, __underlyingTokenDecimals, __points, __fees);
     }
 
     function removeAllowableToken(
-        address token
+        address __token
     )
     public
     onlyOwnerOrGuardian
     nonReentrant
     farmIsNotActive {
-        uint index = _tokenToIndexPlusOneMap[token];
+        uint index = _tokenToIndexPlusOneMap[__token];
         require(
             index != 0,
             "DMGYieldFarmingV2::removeAllowableToken: TOKEN_NOT_SUPPORTED"
         );
-        _tokenToIndexPlusOneMap[token] = 0;
-        _tokenToRewardPointMap[token] = 0;
+        _tokenToIndexPlusOneMap[__token] = 0;
+        _tokenToRewardPointMap[__token] = 0;
         delete _supportedFarmTokens[index - 1];
-        emit TokenRemoved(token);
+        emit TokenRemoved(__token);
     }
 
     function beginFarmingSeason(
-        uint dmgAmount
+        uint __dmgAmount
     )
     public
     onlyOwnerOrGuardian
@@ -152,14 +153,15 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         _seasonIndex += 1;
         _isFarmActive = true;
         address dmgToken = _dmgToken;
-        IERC20(dmgToken).safeTransferFrom(msg.sender, address(this), dmgAmount);
-        _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken] = _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken].add(dmgAmount);
+        IERC20(dmgToken).safeTransferFrom(msg.sender, address(this), __dmgAmount);
+        _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken] = _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken].add(__dmgAmount);
+        _seasonIndexToStartTimestamp[_seasonIndex] = uint64(block.timestamp);
 
-        emit FarmSeasonBegun(_seasonIndex, dmgAmount);
+        emit FarmSeasonBegun(_seasonIndex, __dmgAmount);
     }
 
     function endActiveFarmingSeason(
-        address dustRecipient
+        address __dustRecipient
     )
     public
     nonReentrant {
@@ -173,58 +175,58 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
 
         _isFarmActive = false;
         if (dmgBalance > 0) {
-            IERC20(dmgToken).safeTransfer(dustRecipient, dmgBalance);
+            IERC20(dmgToken).safeTransfer(__dustRecipient, dmgBalance);
         }
 
-        emit FarmSeasonEnd(_seasonIndex, dustRecipient, dmgBalance);
+        emit FarmSeasonEnd(_seasonIndex, __dustRecipient, dmgBalance);
     }
 
     function setDmgGrowthCoefficient(
-        uint dmgGrowthCoefficient
+        uint __dmgGrowthCoefficient
     )
     public
     nonReentrant
     onlyOwnerOrGuardian {
-        _verifyDmgGrowthCoefficient(dmgGrowthCoefficient);
+        _verifyDmgGrowthCoefficient(__dmgGrowthCoefficient);
 
-        _dmgGrowthCoefficient = dmgGrowthCoefficient;
-        emit DmgGrowthCoefficientSet(dmgGrowthCoefficient);
+        _dmgGrowthCoefficient = __dmgGrowthCoefficient;
+        emit DmgGrowthCoefficientSet(__dmgGrowthCoefficient);
     }
 
     function setRewardPointsByTokens(
-        address[] calldata tokens,
-        uint16[] calldata points
+        address[] calldata __tokens,
+        uint16[] calldata __points
     )
     external
     nonReentrant
     onlyOwnerOrGuardian {
         require(
-            tokens.length == points.length,
+            __tokens.length == __points.length,
             "DMGYieldFarmingV2::setRewardPointsByTokens INVALID_PARAMS"
         );
 
-        for (uint i = 0; i < tokens.length; i++) {
-            _setRewardPointsByToken(tokens[i], points[i]);
+        for (uint i = 0; i < __tokens.length; i++) {
+            _setRewardPointsByToken(__tokens[i], __points[i]);
         }
     }
 
     function setUnderlyingTokenValuator(
-        address underlyingTokenValuator
+        address __underlyingTokenValuator
     )
     onlyOwnerOrGuardian
     nonReentrant
     public {
         require(
-            underlyingTokenValuator != address(0),
+            __underlyingTokenValuator != address(0),
             "DMGYieldFarmingV2::setUnderlyingTokenValuator: INVALID_VALUATOR"
         );
         address oldUnderlyingTokenValuator = _underlyingTokenValuator;
-        _underlyingTokenValuator = underlyingTokenValuator;
-        emit UnderlyingTokenValuatorChanged(underlyingTokenValuator, oldUnderlyingTokenValuator);
+        _underlyingTokenValuator = __underlyingTokenValuator;
+        emit UnderlyingTokenValuatorChanged(__underlyingTokenValuator, oldUnderlyingTokenValuator);
     }
 
     function setWethToken(
-        address weth
+        address __weth
     )
     onlyOwnerOrGuardian
     nonReentrant
@@ -233,52 +235,52 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
             _weth == address(0),
             "DMGYieldFarmingV2::setWethToken: WETH_ALREADY_SET"
         );
-        _weth = weth;
+        _weth = __weth;
     }
 
     function setUniswapV2Router(
-        address uniswapV2Router
+        address __uniswapV2Router
     )
     onlyOwnerOrGuardian
     nonReentrant
     public {
         require(
-            uniswapV2Router != address(0),
+            __uniswapV2Router != address(0),
             "DMGYieldFarmingV2::setUnderlyingTokenValuator: INVALID_VALUATOR"
         );
         address oldUniswapV2Router = _uniswapV2Router;
-        _uniswapV2Router = uniswapV2Router;
-        emit UniswapV2RouterChanged(uniswapV2Router, oldUniswapV2Router);
+        _uniswapV2Router = __uniswapV2Router;
+        emit UniswapV2RouterChanged(__uniswapV2Router, oldUniswapV2Router);
     }
 
     function setFeesByTokens(
-        address[] calldata tokens,
-        uint16[] calldata fees
+        address[] calldata __tokens,
+        uint16[] calldata __fees
     )
     onlyOwnerOrGuardian
     nonReentrant
     external {
         require(
-            tokens.length == fees.length,
+            __tokens.length == __fees.length,
             "DMGYieldFarmingV2::setFeesByTokens: INVALID_PARAMS"
         );
 
-        for (uint i = 0; i < tokens.length; i++) {
-            _setFeeByToken(tokens[i], fees[i]);
+        for (uint i = 0; i < __tokens.length; i++) {
+            _setFeeByToken(__tokens[i], __fees[i]);
         }
     }
 
     function setTokenTypeByToken(
-        address token,
-        DMGYieldFarmingV2Lib.TokenType tokenType
+        address __token,
+        DMGYieldFarmingV2Lib.TokenType __tokenType
     )
     onlyOwnerOrGuardian
     nonReentrant
-    requireIsFarmToken(token)
+    requireIsFarmToken(__token)
     public {
-        _verifyTokenType(tokenType, _tokenToUnderlyingTokenMap[token]);
-        _tokenToTokenType[token] = tokenType;
-        emit TokenTypeChanged(token, tokenType);
+        _verifyTokenType(__tokenType, _tokenToUnderlyingTokenMap[__token]);
+        _tokenToTokenType[__token] = __tokenType;
+        emit TokenTypeChanged(__token, __tokenType);
     }
 
     function initializeDmgBalance() nonReentrant external {
@@ -298,8 +300,8 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         return _supportedFarmTokens;
     }
 
-    function isSupportedToken(address token) public view returns (bool) {
-        return _tokenToIndexPlusOneMap[token] > 0;
+    function isSupportedToken(address __token) public view returns (bool) {
+        return _tokenToIndexPlusOneMap[__token] > 0;
     }
 
     function isFarmActive() external view returns (bool) {
@@ -319,28 +321,28 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
     }
 
     function getRewardPointsByToken(
-        address token
+        address __token
     ) public view returns (uint16) {
-        uint16 rewardPoints = _tokenToRewardPointMap[token];
+        uint16 rewardPoints = _tokenToRewardPointMap[__token];
         return rewardPoints == 0 ? POINTS_FACTOR : rewardPoints;
     }
 
     function getTokenDecimalsByToken(
-        address token
+        address __token
     ) public view returns (uint8) {
-        return _tokenToDecimalsMap[token];
+        return _tokenToDecimalsMap[__token];
     }
 
     function getTokenIndexPlusOneByToken(
-        address token
+        address __token
     ) public view returns (uint) {
-        return _tokenToIndexPlusOneMap[token];
+        return _tokenToIndexPlusOneMap[__token];
     }
 
     function getTokenTypeByToken(
-        address token
+        address __token
     ) public view returns (DMGYieldFarmingV2Lib.TokenType) {
-        return _tokenToTokenType[token];
+        return _tokenToTokenType[__token];
     }
 
     // ////////////////////
@@ -348,72 +350,72 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
     // ////////////////////
 
     function approve(
-        address spender,
-        bool isTrusted
+        address __spender,
+        bool __isTrusted
     ) public {
-        _userToSpenderToIsApprovedMap[msg.sender][spender] = isTrusted;
-        emit Approval(msg.sender, spender, isTrusted);
+        _userToSpenderToIsApprovedMap[msg.sender][__spender] = __isTrusted;
+        emit Approval(msg.sender, __spender, __isTrusted);
     }
 
     function isApproved(
-        address user,
-        address spender
+        address __user,
+        address __spender
     ) public view returns (bool) {
-        return _userToSpenderToIsApprovedMap[user][spender];
+        return _userToSpenderToIsApprovedMap[__user][__spender];
     }
 
     function beginFarming(
-        address user,
-        address funder,
-        address token,
-        uint amount
+        address __user,
+        address __funder,
+        address __token,
+        uint __amount
     )
     public
     farmIsActive
-    requireIsFarmToken(token)
-    isSpenderApproved(user)
+    requireIsFarmToken(__token)
+    isSpenderApproved(__user)
     nonReentrant {
         require(
-            funder == msg.sender || funder == user,
+            __funder == msg.sender || __funder == __user,
             "DMGYieldFarmingV2::beginFarming: INVALID_FUNDER"
         );
 
-        if (amount > 0) {
-            // In case the user is reusing a non-zero balance they had before the start of this farm.
-            IERC20(token).safeTransferFrom(funder, address(this), amount);
+        if (__amount > 0) {
+            // In case the __user is reusing a non-zero balance they had before the start of this farm.
+            IERC20(__token).safeTransferFrom(__funder, address(this), __amount);
         }
 
-        // We reindex before adding to the user's balance, because the indexing process takes the user's CURRENT
+        // We reindex before adding to the __user's balance, because the indexing process takes the __user's CURRENT
         // balance and applies their earnings, so we can account for new deposits.
-        _reindexEarningsByTimestamp(user, token);
+        _reindexEarningsByTimestamp(__user, __token);
 
-        if (amount > 0) {
-            _addressToTokenToBalanceMap[user][token] = _addressToTokenToBalanceMap[user][token].add(amount);
+        if (__amount > 0) {
+            _addressToTokenToBalanceMap[__user][__token] = _addressToTokenToBalanceMap[__user][__token].add(__amount);
         }
 
-        emit BeginFarming(user, token, amount);
+        emit BeginFarming(__user, __token, __amount);
     }
 
     function endFarmingByToken(
-        address user,
-        address recipient,
-        address token
+        address __user,
+        address __recipient,
+        address __token
     )
     public
     farmIsActive
-    requireIsFarmToken(token)
-    isSpenderApproved(user)
+    requireIsFarmToken(__token)
+    isSpenderApproved(__user)
     nonReentrant
     returns (uint, uint) {
-        uint tokenBalance = _addressToTokenToBalanceMap[user][token];
+        uint tokenBalance = _addressToTokenToBalanceMap[__user][__token];
         require(tokenBalance > 0, "DMGYieldFarmingV2::endFarmingByToken: ZERO_BALANCE");
 
-        address dmgToken = _dmgToken;
+        address dmg = _dmgToken;
 
-        uint earnedDmgAmount = _getTotalRewardBalanceByUserAndToken(user, token, dmgToken, _seasonIndex);
+        uint earnedDmgAmount = _getTotalRewardBalanceByUserAndToken(__user, __token, dmg, _seasonIndex);
         require(earnedDmgAmount > 0, "DMGYieldFarmingV2::endFarmingByToken: ZERO_EARNED");
 
-        uint contractDmgRewardBalance = _getDmgRewardBalance(dmgToken);
+        uint contractDmgRewardBalance = _getDmgRewardBalance(dmg);
         uint scaledTokenBalance = tokenBalance;
         if (earnedDmgAmount > contractDmgRewardBalance) {
             // Proportionally scale down the fee payment to how much DMG is actually going to be redeemed
@@ -421,138 +423,138 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
             earnedDmgAmount = contractDmgRewardBalance;
             require(earnedDmgAmount > 0, "DMGYieldFarmingV2::endFarmingByToken: SCALED_ZERO_EARNED");
         }
-        _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken] = _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken].sub(earnedDmgAmount);
+        _addressToTokenToBalanceMap[ZERO_ADDRESS][dmg] = _addressToTokenToBalanceMap[ZERO_ADDRESS][dmg].sub(earnedDmgAmount);
 
         {
             // To avoid the "stack too deep" error
-            uint feeAmount = _payHarvestFee(user, token, scaledTokenBalance);
-            // The user withdraws (balance - fee) amount.
+            uint feeAmount = _payHarvestFee(__user, __token, scaledTokenBalance);
+            // The __user withdraws (balance - fee) amount.
             tokenBalance = tokenBalance.sub(feeAmount);
-            IERC20(token).safeTransfer(recipient, tokenBalance);
-            IERC20(dmgToken).safeTransfer(recipient, earnedDmgAmount);
+            IERC20(__token).safeTransfer(__recipient, tokenBalance);
+            IERC20(dmg).safeTransfer(__recipient, earnedDmgAmount);
         }
 
-        _addressToTokenToBalanceMap[user][token] = 0;
-        _seasonIndexToUserToTokenToEarnedDmgAmountMap[_seasonIndex][user][token] = 0;
-        _seasonIndexToUserToTokenToDepositTimestampMap[_seasonIndex][user][token] = uint64(block.timestamp);
+        _addressToTokenToBalanceMap[__user][__token] = 0;
+        _seasonIndexToUserToTokenToEarnedDmgAmountMap[_seasonIndex][__user][__token] = 0;
+        _seasonIndexToUserToTokenToDepositTimestampMap[_seasonIndex][__user][__token] = uint64(block.timestamp);
 
-        emit EndFarming(user, token, tokenBalance, earnedDmgAmount);
+        emit EndFarming(__user, __token, tokenBalance, earnedDmgAmount);
 
         return (tokenBalance, earnedDmgAmount);
     }
 
     function withdrawAllWhenOutOfSeason(
-        address user,
-        address recipient
+        address __user,
+        address __recipient
     )
     public
     farmIsNotActive
-    isSpenderApproved(user)
+    isSpenderApproved(__user)
     nonReentrant
     returns (address[] memory, uint[] memory) {
         address[] memory farmTokens = _supportedFarmTokens;
         uint[] memory withdrawnAmounts = new uint[](farmTokens.length);
         for (uint i = 0; i < farmTokens.length; i++) {
-            withdrawnAmounts[i] = _withdrawByTokenWhenOutOfSeason(user, recipient, farmTokens[i]);
+            withdrawnAmounts[i] = _withdrawByTokenWhenOutOfSeason(__user, __recipient, farmTokens[i]);
         }
         return (farmTokens, withdrawnAmounts);
     }
 
     function withdrawByTokenWhenOutOfSeason(
-        address user,
-        address recipient,
-        address token
+        address __user,
+        address __recipient,
+        address __token
     )
-    isSpenderApproved(user)
+    isSpenderApproved(__user)
     nonReentrant
     public returns (uint) {
-        // The user can only withdraw this way if the farm is NOT active or if the token is no longer supported.
+        // The __user can only withdraw this way if the farm is NOT active or if the __token is no longer supported.
         require(
-            !_isFarmActive || _tokenToIndexPlusOneMap[token] == 0,
+            !_isFarmActive || _tokenToIndexPlusOneMap[__token] == 0,
             "DMGYieldFarmingV2::withdrawByTokenWhenOutOfSeason: FARM_ACTIVE_OR_TOKEN_SUPPORTED"
         );
 
-        return _withdrawByTokenWhenOutOfSeason(user, recipient, token);
+        return _withdrawByTokenWhenOutOfSeason(__user, __recipient, __token);
     }
 
     function getRewardBalanceByOwner(
-        address owner
+        address __owner
     ) public view returns (uint) {
         if (_isFarmActive) {
-            return _getTotalRewardBalanceByUser(owner, _seasonIndex);
+            return _getTotalRewardBalanceByUser(__owner, _seasonIndex);
         } else {
             return 0;
         }
     }
 
     function getRewardBalanceByOwnerAndToken(
-        address owner,
-        address token
+        address __owner,
+        address __token
     ) public view returns (uint) {
         if (_isFarmActive) {
-            return _getTotalRewardBalanceByUserAndToken(owner, token, _dmgToken, _seasonIndex);
+            return _getTotalRewardBalanceByUserAndToken(__owner, __token, _dmgToken, _seasonIndex);
         } else {
             return 0;
         }
     }
 
     function balanceOf(
-        address owner,
-        address token
+        address __owner,
+        address __token
     ) public view returns (uint) {
-        return _addressToTokenToBalanceMap[owner][token];
+        return _addressToTokenToBalanceMap[__owner][__token];
     }
 
     function getMostRecentDepositTimestampByOwnerAndToken(
-        address owner,
-        address token
+        address __owner,
+        address __token
     ) public view returns (uint64) {
         if (_isFarmActive) {
-            return _seasonIndexToUserToTokenToDepositTimestampMap[_seasonIndex][owner][token];
+            return _seasonIndexToUserToTokenToDepositTimestampMap[_seasonIndex][__owner][__token];
         } else {
             return 0;
         }
     }
 
     function getMostRecentIndexedDmgEarnedByOwnerAndToken(
-        address owner,
-        address token
+        address __owner,
+        address __token
     ) public view returns (uint) {
         if (_isFarmActive) {
-            return _seasonIndexToUserToTokenToEarnedDmgAmountMap[_seasonIndex][owner][token];
+            return _seasonIndexToUserToTokenToEarnedDmgAmountMap[_seasonIndex][__owner][__token];
         } else {
             return 0;
         }
     }
 
     function harvestDmgByUserAndToken(
-        address user,
-        address recipient,
-        address token
+        address __user,
+        address __recipient,
+        address __token
     )
-    requireIsFarmToken(token)
+    requireIsFarmToken(__token)
     farmIsActive
-    isSpenderApproved(user)
+    isSpenderApproved(__user)
     nonReentrant
     public returns (uint) {
-        uint tokenBalance = _addressToTokenToBalanceMap[user][token];
-        return _harvestDmgByUserAndToken(user, recipient, token, tokenBalance);
+        uint tokenBalance = _addressToTokenToBalanceMap[__user][__token];
+        return _harvestDmgByUserAndToken(__user, __recipient, __token, tokenBalance);
     }
 
     function harvestDmgByUser(
-        address user,
-        address recipient
+        address __user,
+        address __recipient
     )
     farmIsActive
-    isSpenderApproved(user)
+    isSpenderApproved(__user)
     nonReentrant
     public returns (uint) {
         address[] memory farmTokens = _supportedFarmTokens;
         uint totalEarnedDmgAmount = 0;
         for (uint i = 0; i < farmTokens.length; i++) {
-            uint farmTokenBalance = _addressToTokenToBalanceMap[user][farmTokens[i]];
+            uint farmTokenBalance = _addressToTokenToBalanceMap[__user][farmTokens[i]];
             if (farmTokenBalance > 0) {
-                uint earnedDmgAmount = _harvestDmgByUserAndToken(user, recipient, farmTokens[i], farmTokenBalance);
+                uint earnedDmgAmount = _harvestDmgByUserAndToken(__user, __recipient, farmTokens[i], farmTokenBalance);
                 totalEarnedDmgAmount = totalEarnedDmgAmount.add(earnedDmgAmount);
             }
         }
@@ -560,9 +562,9 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
     }
 
     function getUnderlyingTokenByFarmToken(
-        address farmToken
+        address __farmToken
     ) public view returns (address) {
-        return _tokenToUnderlyingTokenMap[farmToken];
+        return _tokenToUnderlyingTokenMap[__farmToken];
     }
 
     function underlyingTokenValuator() external view returns (address) {
@@ -577,8 +579,10 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         return _uniswapV2Router;
     }
 
-    function getFeesByToken(address token) public view returns (uint16) {
-        uint16 fee = _tokenToFeeAmountMap[token];
+    function getFeesByToken(
+        address __token
+    ) public view returns (uint16) {
+        uint16 fee = _tokenToFeeAmountMap[__token];
         return fee == 0 ? 100 : fee;
     }
 
@@ -587,137 +591,137 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
     // ////////////////////
 
     function _setFeeByToken(
-        address token,
-        uint16 fee
+        address __token,
+        uint16 __fee
     ) internal {
-        _verifyTokenFee(fee);
-        _tokenToFeeAmountMap[token] = fee;
-        emit FeesChanged(token, fee);
+        _verifyTokenFee(__fee);
+        _tokenToFeeAmountMap[__token] = __fee;
+        emit FeesChanged(__token, __fee);
     }
 
     function _setRewardPointsByToken(
-        address token,
-        uint16 points
+        address __token,
+        uint16 __points
     ) internal {
-        _verifyPoints(points);
-        _tokenToRewardPointMap[token] = points;
-        emit RewardPointsSet(token, points);
+        _verifyPoints(__points);
+        _tokenToRewardPointMap[__token] = __points;
+        emit RewardPointsSet(__token, __points);
     }
 
     function _verifyDmgGrowthCoefficient(
-        uint dmgGrowthCoefficient
+        uint __dmgGrowthCoefficient
     ) internal pure {
         require(
-            dmgGrowthCoefficient > 0,
+            __dmgGrowthCoefficient > 0,
             "DMGYieldFarmingV2::_verifyDmgGrowthCoefficient: INVALID_GROWTH_COEFFICIENT"
         );
     }
 
     function _verifyTokenType(
-        DMGYieldFarmingV2Lib.TokenType tokenType,
-        address underlyingToken
+        DMGYieldFarmingV2Lib.TokenType __tokenType,
+        address __underlyingToken
     ) internal {
         require(
-            tokenType != DMGYieldFarmingV2Lib.TokenType.Unknown,
+            __tokenType != DMGYieldFarmingV2Lib.TokenType.Unknown,
             "DMGYieldFarmingV2::_verifyTokenType: INVALID_TYPE"
         );
 
-        if (tokenType == DMGYieldFarmingV2Lib.TokenType.UniswapLpToken) {
-            address uniswapV2Router = _uniswapV2Router;
-            if (IERC20(underlyingToken).allowance(address(this), uniswapV2Router) == 0) {
-                IERC20(underlyingToken).safeApprove(uniswapV2Router, uint(- 1));
+        if (__tokenType == DMGYieldFarmingV2Lib.TokenType.UniswapLpToken) {
+            address __uniswapV2Router = _uniswapV2Router;
+            if (IERC20(__underlyingToken).allowance(address(this), __uniswapV2Router) == 0) {
+                IERC20(__underlyingToken).safeApprove(__uniswapV2Router, uint(- 1));
             }
         }
     }
 
     function _verifyTokenFee(
-        uint16 fee
+        uint16 __fee
     ) internal pure {
         require(
-            fee >= 0 && fee < FEE_AMOUNT_FACTOR,
+            __fee >= 0 && __fee < FEE_AMOUNT_FACTOR,
             "DMGYieldFarmingV2::_verifyTokenFee: INVALID_FEES"
         );
     }
 
     function _verifyPoints(
-        uint16 points
+        uint16 __points
     ) internal pure {
         require(
-            points > 0,
+            __points > 0,
             "DMGYieldFarmingV2::_verifyPoints: INVALID_POINTS"
         );
     }
 
     function _getDmgRewardBalance(
-        address dmgToken
+        address __dmgToken
     ) internal view returns (uint) {
-        return _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken];
+        return _addressToTokenToBalanceMap[ZERO_ADDRESS][__dmgToken];
     }
 
     function _harvestDmgByUserAndToken(
-        address user,
-        address recipient,
-        address token,
-        uint tokenBalance
+        address __user,
+        address __recipient,
+        address __token,
+        uint __tokenBalance
     ) internal returns (uint) {
         require(
-            tokenBalance > 0,
+            __tokenBalance > 0,
             "DMGYieldFarmingV2::_harvestDmgByUserAndToken: ZERO_BALANCE"
         );
 
-        address dmgToken = _dmgToken;
-        uint earnedDmgAmount = _getTotalRewardBalanceByUserAndToken(user, token, dmgToken, _seasonIndex);
+        address dmg = _dmgToken;
+        uint earnedDmgAmount = _getTotalRewardBalanceByUserAndToken(__user, __token, dmg, _seasonIndex);
         require(earnedDmgAmount > 0, "DMGYieldFarmingV2::_harvestDmgByUserAndToken: ZERO_EARNED");
 
-        uint contractDmgRewardBalance = _getDmgRewardBalance(dmgToken);
-        uint scaledTokenBalance = tokenBalance;
+        uint contractDmgRewardBalance = _getDmgRewardBalance(dmg);
+        uint scaledTokenBalance = __tokenBalance;
         if (earnedDmgAmount > contractDmgRewardBalance) {
             // Proportionally scale down the fee payment to how much DMG is actually going to be redeemed
             scaledTokenBalance = scaledTokenBalance.mul(contractDmgRewardBalance).div(earnedDmgAmount);
             earnedDmgAmount = contractDmgRewardBalance;
         }
-        _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken] = _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken].sub(earnedDmgAmount);
+        _addressToTokenToBalanceMap[ZERO_ADDRESS][dmg] = _addressToTokenToBalanceMap[ZERO_ADDRESS][dmg].sub(earnedDmgAmount);
 
         {
-            uint feeAmount = _payHarvestFee(user, token, scaledTokenBalance);
-            _addressToTokenToBalanceMap[user][token] = _addressToTokenToBalanceMap[user][token].sub(feeAmount);
+            uint feeAmount = _payHarvestFee(__user, __token, scaledTokenBalance);
+            _addressToTokenToBalanceMap[__user][__token] = _addressToTokenToBalanceMap[__user][__token].sub(feeAmount);
         }
 
-        IERC20(dmgToken).safeTransfer(recipient, earnedDmgAmount);
+        IERC20(dmg).safeTransfer(__recipient, earnedDmgAmount);
 
-        _seasonIndexToUserToTokenToEarnedDmgAmountMap[_seasonIndex][user][token] = 0;
-        _seasonIndexToUserToTokenToDepositTimestampMap[_seasonIndex][user][token] = uint64(block.timestamp);
+        _seasonIndexToUserToTokenToEarnedDmgAmountMap[_seasonIndex][__user][__token] = 0;
+        _seasonIndexToUserToTokenToDepositTimestampMap[_seasonIndex][__user][__token] = uint64(block.timestamp);
 
-        emit Harvest(user, token, earnedDmgAmount);
+        emit Harvest(__user, __token, earnedDmgAmount);
 
         return earnedDmgAmount;
     }
 
     function _getUnindexedRewardsByUserAndToken(
-        address owner,
-        address token,
-        address dmgToken,
-        uint64 previousIndexTimestamp
+        address __owner,
+        address __token,
+        address __dmgToken,
+        uint64 __previousIndexTimestamp
     ) internal view returns (uint) {
         uint balance;
-        if (owner == ZERO_ADDRESS) {
-            balance = IERC20(token).balanceOf(address(this));
-            if (token == dmgToken) {
-                balance = balance.sub(_getDmgRewardBalance(dmgToken));
+        if (__owner == ZERO_ADDRESS) {
+            balance = IERC20(__token).balanceOf(address(this));
+            if (__token == __dmgToken) {
+                balance = balance.sub(_getDmgRewardBalance(__dmgToken));
             }
         } else {
-            balance = _addressToTokenToBalanceMap[owner][token];
+            balance = _addressToTokenToBalanceMap[__owner][__token];
         }
 
-        if (balance > 0 && previousIndexTimestamp != 0) {
-            uint usdValue = _getUsdValueByTokenAndTokenAmount(token, balance);
-            uint16 points = getRewardPointsByToken(token);
+        if (balance > 0 && __previousIndexTimestamp != 0) {
+            uint usdValue = _getUsdValueByTokenAndTokenAmount(__token, balance);
+            uint16 points = getRewardPointsByToken(__token);
             return _calculateRewardBalance(
                 usdValue,
                 points,
                 _dmgGrowthCoefficient,
                 block.timestamp,
-                previousIndexTimestamp
+                __previousIndexTimestamp
             );
         } else {
             return 0;
@@ -725,125 +729,203 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
     }
 
     function _reindexEarningsByTimestamp(
-        address user,
-        address token
+        address __user,
+        address __token
     ) internal {
         uint seasonIndex = _seasonIndex;
-        uint64 previousIndexTimestamp = _seasonIndexToUserToTokenToDepositTimestampMap[seasonIndex][user][token];
+        uint64 previousIndexTimestamp = _seasonIndexToUserToTokenToDepositTimestampMap[seasonIndex][__user][__token];
         if (previousIndexTimestamp != 0) {
-            uint dmgEarnedAmount = _getUnindexedRewardsByUserAndToken(user, token, _dmgToken, previousIndexTimestamp);
+            uint dmgEarnedAmount = _getUnindexedRewardsByUserAndToken(__user, __token, _dmgToken, previousIndexTimestamp);
             if (dmgEarnedAmount > 0) {
-                _seasonIndexToUserToTokenToEarnedDmgAmountMap[seasonIndex][user][token] = _seasonIndexToUserToTokenToEarnedDmgAmountMap[seasonIndex][user][token].add(dmgEarnedAmount);
+                _seasonIndexToUserToTokenToEarnedDmgAmountMap[seasonIndex][__user][__token] = _seasonIndexToUserToTokenToEarnedDmgAmountMap[seasonIndex][__user][__token].add(dmgEarnedAmount);
             }
         }
-        _seasonIndexToUserToTokenToDepositTimestampMap[seasonIndex][user][token] = uint64(block.timestamp);
+        _seasonIndexToUserToTokenToDepositTimestampMap[seasonIndex][__user][__token] = uint64(block.timestamp);
     }
 
     function _getTotalRewardBalanceByUserAndToken(
-        address owner,
-        address token,
-        address dmgToken,
-        uint seasonIndex
+        address __owner,
+        address __token,
+        address __dmgToken,
+        uint __seasonIndex
     ) internal view returns (uint) {
-        uint64 previousIndexTimestamp = _seasonIndexToUserToTokenToDepositTimestampMap[seasonIndex][owner][token];
-        return _getUnindexedRewardsByUserAndToken(owner, token, dmgToken, previousIndexTimestamp)
-        .add(_seasonIndexToUserToTokenToEarnedDmgAmountMap[seasonIndex][owner][token]);
+        uint64 previousIndexTimestamp = _seasonIndexToUserToTokenToDepositTimestampMap[__seasonIndex][__owner][__token];
+        return _getUnindexedRewardsByUserAndToken(__owner, __token, __dmgToken, previousIndexTimestamp)
+        .add(_seasonIndexToUserToTokenToEarnedDmgAmountMap[__seasonIndex][__owner][__token]);
     }
 
     /**
      * @return  The dollar value of `tokenAmount`, formatted as a number with 18 decimal places
      */
     function _getUsdValueByTokenAndTokenAmount(
-        address token,
-        uint tokenAmount
+        address __farmToken,
+        uint __tokenAmount
     ) internal view returns (uint) {
-        uint8 decimals = _tokenToDecimalsMap[token];
-        address underlyingToken = _tokenToUnderlyingTokenMap[token];
+        address underlyingToken = _tokenToUnderlyingTokenMap[__farmToken];
+        address mToken;
+        address __underlyingTokenValuator = _underlyingTokenValuator;
+        DMGYieldFarmingV2Lib.TokenType tokenType = _tokenToTokenType[__farmToken];
 
-        tokenAmount = tokenAmount
-        .mul(IERC20(underlyingToken).balanceOf(token)) /* For Uniswap pools, underlying tokens are held in the pool's contract. */
-        .div(IERC20(token).totalSupply(), "DMGYieldFarmingV2::_getUsdValueByTokenAndTokenAmount: INVALID_TOTAL_SUPPLY")
-        .mul(2) /* The user deposits effectively 2x the value of the underlying token in total (when the pool is in equilibrium, to account for both sides of the pool. Assuming the pool is at (or close to it) equilibrium, this 2x suffices as an estimate */;
+        if (tokenType == DMGYieldFarmingV2Lib.TokenType.UniswapLpToken) {
+            {
+                // New context to prevent "stack too deep" errors
+                address token0 = IUniswapV2Pair(__farmToken).token0();
+                mToken = underlyingToken == token0 ? IUniswapV2Pair(__farmToken).token1() : token0;
+            }
+            uint totalSupply = IERC20(__farmToken).totalSupply();
+            require(
+                totalSupply > 0,
+                "DMGYieldFarmingV2::_getUsdValueByTokenAndTokenAmount: INVALID_TOTAL_SUPPLY"
+            );
 
-        if (decimals < 18) {
-            tokenAmount = tokenAmount.mul((10 ** (18 - uint(decimals))));
-        } else if (decimals > 18) {
-            tokenAmount = tokenAmount.div((10 ** (uint(decimals) - 18)));
+            address dmmController = _dmmController;
+
+            uint underlyingTokenUsdValue = _getUnderlyingTokenUsdValueFromUniswapPool(
+                __tokenAmount,
+                totalSupply,
+                __farmToken,
+                underlyingToken,
+                __underlyingTokenValuator
+            );
+
+            uint mTokenUsdValue = _getMTokenUsdValueFromUniswapPool(
+                __tokenAmount,
+                totalSupply,
+                __farmToken,
+                mToken,
+                dmmController,
+                __underlyingTokenValuator
+            );
+
+            return underlyingTokenUsdValue.add(mTokenUsdValue);
+        } else {
+            revert("DMGYieldFarmingV2::_getUsdValueByTokenAndTokenAmount: INVALID_TOKEN_TYPE");
         }
+    }
 
-        return IUnderlyingTokenValuator(_underlyingTokenValuator).getTokenValue(underlyingToken, tokenAmount);
+    function _getUnderlyingTokenUsdValueFromUniswapPool(
+        uint __tokenAmount,
+        uint __totalSupply,
+        address __farmToken,
+        address __underlyingToken,
+        address __underlyingTokenValuator
+    ) internal view returns (uint) {
+        uint underlyingTokenValue = __tokenAmount
+        .mul(IERC20(__underlyingToken).balanceOf(__farmToken)) // For Uniswap, underlying tokens are held in the contract.
+        .div(__totalSupply);
+
+        return _getUsdValueForUnderlyingTokenAmount(
+            __underlyingToken,
+            __underlyingTokenValuator,
+            _tokenToDecimalsMap[__farmToken],
+            underlyingTokenValue
+        );
+    }
+
+    function _getMTokenUsdValueFromUniswapPool(
+        uint __tokenAmount,
+        uint __totalSupply,
+        address __farmToken,
+        address __mToken,
+        address __dmmController,
+        address __underlyingTokenValuator
+    ) internal view returns (uint) {
+        uint mTokenAmount = __tokenAmount
+        .mul(IERC20(__mToken).balanceOf(__farmToken)) // For Uniswap, underlying tokens are held in the contract.
+        .div(__totalSupply);
+
+        return _getUsdValueForUnderlyingTokenAmount(
+            IDmmController(__dmmController).getUnderlyingTokenForDmm(__mToken),
+            __underlyingTokenValuator,
+            IERC20WithDecimals(__mToken).decimals(),
+            mTokenAmount.mul(IDmmController(__dmmController).getExchangeRate(__mToken)).div(1e18)
+        );
+    }
+
+    function _getUsdValueForUnderlyingTokenAmount(
+        address __underlyingToken,
+        address __underlyingTokenValuator,
+        uint8 __decimals,
+        uint __amount
+    ) internal view returns (uint) {
+        if (__decimals < 18) {
+            __amount = __amount.mul((10 ** (18 - uint(__decimals))));
+        } else if (__decimals > 18) {
+            __amount = __amount.div((10 ** (uint(__decimals) - 18)));
+        }
+        return IUnderlyingTokenValuator(__underlyingTokenValuator).getTokenValue(__underlyingToken, __amount);
     }
 
     function _calculateRewardBalance(
-        uint usdValue,
-        uint16 points,
-        uint dmgGrowthCoefficient,
-        uint currentTimestamp,
-        uint previousIndexTimestamp
+        uint __usdValue,
+        uint16 __points,
+        uint __dmgGrowthCoefficient,
+        uint __currentTimestamp,
+        uint __previousIndexTimestamp
     ) internal pure returns (uint) {
-        if (usdValue == 0) {
+        if (__usdValue == 0) {
             return 0;
         } else {
-            uint elapsedTime = currentTimestamp.sub(previousIndexTimestamp);
+            uint elapsedTime = __currentTimestamp.sub(__previousIndexTimestamp);
             // The number returned here has 18 decimal places (same as USD value), which is the same number as DMG.
             // Perfect.
             return elapsedTime
-            .mul(dmgGrowthCoefficient)
-            .mul(usdValue)
+            .mul(__dmgGrowthCoefficient)
+            .mul(__usdValue)
             .div(DMG_GROWTH_COEFFICIENT_FACTOR)
-            .mul(points)
+            .mul(__points)
             .div(POINTS_FACTOR);
         }
     }
 
     function _getTotalRewardBalanceByUser(
-        address owner,
-        uint seasonIndex
+        address __owner,
+        uint __seasonIndex
     ) internal view returns (uint) {
         address[] memory supportedFarmTokens = _supportedFarmTokens;
-        address dmgToken = _dmgToken;
+        address dmg = _dmgToken;
         uint totalDmgEarned = 0;
         for (uint i = 0; i < supportedFarmTokens.length; i++) {
-            totalDmgEarned = totalDmgEarned.add(_getTotalRewardBalanceByUserAndToken(owner, supportedFarmTokens[i], dmgToken, seasonIndex));
+            totalDmgEarned = totalDmgEarned.add(_getTotalRewardBalanceByUserAndToken(__owner, supportedFarmTokens[i], dmg, __seasonIndex));
         }
         return totalDmgEarned;
     }
 
     function _withdrawByTokenWhenOutOfSeason(
-        address user,
-        address recipient,
-        address token
+        address __user,
+        address __recipient,
+        address __token
     ) internal returns (uint) {
-        uint amount = _addressToTokenToBalanceMap[user][token];
+        uint amount = _addressToTokenToBalanceMap[__user][__token];
         if (amount > 0) {
-            _addressToTokenToBalanceMap[user][token] = 0;
-            IERC20(token).safeTransfer(recipient, amount);
+            _addressToTokenToBalanceMap[__user][__token] = 0;
+            IERC20(__token).safeTransfer(__recipient, amount);
         }
 
-        emit WithdrawOutOfSeason(user, token, recipient, amount);
+        emit WithdrawOutOfSeason(__user, __token, __recipient, amount);
 
         return amount;
     }
 
     /**
-     * @return The amount of `token` paid for the burn.
+     * @return The amount of `__token` paid for the burn.
      */
     function _payHarvestFee(
-        address user,
-        address token,
-        uint tokenAmount
+        address __user,
+        address __token,
+        uint __tokenAmount
     ) internal returns (uint) {
-        uint fees = getFeesByToken(token);
+        uint fees = getFeesByToken(__token);
         if (fees > 0) {
-            uint tokenFeeAmount = tokenAmount.mul(fees).div(uint(FEE_AMOUNT_FACTOR));
-            DMGYieldFarmingV2Lib.TokenType tokenType = _tokenToTokenType[token];
+            uint tokenFeeAmount = __tokenAmount.mul(fees).div(uint(FEE_AMOUNT_FACTOR));
+            DMGYieldFarmingV2Lib.TokenType tokenType = _tokenToTokenType[__token];
             require(
                 tokenType != DMGYieldFarmingV2Lib.TokenType.Unknown,
                 "DMGYieldFarmingV2::_payHarvestFee: UNKNOWN_TOKEN_TYPE"
             );
 
             if (tokenType == DMGYieldFarmingV2Lib.TokenType.UniswapLpToken) {
-                _payFeesWithUniswapToken(user, token, tokenFeeAmount);
+                _payFeesWithUniswapToken(__user, __token, tokenFeeAmount);
             } else {
                 revert("DMGYieldFarmingV2::_payHarvestFee UNCAUGHT_TOKEN_TYPE");
             }
@@ -855,55 +937,60 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
     }
 
     function _payFeesWithUniswapToken(
-        address user,
-        address token,
-        uint tokenFeeAmount
+        address __user,
+        address __token,
+        uint __tokenFeeAmount
     ) internal {
-        address underlyingToken = _tokenToUnderlyingTokenMap[token];
+        address underlyingToken = _tokenToUnderlyingTokenMap[__token];
 
+        // This is the __token that is NOT the underlyingToken. Meaning, it needs to be converted to underlyingToken so
+        // it can be swapped to DMG and burned.
         address tokenToSwap;
         address token0;
         uint amountToBurn;
         uint amountToSwap;
         {
             // New context - to prevent the stack too deep error
-            IERC20(token).safeTransfer(token, tokenFeeAmount);
-            (uint amount0, uint amount1) = IUniswapV2Pair(token).burn(address(this));
-            token0 = IUniswapV2Pair(token).token0();
+            // --------------------------------------------------
+            // This code is taken from the `UniswapV2Router02` to more efficiently convert the LP __token *TO* its
+            // reserve tokens
+            IERC20(__token).safeTransfer(__token, __tokenFeeAmount);
+            (uint amount0, uint amount1) = IUniswapV2Pair(__token).burn(address(this));
+            token0 = IUniswapV2Pair(__token).token0();
 
-            tokenToSwap = token0 == underlyingToken ? IUniswapV2Pair(token).token1() : token0;
+            tokenToSwap = token0 == underlyingToken ? IUniswapV2Pair(__token).token1() : token0;
 
             amountToBurn = token0 == underlyingToken ? amount0 : amount1;
             amountToSwap = token0 != underlyingToken ? amount0 : amount1;
         }
 
-        address dmgToken = _dmgToken;
-
-        if (tokenToSwap != dmgToken) {
-            // This code is taken from the `UniswapV2Router02` to more efficiently swap *TO* the underlying token
-            IERC20(tokenToSwap).safeTransfer(token, amountToSwap);
-            (uint reserve0, uint reserve1,) = IUniswapV2Pair(token).getReserves();
+        address dmg = _dmgToken;
+        if (tokenToSwap != dmg) {
+            // This code is taken from the `UniswapV2Router02` to more efficiently swap *TO* the underlying __token
+            IERC20(tokenToSwap).safeTransfer(__token, amountToSwap);
+            (uint reserve0, uint reserve1,) = IUniswapV2Pair(__token).getReserves();
             uint amountOut = UniswapV2Library.getAmountOut(
                 amountToSwap,
                 tokenToSwap == token0 ? reserve0 : reserve1,
                 tokenToSwap != token0 ? reserve0 : reserve1
             );
+
             (uint amount0Out, uint amount1Out) = tokenToSwap == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
-            IUniswapV2Pair(token).swap(amount0Out, amount1Out, address(this), new bytes(0));
+            IUniswapV2Pair(__token).swap(amount0Out, amount1Out, address(this), new bytes(0));
+
             amountToBurn = amountToBurn.add(amountOut);
         }
 
-        address weth = _weth;
-        uint dmgToBurn = _swapTokensForDmgViaUniswap(amountToBurn, underlyingToken, weth, dmgToken);
+        uint dmgToBurn = _swapTokensForDmgViaUniswap(amountToBurn, underlyingToken, _weth, dmg);
 
-        if (tokenToSwap == dmgToken) {
+        if (tokenToSwap == dmg) {
             // We can just add the DMG to be swapped with the amount to burn.
             amountToSwap = amountToSwap.add(dmgToBurn);
-            IDMGToken(dmgToken).burn(amountToSwap);
-            emit HarvestFeePaid(user, token, tokenFeeAmount, amountToSwap);
+            IDMGToken(dmg).burn(amountToSwap);
+            emit HarvestFeePaid(__user, __token, __tokenFeeAmount, amountToSwap);
         } else {
-            IDMGToken(dmgToken).burn(dmgToBurn);
-            emit HarvestFeePaid(user, token, tokenFeeAmount, dmgToBurn);
+            IDMGToken(dmg).burn(dmgToBurn);
+            emit HarvestFeePaid(__user, __token, __tokenFeeAmount, dmgToBurn);
         }
     }
 
@@ -911,25 +998,25 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
      * @return  The amount of DMG received from the swap
      */
     function _swapTokensForDmgViaUniswap(
-        uint amountToBurn,
-        address underlyingToken,
-        address weth,
-        address dmgToken
+        uint __amountToBurn,
+        address __underlyingToken,
+        address __weth,
+        address __dmg
     ) internal returns (uint) {
         address[] memory paths;
-        if (underlyingToken == weth) {
+        if (__underlyingToken == __weth) {
             paths = new address[](2);
-            paths[0] = weth;
-            paths[1] = dmgToken;
+            paths[0] = __weth;
+            paths[1] = __dmg;
         } else {
             paths = new address[](3);
-            paths[0] = underlyingToken;
-            paths[1] = weth;
-            paths[2] = dmgToken;
+            paths[0] = __underlyingToken;
+            paths[1] = __weth;
+            paths[2] = __dmg;
         }
         // We sell the non-mToken to DMG and burn it.
         uint[] memory amountsOut = IUniswapV2Router02(_uniswapV2Router).swapExactTokensForTokens(
-            amountToBurn,
+            __amountToBurn,
         /* amountOutMin */ 1,
             paths,
             address(this),

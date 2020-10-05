@@ -7,8 +7,6 @@ const {deployContract} = require('../ContractUtils');
 const web3 = new Web3(provider);
 const defaultGasPrice = 89e9;
 
-const implementation = '0x628202Dda63968B8aBab64A6fbAC7E6b997DbBF1';
-
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
 
@@ -24,29 +22,14 @@ const main = async () => {
     throw Error("Invalid deployer, found nothing");
   }
 
-  let multiSigWallet;
-  let weth;
-  if (environment === 'LOCAL') {
-    multiSigWallet = deployer;
-    weth = undefined;
-  } else if (environment === 'TESTNET') {
-    multiSigWallet = "0x0323cE501DD42Ed46a409D86e4EB6a9745FCA9EC";
-    weth = undefined;
-  } else if (environment === 'PRODUCTION') {
-    multiSigWallet = "0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF";
-    weth = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
-  } else {
-    throw new Error("Invalid environment, found: " + environment);
-  }
-
   const loader = setupLoader({provider: web3, defaultSender: deployer, defaultGasPrice: 8e9});
 
-  const ReferralTrackerProxy = loader.truffle.fromArtifact('ReferralTrackerProxy');
+  const ReferralTrackerImplV1 = loader.truffle.fromArtifact('ReferralTrackerImplV1');
   const dmgToken = await deployContract(
-    ReferralTrackerProxy,
-    [implementation, multiSigWallet, multiSigWallet, weth],
+    ReferralTrackerImplV1,
+    [],
     deployer,
-    2e6,
+    4e6,
     web3,
     defaultGasPrice,
   );

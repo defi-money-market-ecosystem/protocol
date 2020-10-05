@@ -24,37 +24,37 @@ import "./v1/IDMGYieldFarmingV1Initializable.sol";
 contract DMGYieldFarmingProxy is AdminUpgradeabilityProxy {
 
     /**
-     * @param logic                 The address of the initial implementation.
-     * @param admin                 The address of the proxy administrator.
-     * @param dmgToken              The address of the DMG token.
-     * @param guardian              The address of the guardian of the implementation contract.
-     * @param dmmController         The address of the DMM Controller for the DMM: Ecosystem.
-     * @param dmgGrowthCoefficient  The rate at which DMG is distributed for each point farmed, per second.
-     * @param allowableTokens       The list of initially-farmable tokens.
-     * @param underlyingTokens      The list of tokens that underpin `allowableTokens`, which the DMM: Underlying Token
-     *                              Valuator can decipher.
-     * @param tokenDecimals         The number of decimals each token has.
-     * @param points                The amount of points each dollar of token/underlying is worth. This acts as a
-     *                              multiplier, using base `DMGYieldFarmingData::ONE_REWARD_POINTS`.
+     * @param __logic                   The address of the initial implementation.
+     * @param __admin                   The address of the proxy administrator.
+     * @param __dmgToken                The address of the DMG token.
+     * @param __guardian                The address of the guardian of the implementation contract.
+     * @param __dmmController           The address of the DMM Controller for the DMM: Ecosystem.
+     * @param __dmgGrowthCoefficient    The rate at which DMG is distributed for each point farmed, per second.
+     * @param __allowableTokens         The list of initially-farmable tokens.
+     * @param __underlyingTokens        The list of tokens that underpin `allowableTokens`, which the DMM: Underlying
+     *                                  Token Valuator can decipher.
+     * @param __tokenDecimals           The number of decimals each token has.
+     * @param __points                  The amount of points each dollar of token/underlying is worth. This acts as a
+     *                                  multiplier, using base `DMGYieldFarmingData::ONE_REWARD_POINTS`.
      */
     constructor(
-        address logic,
-        address admin,
-        address dmgToken,
-        address guardian,
-        address dmmController,
-        uint dmgGrowthCoefficient,
-        address[] memory allowableTokens,
-        address[] memory underlyingTokens,
-        uint8[] memory tokenDecimals,
-        uint16[] memory points
+        address __logic,
+        address __admin,
+        address __dmgToken,
+        address __guardian,
+        address __dmmController,
+        uint __dmgGrowthCoefficient,
+        address[] memory __allowableTokens,
+        address[] memory __underlyingTokens,
+        uint8[] memory __tokenDecimals,
+        uint16[] memory __points
     )
     AdminUpgradeabilityProxy(
-        logic,
-        admin,
+        __logic,
+        __admin,
         abi.encodePacked(
             IDMGYieldFarmingV1Initializable(address(0)).initialize.selector,
-            abi.encode(dmgToken, guardian, dmmController, dmgGrowthCoefficient, allowableTokens, underlyingTokens, tokenDecimals, points)
+            abi.encode(__dmgToken, __guardian, __dmmController, __dmgGrowthCoefficient, __allowableTokens, __underlyingTokens, __tokenDecimals, __points)
         )
     )
     public {}
@@ -64,7 +64,7 @@ contract DMGYieldFarmingProxy is AdminUpgradeabilityProxy {
     }
 
     function _willFallback() internal {
-        // Don't call super. We want the admin to be able to call-through to the implementation contract
+        // Don't call super. We want the __admin to be able to call-through to the implementation contract
     }
 
 }

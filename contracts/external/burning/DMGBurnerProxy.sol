@@ -24,23 +24,23 @@ import "./v1/IDMGBurnerV1Initializable.sol";
 contract DMGBurnerProxy is AdminUpgradeabilityProxy {
 
     /**
-     * @param logic             The address of the initial implementation.
-     * @param admin             The address of the proxy administrator.
-     * @param uniswapV2Router   The address of the UniswapV2 Router.
-     * @param dmgToken          The address of the DMG token.
+     * @param __logic               The address of the initial implementation.
+     * @param __admin               The address of the proxy administrator.
+     * @param __uniswapV2Router     The address of the UniswapV2 Router.
+     * @param __dmgToken            The address of the DMG token.
      */
     constructor(
-        address logic,
-        address admin,
-        address uniswapV2Router,
-        address dmgToken
+        address __logic,
+        address __admin,
+        address __uniswapV2Router,
+        address __dmgToken
     )
     AdminUpgradeabilityProxy(
-        logic,
-        admin,
+        __logic,
+        __admin,
         abi.encodePacked(
             IDMGBurnerV1Initializable(address(0)).initialize.selector,
-            abi.encode(uniswapV2Router, dmgToken)
+            abi.encode(__uniswapV2Router, __dmgToken)
         )
     )
     public {}
@@ -50,7 +50,7 @@ contract DMGBurnerProxy is AdminUpgradeabilityProxy {
     }
 
     function _willFallback() internal {
-        // Don't call super. We want the admin to be able to call-through to the implementation contract
+        // Don't call super. We want the __admin to be able to call-through to the implementation contract
     }
 
 }

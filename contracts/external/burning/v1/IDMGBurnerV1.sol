@@ -23,6 +23,16 @@ pragma solidity ^0.5.0;
  */
 interface IDMGBurnerV1 {
 
+    // *************************
+    // ***** Events
+    // *************************
+
+    event DmgBurned(address indexed burner, uint amount);
+
+    // *************************
+    // ***** Functions
+    // *************************
+
     /**
      * @return  The address of the UniswapV2 Router
      */

@@ -61,6 +61,7 @@ contract DMGYieldFarmingData is Initializable {
     mapping(address => DMGYieldFarmingV2Lib.TokenType) internal _tokenToTokenType;
     mapping(address => uint16) internal _tokenToFeeAmountMap;
     bool internal _isDmgBalanceInitialized;
+    mapping(uint => uint64) internal _seasonIndexToStartTimestamp;
 
     // /////////////////////////
     // END State Variables
@@ -154,7 +155,7 @@ contract DMGYieldFarmingData is Initializable {
 
     uint8 public constant POINTS_DECIMALS = 2;
 
-    uint16 public constant POINTS_FACTOR = 10 ** uint16(POINTS_DECIMALS);
+    uint16 public constant POINTS_FACTOR = uint16(10 ** uint(POINTS_DECIMALS));
 
     uint8 public constant DMG_GROWTH_COEFFICIENT_DECIMALS = 18;
 
@@ -166,6 +167,6 @@ contract DMGYieldFarmingData is Initializable {
 
     uint8 public constant FEE_AMOUNT_DECIMALS = 4;
 
-    uint16 public constant FEE_AMOUNT_FACTOR = 10 ** uint16(FEE_AMOUNT_DECIMALS);
+    uint16 public constant FEE_AMOUNT_FACTOR = uint16(10 ** uint(FEE_AMOUNT_DECIMALS));
 
 }

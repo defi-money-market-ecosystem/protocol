@@ -17,16 +17,14 @@
 
 pragma solidity ^0.5.0;
 
-import "../interfaces/InterestRateInterface.sol";
+/**
+ * @dev This proxy contract is used for industry partners so we can track their usage of the protocol.
+ */
+interface IReferralTrackerV1Initializable {
 
-contract InterestRateImplV1 is InterestRateInterface {
-
-    constructor() public {
-    }
-
-    function getInterestRate(uint, uint, uint) external view returns (uint) {
-        // 0.0625 or 6.25%
-        return 62500000000000000;
-    }
+    function initialize(
+        address owner,
+        address weth
+    ) external;
 
 }

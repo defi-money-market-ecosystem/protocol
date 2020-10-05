@@ -24,16 +24,16 @@ import "./v1/IDMGStakingV1Initializable.sol";
 contract DMGStakingProxy is AdminUpgradeabilityProxy {
 
     /**
-     * @param logic                 The address of the initial implementation.
-     * @param admin                 The address of the proxy administrator.
+     * @param __logic   The address of the initial implementation.
+     * @param __admin   The address of the proxy administrator.
      */
     constructor(
-        address logic,
-        address admin
+        address __logic,
+        address __admin
     )
     AdminUpgradeabilityProxy(
-        logic,
-        admin,
+        __logic,
+        __admin,
         abi.encodePacked(
             IDMGStakingV1Initializable(address(0)).initialize.selector,
             abi.encode("")
