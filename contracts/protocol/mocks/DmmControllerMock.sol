@@ -30,7 +30,7 @@ import "../../utils/Blacklistable.sol";
 contract DmmControllerMock is IDmmController, Ownable, Pausable {
 
     bool private _isMarketsEnabled;
-    address private _token;
+    mapping(address => address) private _mTokenToTokenMap;
     address private _dmmBlacklistable;
     address private _underlyingTokenValuator;
     uint private _interestRate;
@@ -38,14 +38,18 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
     constructor(
         address dmmBlacklistable,
         address underlyingTokenValuator,
-        address token,
+        address[] memory mTokens,
+        address[] memory underlyingTokens,
         uint interestRate
     ) public {
         _dmmBlacklistable = dmmBlacklistable;
         _underlyingTokenValuator = underlyingTokenValuator;
-        _token = token;
         _interestRate = interestRate;
         _isMarketsEnabled = true;
+
+        for (uint i = 0; i < mTokens.length; i++) {
+            _mTokenToTokenMap[mTokens[i]] = underlyingTokens[i];
+        }
     }
 
     function enableMarket(uint) public {
@@ -68,12 +72,12 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
         return _isMarketsEnabled;
     }
 
-    function getUnderlyingTokenForDmm(address) public view returns (address) {
-        return _token;
+    function getUnderlyingTokenForDmm(address mToken) public view returns (address) {
+        return _mTokenToTokenMap[mToken];
     }
 
     function getDmmTokenForUnderlying(address) public view returns (address) {
-        revert("NOT_IMPLEMENTED");
+        revert("DmmControllerMock::getDmmTokenForUnderlying: NOT_IMPLEMENTED");
     }
 
     function getInterestRateByDmmTokenAddress(address) public view returns (uint) {
@@ -85,15 +89,15 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
     }
 
     function setGuardian(address) public {
-        revert("NOT_IMPLEMENTED");
+        revert("DmmControllerMock::setGuardian: NOT_IMPLEMENTED");
     }
 
     function setDmmTokenFactory(address) public {
-        revert("NOT_IMPLEMENTED");
+        revert("DmmControllerMock::setDmmTokenFactory: NOT_IMPLEMENTED");
     }
 
     function setDmmEtherFactory(address) public {
-        revert("NOT_IMPLEMENTED");
+        revert("DmmControllerMock::setDmmEtherFactory: NOT_IMPLEMENTED");
     }
 
     function setInterestRateInterface(address) public {
@@ -148,19 +152,23 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
     }
 
     function getExchangeRateByUnderlying(address) public view returns (uint) {
-        revert("NOT_IMPLEMENTED");
+        // 1.1
+        //        return 1.1e18;
+        return 1e18;
     }
 
     function getExchangeRate(address) public view returns (uint) {
-        revert("NOT_IMPLEMENTED");
+        // 1.1
+        //        return 1.1e18;
+        return 1e18;
     }
 
     function getTokenIdFromDmmTokenAddress(address) public view returns (uint) {
-        revert("NOT_IMPLEMENTED");
+        return 1;
     }
 
     function getDmmTokenAddressByDmmTokenId(uint) public view returns (address) {
-        revert("NOT_IMPLEMENTED");
+        revert("DmmControllerMock::getDmmTokenAddressByDmmTokenId: NOT_IMPLEMENTED");
     }
 
     function addMarket(
@@ -172,20 +180,18 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
         uint,
         uint
     ) public {
-        revert("NOT_IMPLEMENTED");
+        revert("DmmControllerMock::NOT_IMPLEMENTED");
     }
 
     function addMarketFromExistingDmmToken(
         address,
         address
     ) public {
-        revert("NOT_IMPLEMENTED");
+        revert("DmmControllerMock::: addMarketFromExistingDmmTokenNOT_IMPLEMENTED");
     }
 
-    function transferOwnershipToNewController(
-        address
-    ) public {
-        revert("NOT_IMPLEMENTED");
+    function transferOwnershipToNewController(address) public {
+        revert("DmmControllerMock::DmmControllerMock: NOT_IMPLEMENTED");
     }
 
     function blacklistable() public view returns (Blacklistable) {

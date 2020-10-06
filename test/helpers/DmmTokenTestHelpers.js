@@ -45,6 +45,7 @@ const doDmmTokenBeforeEach = async (thisInstance, contracts, web3) => {
   const ERC20Mock = contracts.fromArtifact('ERC20Mock');
   const SafeERC20 = contracts.fromArtifact('SafeERC20');
   const SafeMath = contracts.fromArtifact('SafeMath');
+  const UnderlyingTokenValuatorMock = contracts.fromArtifact('UnderlyingTokenValuatorMock');
 
   await Promise.all([ERC20Mock.detectNetwork(), DmmToken.detectNetwork()]);
 
@@ -64,9 +65,17 @@ const doDmmTokenBeforeEach = async (thisInstance, contracts, web3) => {
   thisInstance.underlyingToken = await ERC20Mock.new({from: thisInstance.admin});
   thisInstance.dai = thisInstance.underlyingToken;
 
+  thisInstance.underlyingTokenValuator = await UnderlyingTokenValuatorMock.new(
+    [thisInstance.underlyingToken.address],
+    ['100000000'], // $1.00
+    ['8'],
+    {from: thisInstance.admin},
+  );
+
   thisInstance.interestRate = _0();
   thisInstance.controller = await DmmControllerMock.new(
     thisInstance.blacklistable.address,
+    thisInstance.underlyingTokenValuator.address,
     thisInstance.underlyingToken.address,
     thisInstance.interestRate,
     {from: thisInstance.admin}

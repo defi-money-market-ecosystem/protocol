@@ -19,11 +19,11 @@ pragma solidity ^0.5.0;
 
 library StringHelpers {
 
-    function toString(address _value) public pure returns (string memory) {
+    function toString(address _value) internal pure returns (string memory) {
         return toString(abi.encodePacked(_value));
     }
 
-    function toString(uint _value) public pure returns (string memory) {
+    function toString(uint _value) internal pure returns (string memory) {
         return toString(abi.encodePacked(_value));
     }
 

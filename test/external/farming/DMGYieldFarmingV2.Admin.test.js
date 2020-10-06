@@ -10,7 +10,7 @@ const {doYieldFarmingExternalProxyBeforeEach} = require('../../helpers/YieldFarm
 const [admin, guardian, owner, user] = accounts;
 
 describe('DMGYieldFarmingV2.Admin', () => {
-  const NOT_OWNER_ERROR = 'DMGYieldFarmingV2: UNAUTHORIZED';
+  const NOT_OWNER_ERROR = 'DMGYieldFarmingV2:: UNAUTHORIZED';
   const timeBuffer = new BN('2');
   const UniswapLpToken = new BN('1');
   let snapshotId;
@@ -179,32 +179,32 @@ describe('DMGYieldFarmingV2.Admin', () => {
 
     await expectRevert(
       this.yieldFarming.removeAllowableToken(this.tokenC.address, {from: owner}),
-      'DMGYieldFarmingV2: FARM_IS_ACTIVE'
+      'DMGYieldFarmingV2:: FARM_IS_ACTIVE'
     );
   });
 
-  it('setRewardPointsByToken: should set points if sent by owner', async () => {
+  it('setRewardPointsByTokens: should set points if sent by owner', async () => {
     const points = new BN('500');
     const token = this.tokenA.address;
-    const result = await this.yieldFarming.setRewardPointsByToken(token, points, {from: owner});
+    const result = await this.yieldFarming.setRewardPointsByTokens([token], [points], {from: owner});
     expectEvent(result, 'RewardPointsSet', {token: token, points});
     (await this.yieldFarming.getRewardPointsByToken(token)).should.be.bignumber.eq(points);
   });
 
-  it('setRewardPointsByToken: should fail if not sent by owner', async () => {
+  it('setRewardPointsByTokens: should fail if not sent by owner', async () => {
     const points = new BN('500');
     await expectRevert(
-      this.yieldFarming.setRewardPointsByToken(this.tokenA.address, points, {from: user}),
+      this.yieldFarming.setRewardPointsByTokens([this.tokenA.address], [points], {from: user}),
       NOT_OWNER_ERROR
-    )
+    );
   });
 
-  it('setRewardPointsByToken: should fail if points is 0', async () => {
+  it('setRewardPointsByTokens: should fail if points is 0', async () => {
     const points = new BN('0');
     await expectRevert(
-      this.yieldFarming.setRewardPointsByToken(this.tokenA.address, points, {from: owner}),
+      this.yieldFarming.setRewardPointsByTokens([this.tokenA.address], [points], {from: owner}),
       'DMGYieldFarmingV2::_verifyPoints: INVALID_POINTS'
-    )
+    );
   });
 
   it('setDmgGrowthCoefficient: should set coefficient if sent by owner', async () => {
@@ -219,7 +219,7 @@ describe('DMGYieldFarmingV2.Admin', () => {
     await expectRevert(
       this.yieldFarming.setDmgGrowthCoefficient(coefficient, {from: user}),
       NOT_OWNER_ERROR
-    )
+    );
   });
 
   it('setDmgGrowthCoefficient: should fail if coefficient is 0', async () => {
@@ -227,10 +227,8 @@ describe('DMGYieldFarmingV2.Admin', () => {
     await expectRevert(
       this.yieldFarming.setDmgGrowthCoefficient(coefficient, {from: owner}),
       'DMGYieldFarmingV2::_verifyDmgGrowthCoefficient: INVALID_GROWTH_COEFFICIENT'
-    )
+    );
   });
-
-  // beginFarmingSeason
 
   it('beginFarmingSeason: should succeed if the system is idle', async () => {
     await this.dmgToken.approve(this.yieldFarming.address, constants.MAX_UINT256, {from: owner});
@@ -353,7 +351,7 @@ describe('DMGYieldFarmingV2.Admin', () => {
     await expectRevert(
       this.yieldFarming.endActiveFarmingSeason(user, {from: user}),
       'DMGYieldFarmingV2::endActiveFarmingSeason: FARM_ACTIVE_OR_INVALID_SENDER'
-    )
+    );
   });
 
 });

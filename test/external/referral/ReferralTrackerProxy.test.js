@@ -1,22 +1,34 @@
-const {accounts, contract, web3} = require('@openzeppelin/test-environment');
+const {accounts, contract, web3, provider} = require('@openzeppelin/test-environment');
 require('@openzeppelin/test-helpers/src/config/web3').getWeb3 = () => web3;
 const {expect} = require('chai');
 require('chai').should();
 const {BN, constants, expectRevert, expectEvent, send, balance} = require('@openzeppelin/test-helpers');
 
-const {doDmmTokenBeforeEach, setApproval, _001, _1, _10000, _0, signMessage} = require('../../helpers/DmmTokenTestHelpers');
+const {
+  snapshotChain,
+  resetChain,
+  doDmmTokenBeforeEach,
+  setApproval,
+  _001,
+  _1,
+  _10000,
+  _0,
+  signMessage,
+} = require('../../helpers/DmmTokenTestHelpers');
 
 
 // Use the different accounts, which are unlocked and funded with Ether
-const [admin, user, otherUser] = accounts;
+const [admin, user, otherUser, referrer] = accounts;
 
 // Create a contract object from a compilation artifact
 const ReferralTrackerProxy = contract.fromArtifact('ReferralTrackerProxy');
+const ReferralTrackerImplV1 = contract.fromArtifact('ReferralTrackerImplV1');
 
 describe('ReferralTrackerProxy', () => {
   let proxy = null;
+  let snapshotId = null;
 
-  beforeEach(async () => {
+  before(async () => {
     this.admin = admin;
     this.user = user;
 
@@ -50,16 +62,35 @@ describe('ReferralTrackerProxy', () => {
       {from: this.admin},
     );
 
-    proxy = await ReferralTrackerProxy.new(this.weth.address, {from: admin});
+    const implementation = await ReferralTrackerImplV1.new();
+
+    proxy = await ReferralTrackerProxy.new(
+      implementation.address,
+      admin,
+      admin,
+      this.weth.address,
+      {from: admin},
+    );
+
+    proxy = await contract.fromArtifact('ReferralTrackerImplV1', proxy.address);
+
+    (await proxy.weth()).should.be.eq(this.weth.address);
+
+    snapshotId = await snapshotChain(provider);
+  });
+
+  beforeEach(async () => {
+    snapshotId = await resetChain(provider, snapshotId);
   });
 
   it('should mint properly using ETH proxy', async () => {
     const amount = _1();
-    const receipt = await proxy.mintViaEther(this.mETH.address, {from: user, value: amount});
+    const receipt = await proxy.mintViaEther(referrer, this.mETH.address, {from: user, value: amount});
     expectEvent(
       receipt,
       'ProxyMint',
       {
+        referrer,
         minter: user,
         receiver: user,
         amount: amount,
@@ -68,7 +99,6 @@ describe('ReferralTrackerProxy', () => {
     );
 
     ((await this.mETH.balanceOf(user))).should.be.bignumber.equal(amount);
-
     ((await balance.current(proxy.address))).should.be.bignumber.equal(_0());
     ((await this.mETH.balanceOf(proxy.address))).should.be.bignumber.equal(_0());
   });
@@ -78,11 +108,12 @@ describe('ReferralTrackerProxy', () => {
     // The user's balance is set in the beforeEach to be _10000()
     ((await this.dai.balanceOf(user))).should.be.bignumber.equal(_10000());
 
-    const receipt = await proxy.mint(this.mDAI.address, _10000(), {from: user});
+    const receipt = await proxy.mint(referrer, this.mDAI.address, _10000(), {from: user});
     expectEvent(
       receipt,
       'ProxyMint',
       {
+        referrer,
         minter: user,
         receiver: user,
         amount: _10000(),
@@ -103,15 +134,16 @@ describe('ReferralTrackerProxy', () => {
 
     // The user's balance is set in the beforeEach to be _10000()
     ((await this.dai.balanceOf(user))).should.be.bignumber.equal(_10000());
-    await proxy.mint(this.mDAI.address, _10000(), {from: user});
+    await proxy.mint(referrer, this.mDAI.address, _10000(), {from: user});
 
     await this.mDAI.transfer(otherUser, _10000(), {from: user});
 
-    const receipt = await proxy.redeem(this.mDAI.address, _10000(), {from: otherUser});
+    const receipt = await proxy.redeem(referrer, this.mDAI.address, _10000(), {from: otherUser});
     expectEvent(
       receipt,
       'ProxyRedeem',
       {
+        referrer,
         redeemer: otherUser,
         receiver: otherUser,
         amount: _10000(),
@@ -155,6 +187,7 @@ describe('ReferralTrackerProxy', () => {
     )
 
     const receipt = await proxy.mintFromGaslessRequest(
+      referrer,
       this.mDAI.address,
       this.wallet.address,
       otherUser,
@@ -172,6 +205,7 @@ describe('ReferralTrackerProxy', () => {
       receipt,
       'ProxyMint',
       {
+        referrer,
         minter: this.wallet.address,
         receiver: otherUser,
         amount: amount,
@@ -195,7 +229,7 @@ describe('ReferralTrackerProxy', () => {
 
     // The user's balance is set in the beforeEach to be _10000()
     ((await this.dai.balanceOf(user))).should.be.bignumber.equal(_10000());
-    await proxy.mint(this.mDAI.address, _10000(), {from: user});
+    await proxy.mint(referrer, this.mDAI.address, _10000(), {from: user});
 
     const amount = _10000();
     const feeAmount = _0();
@@ -206,6 +240,7 @@ describe('ReferralTrackerProxy', () => {
     const signature = await encodeHashAndSign(this, typeHash, this.wallet.address, otherUser, _0(), _0(), amount, feeAmount, feeRecipientAddress)
 
     const receipt = await proxy.redeemFromGaslessRequest(
+      referrer,
       this.mDAI.address,
       this.wallet.address,
       otherUser,
@@ -223,6 +258,7 @@ describe('ReferralTrackerProxy', () => {
       receipt,
       'ProxyRedeem',
       {
+        referrer,
         redeemer: this.wallet.address,
         receiver: otherUser,
         amount: _10000(),

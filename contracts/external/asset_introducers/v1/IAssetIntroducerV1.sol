@@ -71,15 +71,16 @@ interface IAssetIntroducerV1 {
         uint tokenId
     ) external returns (uint);
 
-    function getVoteCount(
-        address owner
+    function getCurrentVotesByUser(
+        address user
     ) external view returns (uint);
 
-    function getDmgLockedByOwner(
-        address owner
+    function getDmgLockedByUser(
+        address user
     ) external view returns (uint);
 
     function getTotalDmgLocked() external view returns (uint);
+
     function getDollarAmountToManageByTokenId(
         uint tokenId
     ) external view returns (uint);
@@ -87,6 +88,10 @@ interface IAssetIntroducerV1 {
     function getDmgLockedByTokenId(
         uint tokenId
     ) external view returns (uint);
+
+    function getAssetIntroducersByCountryCode(
+        string calldata countryCode
+    ) external view returns (uint[] memory);
 
     /**
      * @return  The address of the DMG token

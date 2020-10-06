@@ -37,6 +37,9 @@ const doYieldFarmingExternalProxyBeforeEach = async (thisInstance, contracts, we
   thisInstance.underlyingTokenB_2 = await ERC20Mock.new({from: thisInstance.admin});
   thisInstance.underlyingTokenC_2 = await ERC20Mock.new({from: thisInstance.admin});
 
+  await thisInstance.underlyingTokenB.setDecimals(6);
+  await thisInstance.underlyingTokenB_2.setDecimals(6);
+
   const loader = setupLoader({provider, artifactsDir: unsiwapDirectory, defaultGas: 8e6});
 
   const UniswapV2Factory = loader.truffle.fromArtifact('UniswapV2Factory');
@@ -156,7 +159,7 @@ const doYieldFarmingV1BeforeEach = async (thisInstance, contracts, web3) => {
   thisInstance.dmmController = await DmmControllerMock.new(
     ZERO_ADDRESS,
     thisInstance.underlyingTokenValuator.address,
-    ZERO_ADDRESS,
+    thisInstance.underlyingTokenA.address,
     '0',
   );
 
@@ -188,12 +191,12 @@ const doYieldFarmingV1BeforeEach = async (thisInstance, contracts, web3) => {
 const doYieldFarmingV2BeforeEach = async (thisInstance, contracts, web3) => {
   web3Config.getWeb3 = () => web3;
 
-  const TestDMGYieldFarmingV2 = contracts.fromArtifact('TestDMGYieldFarmingV2');
+  const DMGYieldFarmingV2Lib = contracts.fromArtifact('DMGYieldFarmingV2Lib');
   const DMGYieldFarmingProxy = contracts.fromArtifact('DMGYieldFarmingProxy');
   const ERC20Mock = contracts.fromArtifact('ERC20Mock');
   const DmmControllerMock = contracts.fromArtifact('DmmControllerMock');
+  const TestDMGYieldFarmingV2 = contracts.fromArtifact('TestDMGYieldFarmingV2');
   const UnderlyingTokenValuatorMock = contracts.fromArtifact('UnderlyingTokenValuatorMock');
-  const StringHelpers = contracts.fromArtifact('StringHelpers');
 
   await Promise.all(
     [
@@ -201,8 +204,9 @@ const doYieldFarmingV2BeforeEach = async (thisInstance, contracts, web3) => {
     ]
   );
 
-  const stringHelpers = await StringHelpers.new();
-  await TestDMGYieldFarmingV2.link("StringHelpers", stringHelpers.address);
+  const yieldFarmingV2Lib = await DMGYieldFarmingV2Lib.new();
+
+  await TestDMGYieldFarmingV2.link('DMGYieldFarmingV2Lib', yieldFarmingV2Lib.address);
 
   thisInstance.tokenA = thisInstance.tokenA || await ERC20Mock.new({from: thisInstance.admin});
   thisInstance.tokenB = thisInstance.tokenB || await ERC20Mock.new({from: thisInstance.admin});
@@ -234,7 +238,8 @@ const doYieldFarmingV2BeforeEach = async (thisInstance, contracts, web3) => {
   thisInstance.dmmController = await DmmControllerMock.new(
     ZERO_ADDRESS,
     thisInstance.underlyingTokenValuator.address,
-    ZERO_ADDRESS,
+    [thisInstance.underlyingTokenA_2.address, thisInstance.underlyingTokenB_2.address],
+    [thisInstance.underlyingTokenA.address, thisInstance.underlyingTokenB.address],
     '0',
   );
 

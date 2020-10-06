@@ -53,6 +53,10 @@ contract ReferralTrackerImplV1 is IReferralTrackerV1, IReferralTrackerV1Initiali
         );
     }
 
+    function weth() external view returns (address) {
+        return _weth;
+    }
+
     function mintViaEther(
         address __referrer,
         address __mETH

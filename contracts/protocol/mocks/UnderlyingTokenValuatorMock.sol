@@ -65,7 +65,7 @@ contract UnderlyingTokenValuatorMock is IUnderlyingTokenValuator {
     ) public view returns (uint) {
         require(
             tokenToPriceMap[token] != 0,
-            "UnderlyingTokenValuatorMock::getTokenValue: INVALID_TOKEN"
+            string(abi.encodePacked("UnderlyingTokenValuatorMock::getTokenValue: INVALID_TOKEN: ", StringHelpers.toString(token)))
         );
         return tokenToPriceMap[token].mul(amount).div(10 ** uint(tokenToPriceDecimalsMap[token]));
     }

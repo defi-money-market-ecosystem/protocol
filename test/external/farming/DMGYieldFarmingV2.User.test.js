@@ -551,7 +551,7 @@ describe('DMGYieldFarmingV2.User', () => {
     const deposit1 = _100();
     await expectRevert(
       this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user}),
-      'DMGYieldFarmingV2: FARM_NOT_ACTIVE',
+      'DMGYieldFarmingV2:: FARM_NOT_ACTIVE',
     );
   });
 
@@ -562,7 +562,7 @@ describe('DMGYieldFarmingV2.User', () => {
     const deposit1 = _100();
     await expectRevert(
       this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user}),
-      'DMGYieldFarmingV2: TOKEN_UNSUPPORTED',
+      'DMGYieldFarmingV2:: TOKEN_UNSUPPORTED',
     );
   });
 
@@ -573,7 +573,7 @@ describe('DMGYieldFarmingV2.User', () => {
     const deposit1 = _100();
     await expectRevert(
       this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: spender}),
-      'DMGYieldFarmingV2: UNAPPROVED',
+      'DMGYieldFarmingV2:: UNAPPROVED',
     );
   });
 
@@ -649,6 +649,7 @@ describe('DMGYieldFarmingV2.User', () => {
     );
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(_0());
     (await this.yieldFarming.getRewardBalanceByOwnerAndToken(user, token.address)).should.be.bignumber.eq(_0());
+    (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(_0());
     (await token.balanceOf(receiver)).should.be.bignumber.eq(deposit1.mul(oneMinusFeesA).div(feesFactor));
     (await underlyingToken_1.balanceOf(user)).should.be.bignumber.eq(_0()); // Dust is sold, so balance should be zero
     (await underlyingToken_2.balanceOf(user)).should.be.bignumber.eq(_0()); // Dust is sold, so balance should be zero
@@ -684,6 +685,7 @@ describe('DMGYieldFarmingV2.User', () => {
     );
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(_0());
     (await this.yieldFarming.getRewardBalanceByOwnerAndToken(user, token.address)).should.be.bignumber.eq(_0());
+    (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(_0());
     (await token.balanceOf(user)).should.be.bignumber.eq(balance.sub(deposit1.mul(feesA).div(feesFactor)));
     (await token.balanceOf(spender)).should.be.bignumber.eq(_0());
     (await this.dmgToken.totalSupply()).should.be.bignumber.lt(originalDmgTotalSupply);
@@ -711,7 +713,7 @@ describe('DMGYieldFarmingV2.User', () => {
 
     await expectRevert(
       this.yieldFarming.endFarmingByToken(user, receiver, token.address, {from: user}),
-      'DMGYieldFarmingV2: FARM_NOT_ACTIVE',
+      'DMGYieldFarmingV2:: FARM_NOT_ACTIVE',
     );
   });
 
@@ -735,7 +737,7 @@ describe('DMGYieldFarmingV2.User', () => {
 
     await expectRevert(
       this.yieldFarming.endFarmingByToken(user, receiver, this.tokenC.address, {from: user}),
-      'DMGYieldFarmingV2: TOKEN_UNSUPPORTED',
+      'DMGYieldFarmingV2:: TOKEN_UNSUPPORTED',
     );
   });
 
@@ -863,7 +865,7 @@ describe('DMGYieldFarmingV2.User', () => {
 
     await expectRevert(
       this.yieldFarming.withdrawAllWhenOutOfSeason(user, receiver, {from: user}),
-      'DMGYieldFarmingV2: FARM_IS_ACTIVE',
+      'DMGYieldFarmingV2:: FARM_IS_ACTIVE',
     );
   });
 
@@ -886,7 +888,7 @@ describe('DMGYieldFarmingV2.User', () => {
 
     await expectRevert(
       this.yieldFarming.withdrawAllWhenOutOfSeason(user, receiver, {from: spender}),
-      'DMGYieldFarmingV2: UNAPPROVED',
+      'DMGYieldFarmingV2:: UNAPPROVED',
     );
   });
 
@@ -1030,7 +1032,7 @@ describe('DMGYieldFarmingV2.User', () => {
 
     await expectRevert(
       this.yieldFarming.withdrawByTokenWhenOutOfSeason(user, receiver, token.address, {from: spender}),
-      'DMGYieldFarmingV2: UNAPPROVED',
+      'DMGYieldFarmingV2:: UNAPPROVED',
     );
   });
 

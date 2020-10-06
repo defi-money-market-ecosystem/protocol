@@ -40,6 +40,12 @@ interface IReferralTrackerV1 {
     );
 
     // *************************
+    // ***** Misc Functions
+    // *************************
+
+    function weth() external view returns (address);
+
+    // *************************
     // ***** User Functions
     // *************************
 

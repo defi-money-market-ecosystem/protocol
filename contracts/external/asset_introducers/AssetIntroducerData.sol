@@ -20,6 +20,7 @@ pragma solidity ^0.5.0;
 import "../../../node_modules/@openzeppelin/upgrades/contracts/Initializable.sol";
 
 import "../../protocol/interfaces/IOwnableOrGuardian.sol";
+import "../../governance/dmg/IDMGToken.sol";
 
 contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
 

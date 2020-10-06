@@ -19,8 +19,19 @@ pragma solidity ^0.5.0;
 
 import "../../utils/Blacklistable.sol";
 import "../../utils/ERC20.sol";
+import "../../utils/IERC20WithDecimals.sol";
 
-contract ERC20Mock is ERC20, Blacklistable {
+contract ERC20Mock is ERC20, Blacklistable, IERC20WithDecimals {
+
+    uint8 internal _decimals = 18;
+
+    function decimals() external view returns (uint8) {
+        return _decimals;
+    }
+
+    function setDecimals(uint8 __decimals) external {
+        _decimals = __decimals;
+    }
 
     function pausable() public view returns (address) {
         return address(this);

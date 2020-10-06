@@ -220,6 +220,26 @@ interface IDMGYieldFarmingV2 {
     ) external returns (uint, uint);
 
     /**
+     * Ends a farm by transferring `amount` of `token` deposited by `from` to `recipient`, from this contract, as well
+     * as a proportional amount of the earned DMG for farming `token` to `recipient`. `from` must be either
+     * 1) msg.sender or 2) an approved proxy; else this function reverts.
+     *
+     * @param from          The user that is ending the harvest
+     * @param recipient     The address that should receive the withdrawn token as well as the earned DMG.
+     * @param token         The token being withdrawn.
+     * @param amount        The balance of the user that should be withdrawn, along with a proportional amount of the
+     *                      harvest.
+     * @return              The amount of `token` withdrawn and the amount of DMG earned for farming. Both values are
+     *                      sent to `recipient`.
+     */
+    function endFarmingByTokenAndAmount(
+        address from,
+        address recipient,
+        address token,
+        uint amount
+    ) external returns (uint, uint);
+
+    /**
      * Withdraws all of `msg.sender`'s tokens from the farm to `recipient`. This function reverts if there is an active
      * farm. `user` must be either 1) msg.sender or 2) an approved proxy; else this function reverts.
      *
