@@ -32,10 +32,26 @@ interface IDMGToken {
     /// @notice An event thats emitted when a delegate account's vote balance changes
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
 
+    // *************************
+    // ***** Functions
+    // *************************
+
     function getPriorVotes(address account, uint blockNumber) external view returns (uint128);
+
+    function getCurrentVotes(address account) external view returns (uint128);
 
     function delegates(address delegator) external view returns (address);
 
     function burn(uint amount) external returns (bool);
+
+    function approveBySig(
+        address spender,
+        uint rawAmount,
+        uint nonce,
+        uint expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
 
 }

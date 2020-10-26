@@ -25,38 +25,59 @@ import "../../governance/dmg/IDMGToken.sol";
 contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
 
     // *************************
+    // ***** Constants
+    // *************************
+
+    uint internal constant LINKED_LIST_GUARD = uint(1);
+
+    string public constant NAME = "AssetIntroducer";
+
+    // *************************
     // ***** V1 State Variables
     // *************************
 
     address internal _dmg;
-    address internal _wDmg;
+    uint internal _totalDmgLocked;
+    bytes32 _domainSeparator;
+    uint internal _totalSupply;
+    uint[] internal _allTokens;
+
+    mapping(uint => AssetIntroducer) internal _idToAssetIntroducer;
 
     /**
-     * @dev A mapping from NFT ID to the address that owns it.
+     * @dev Mapping from NFT ID to owner address.
      */
-    mapping(uint256 => address) internal _idToOwner;
+    mapping(uint256 => address) internal _idToOwnerMap;
 
     /**
      * @dev Mapping from NFT ID to approved address.
      */
-    mapping(uint256 => address) internal _idToApproval;
+    mapping(uint256 => address) internal _idToSpenderMap;
 
     /**
-    * @dev Mapping from owner address to count of his tokens.
-    */
-    mapping(address => uint256) internal _ownerToTokenCount;
-
-    /**
-     * @dev Mapping from owner address to mapping of operator addresses.
+     * @dev Mapping from owner to an operator that can spend all of owner's NFTs.
      */
-    mapping(address => mapping(address => bool)) internal _ownerToOperators;
+    mapping(address => mapping(address => bool)) internal _ownerToOperatorToIsApprovedMap;
 
-    mapping(bytes4 => mapping(uint8 => uint16)) internal _countryCodeToAssetIntroducerTypeToCountMap;
+    mapping(address => uint) internal _ownerToNonceMap;
+
+    /**
+    * @dev  Mapping from owner address to all owned token IDs. Works as a linked list such that previous key --> next
+    *       value. The 0th key in the list is LINKED_LIST_GUARD.
+    */
+    mapping(address => mapping(uint => uint)) internal _ownerToTokenIds;
+
+    /**
+    * @dev Mapping from owner address to a count of all owned NFTs.
+    */
+    mapping(address => uint32) internal _ownerToTokenCount;
+
+    mapping(bytes3 => mapping(uint8 => uint[])) internal _countryCodeToAssetIntroducerTypeToTokenIdsMap;
 
     /**
      * @dev Mapping from an interface to whether or not it's supported.
      */
-    mapping(bytes4 => bool) internal _supportedInterfaces;
+    mapping(bytes3 => bool) internal _supportedInterfaces;
 
     // *************************
     // ***** Data Structures
@@ -67,7 +88,7 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
     }
 
     struct AssetIntroducer {
-        bytes4 countryCode;
+        bytes3 countryCode;
         AssetIntroducerType introducerType;
         /// True if the asset introducer has been purchased yet, false if it hasn't and is thus
         bool isOnSecondaryMarket;
@@ -75,6 +96,47 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
         /// An override on how much this asset introducer can manager; the default amount for a `countryCode` and
         /// `introducerType` can be retrieved via function call
         uint104 dollarAmountToManage;
+    }
+
+    struct DmgApprovalStruct {
+        address spender;
+        uint rawAmount;
+        uint nonce;
+        uint expiry;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
+
+    // *************************
+    // ***** Modifiers
+    // *************************
+
+    modifier requireIsPrimaryMarketNft(uint __tokenId) {
+        require(
+            !_idToAssetIntroducer[__tokenId].isOnSecondaryMarket,
+            "AssetIntroducerData: IS_SECONDARY_MARKET"
+        );
+
+        _;
+    }
+
+    modifier requireIsSecondaryMarketNft(uint __tokenId) {
+        require(
+            _idToAssetIntroducer[__tokenId].isOnSecondaryMarket,
+            "AssetIntroducerData: IS_PRIMARY_MARKET"
+        );
+
+        _;
+    }
+
+    modifier requireIsValidNft(uint __tokenId) {
+        require(
+            _idToOwnerMap[__tokenId] != address(0),
+            "AssetIntroducerData: INVALID_NFT"
+        );
+
+        _;
     }
 
 }

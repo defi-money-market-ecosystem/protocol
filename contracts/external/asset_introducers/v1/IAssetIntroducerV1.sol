@@ -25,17 +25,18 @@ interface IAssetIntroducerV1 {
     // ***** Events
     // *************************
 
+    event SignatureValidated(address indexed signer, uint nonce);
     event AssetIntroducerBought(uint indexed tokenId, address indexed buyer, uint dmgAmount);
 
     // *************************
     // ***** Admin Functions
     // *************************
 
-    function createAssetIntroducerForPrimaryMarket(
-        string calldata countryCode,
-        AssetIntroducerData.AssetIntroducerType introducerType,
-        uint dmgPriceAmount
-    ) external returns (uint);
+    function createAssetIntroducersForPrimaryMarket(
+        string[] calldata countryCode,
+        AssetIntroducerData.AssetIntroducerType[] calldata introducerType,
+        uint[] calldata dmgPriceAmount
+    ) external returns (uint[] memory);
 
     function setDollarAmountToManageByTokenId(
         uint tokenId,
@@ -56,6 +57,10 @@ interface IAssetIntroducerV1 {
         uint tokenId
     ) external returns (bool);
 
+    function nonceOf(
+        address user
+    ) external view returns (uint);
+
     function buyAssetIntroducerSlotBySig(
         uint tokenId,
         address recipient,
@@ -71,7 +76,12 @@ interface IAssetIntroducerV1 {
         uint tokenId
     ) external returns (uint);
 
-    function getCurrentVotesByUser(
+    function getPriorVotes(
+        address user,
+        uint blockNumber
+    ) external view returns (uint);
+
+    function getCurrentVotes(
         address user
     ) external view returns (uint);
 
@@ -92,6 +102,12 @@ interface IAssetIntroducerV1 {
     function getAssetIntroducersByCountryCode(
         string calldata countryCode
     ) external view returns (uint[] memory);
+
+    // *************************
+    // ***** Misc Functions
+    // *************************
+
+    function domainSeparator() external view returns (bytes32);
 
     /**
      * @return  The address of the DMG token
