@@ -16,12 +16,14 @@
 
 
 pragma solidity ^0.5.0;
+pragma experimental ABIEncoderV2;
 
 import "../../../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../../../utils/EvmUtil.sol";
 
+import "../../../governance/dmg/SafeBitMath.sol";
 import "../impl/ERC721.sol";
 
 import "./IAssetIntroducerV1.sol";
@@ -29,6 +31,7 @@ import "./IAssetIntroducerV1.sol";
 contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
 
     using SafeERC20 for IERC20;
+    using SafeBitMath for uint128;
     using SafeMath for uint;
 
     // *************************
@@ -90,6 +93,8 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
             dollarAmountToManage : 0
             });
 
+            _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(__introducerTypes[i])].push(tokenIds[i]);
+
             _mint(address(this), tokenIds[i]);
         }
 
@@ -124,7 +129,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         );
 
         bytes3 rawCountryCode = _verifyAndConvertCountryCodeToBytes(__countryCode);
-        uint[] memory tokenIds = _countryCodeToAssetIntroducerTypeToTokenIdsMap[rawCountryCode][__introducerType];
+        uint[] memory tokenIds = _countryCodeToAssetIntroducerTypeToTokenIdsMap[rawCountryCode][uint8(__introducerType)];
         for (uint i = 0; i < tokenIds.length; i++) {
             _idToAssetIntroducer[tokenIds[i]].dollarAmountToManage = uint104(__dollarAmountToManage);
         }
@@ -209,20 +214,75 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
 
     function getAssetIntroducerPrice(
         uint __tokenId
-    ) public returns (uint);
+    )
+    requireIsValidNft(__tokenId)
+    public
+    returns (uint) {
+        // TODO
+        return 0;
+    }
 
     function getCurrentVotes(
         address __owner
-    ) external view returns (uint);
+    ) external view returns (uint) {
+        uint64 checkpointCount = _ownerToCheckpointCountMap[__owner];
+        return checkpointCount > 0 ? _ownerToCheckpointIndexToCheckpointMap[__owner][checkpointCount - 1].votes : 0;
+    }
 
     function getPriorVotes(
         address __owner,
         uint __blockNumber
-    ) external view returns (uint);
+    )
+    external
+    view returns (uint128) {
+        require(
+            __blockNumber < block.number,
+            "AssetIntroducerV1::getPriorVotes: not yet determined"
+        );
+
+        uint64 checkpointCount = _ownerToCheckpointCountMap[__owner];
+        if (checkpointCount == 0) {
+            return 0;
+        }
+
+        // First check most recent balance
+        if (_ownerToCheckpointIndexToCheckpointMap[__owner][checkpointCount - 1].fromBlock <= __blockNumber) {
+            return _ownerToCheckpointIndexToCheckpointMap[__owner][checkpointCount - 1].votes;
+        }
+
+        // Next check implicit zero balance
+        if (_ownerToCheckpointIndexToCheckpointMap[__owner][0].fromBlock > __blockNumber) {
+            return 0;
+        }
+
+        uint64 lower = 0;
+        uint64 upper = checkpointCount - 1;
+        while (upper > lower) {
+            // ceil, avoiding overflow
+            uint64 center = upper - (upper - lower) / 2;
+            Checkpoint memory checkpoint = _ownerToCheckpointIndexToCheckpointMap[__owner][center];
+            if (checkpoint.fromBlock == __blockNumber) {
+                return checkpoint.votes;
+            } else if (checkpoint.fromBlock < __blockNumber) {
+                lower = center;
+            } else {
+                upper = center - 1;
+            }
+        }
+        return _ownerToCheckpointIndexToCheckpointMap[__owner][lower].votes;
+    }
+
 
     function getDmgLockedByUser(
         address __user
-    ) external view returns (uint);
+    ) external view returns (uint) {
+        uint[] memory tokenIds = getAllTokenIdsByOwner(__user);
+        uint dmgLocked = 0;
+        for (uint i = 0; i < tokenIds.length; i++) {
+            dmgLocked = dmgLocked.add(_idToAssetIntroducer[tokenIds[i]].dmgLocked);
+        }
+        return dmgLocked;
+    }
 
     // *************************
     // ***** Misc Functions
@@ -231,7 +291,9 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     /**
      * @return  The total amount of DMG locked in the asset introducer reserves
      */
-    function getTotalDmgLocked() external view returns (uint);
+    function getTotalDmgLocked() external view returns (uint) {
+        return _totalDmgLocked;
+    }
 
     /**
      * @return  The amount that this asset introducer can manager, represented in wei format (a number with 18
@@ -239,7 +301,12 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
      */
     function getDollarAmountToManageByTokenId(
         uint __tokenId
-    ) external view returns (uint);
+    )
+    external
+    requireIsValidNft(__tokenId)
+    view returns (uint) {
+        return _idToAssetIntroducer[__tokenId].dollarAmountToManage;
+    }
 
     /**
      * @return  The amount of DMG that this asset introducer has locked in order to maintain a valid status as an asset
@@ -247,11 +314,28 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
      */
     function getDmgLockedByTokenId(
         uint __tokenId
-    ) external view returns (uint);
+    )
+    external
+    requireIsValidNft(__tokenId)
+    view returns (uint) {
+        return _idToAssetIntroducer[__tokenId].dmgLocked;
+    }
 
     // *************************
     // ***** Internal Functions
     // *************************
+
+    function _transfer(
+        address __to,
+        uint256 __tokenId,
+        bool __shouldAllowTransferIntoThisContract
+    )
+    internal {
+        // Get the "from" address (the owner) before effectuating the transfer via the call to "super"
+        address from = _idToOwnerMap[__tokenId];
+        super._transfer(__to, __tokenId, __shouldAllowTransferIntoThisContract);
+        _moveDelegates(from, __to, _idToAssetIntroducer[__tokenId].dmgLocked);
+    }
 
     function _verifyAndConvertCountryCodeToBytes(
         string memory __countryCode
@@ -262,7 +346,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         );
         bytes3 result;
         assembly {
-            result := mload(add(countryCode, 3))
+            result := mload(add(__countryCode, 3))
         }
         return result;
     }
@@ -279,9 +363,19 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     returns (address signer) {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", _domainSeparator, __structHash));
         signer = ecrecover(digest, __v, __r, __s);
-        require(signer != address(0), "AssetIntroducerV1::_validateOfflineSignature: invalid signature");
-        require(__nonce == _ownerToNonceMap[signer]++, "AssetIntroducerV1::_validateOfflineSignature: invalid nonce");
-        require(now <= __expiry, "AssetIntroducerV1::_validateOfflineSignature: signature expired");
+
+        require(
+            signer != address(0),
+            "AssetIntroducerV1::_validateOfflineSignature: INVALID_SIGNATURE"
+        );
+        require(
+            __nonce == _ownerToNonceMap[signer]++,
+            "AssetIntroducerV1::_validateOfflineSignature: INVALID_NONCE"
+        );
+        require(
+            now <= __expiry,
+            "AssetIntroducerV1::_validateOfflineSignature: EXPIRED"
+        );
 
         emit SignatureValidated(signer, __nonce);
     }
@@ -296,11 +390,63 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
 
         AssetIntroducer storage introducer = _idToAssetIntroducer[__tokenId];
         introducer.isOnSecondaryMarket = true;
-        introducer.dmgLocked = dmgPurchasePrice;
+        introducer.dmgLocked = uint96(dmgPurchasePrice);
 
-        _transfer(__buyer, __tokenId);
+        _transfer(__buyer, __tokenId, false);
 
         emit AssetIntroducerBought(__tokenId, __buyer, dmgPurchasePrice);
+    }
+
+    function _moveDelegates(
+        address fromOwner,
+        address toOwner,
+        uint128 amount
+    ) internal {
+        if (fromOwner != toOwner && amount > 0) {
+            if (fromOwner != address(0)) {
+                uint64 fromCheckpointCount = _ownerToCheckpointCountMap[fromOwner];
+                uint128 fromVotesOld = fromCheckpointCount > 0 ? _ownerToCheckpointIndexToCheckpointMap[fromOwner][fromCheckpointCount - 1].votes : 0;
+                uint128 fromVotesNew = SafeBitMath.sub128(
+                    fromVotesOld,
+                    amount,
+                    "AssetIntroducerV1::_moveVotes: VOTE_UNDERFLOW"
+                );
+                _writeCheckpoint(fromOwner, fromCheckpointCount, fromVotesOld, fromVotesNew);
+            }
+
+            if (toOwner != address(0)) {
+                uint64 toCheckpointCount = _ownerToCheckpointCountMap[toOwner];
+                uint128 toVotesOld = toCheckpointCount > 0 ? _ownerToCheckpointIndexToCheckpointMap[toOwner][toCheckpointCount - 1].votes : 0;
+                uint128 toVotesNew = SafeBitMath.add128(
+                    toVotesOld,
+                    amount,
+                    "AssetIntroducerV1::_moveVotes: VOTE_OVERFLOW"
+                );
+                _writeCheckpoint(toOwner, toCheckpointCount, toVotesOld, toVotesNew);
+            }
+        }
+    }
+
+
+    function _writeCheckpoint(
+        address owner,
+        uint64 checkpointCount,
+        uint128 oldVotes,
+        uint128 newVotes
+    ) internal {
+        uint64 blockNumber = SafeBitMath.safe64(
+            block.number,
+            "AssetIntroducerV1::_writeCheckpoint: INVALID_BLOCK_NUMBER"
+        );
+
+        if (checkpointCount > 0 && _ownerToCheckpointIndexToCheckpointMap[owner][checkpointCount - 1].fromBlock == blockNumber) {
+            _ownerToCheckpointIndexToCheckpointMap[owner][checkpointCount - 1].votes = newVotes;
+        } else {
+            _ownerToCheckpointIndexToCheckpointMap[owner][checkpointCount] = Checkpoint(blockNumber, newVotes);
+            _ownerToCheckpointCountMap[owner] = checkpointCount + 1;
+        }
+
+        emit DelegateVotesChanged(owner, oldVotes, newVotes);
     }
 
 }

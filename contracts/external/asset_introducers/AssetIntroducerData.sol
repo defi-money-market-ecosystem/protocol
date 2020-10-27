@@ -37,9 +37,13 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
     // *************************
 
     address internal _dmg;
+
     uint internal _totalDmgLocked;
+
     bytes32 _domainSeparator;
+
     uint internal _totalSupply;
+
     uint[] internal _allTokens;
 
     mapping(uint => AssetIntroducer) internal _idToAssetIntroducer;
@@ -77,7 +81,17 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
     /**
      * @dev Mapping from an interface to whether or not it's supported.
      */
-    mapping(bytes3 => bool) internal _supportedInterfaces;
+    mapping(bytes4 => bool) internal _interfaceIdToIsSupportedMap;
+
+    /**
+     * @dev Taken from the DMG token implementation
+     */
+    mapping(address => mapping(uint64 => Checkpoint)) internal _ownerToCheckpointIndexToCheckpointMap;
+
+    /**
+     * @dev Taken from the DMG token implementation
+     */
+    mapping(address => uint64) internal _ownerToCheckpointCountMap;
 
     // *************************
     // ***** Data Structures
@@ -96,6 +110,11 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
         /// An override on how much this asset introducer can manager; the default amount for a `countryCode` and
         /// `introducerType` can be retrieved via function call
         uint104 dollarAmountToManage;
+    }
+
+    struct Checkpoint {
+        uint64 fromBlock;
+        uint128 votes;
     }
 
     struct DmgApprovalStruct {

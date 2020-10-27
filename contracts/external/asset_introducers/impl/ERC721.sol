@@ -46,7 +46,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
      * @dev Guarantees that the msg.sender is an owner or operator of the given NFT.
      * @param __tokenId ID of the NFT to validate.
      */
-    modifier onlyOperator(uint256 __tokenId) {
+    modifier requireIsOperator(uint256 __tokenId) {
         address tokenOwner = _idToOwnerMap[__tokenId];
         require(
             tokenOwner == msg.sender || _ownerToOperatorToIsApprovedMap[tokenOwner][msg.sender],
@@ -60,26 +60,13 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
      * @dev Guarantees that the msg.sender is allowed to transfer NFT.
      * @param __tokenId ID of the NFT to transfer.
      */
-    modifier canTransfer(uint256 __tokenId) {
+    modifier requireCanTransfer(uint256 __tokenId) {
         address tokenOwner = _idToOwnerMap[__tokenId];
         require(
             tokenOwner == msg.sender ||
             _idToSpenderMap[__tokenId] == msg.sender ||
             _ownerToOperatorToIsApprovedMap[tokenOwner][msg.sender],
-            "ERC721: NOT_APPROVED_OR_NOT_OPERATOR"
-        );
-
-        _;
-    }
-
-    /**
-     * @dev Guarantees that __tokenId is a valid Token.
-     * @param __tokenId ID of the NFT to validate.
-     */
-    modifier onlyValidNft(uint256 __tokenId) {
-        require(
-            _idToOwnerMap[__tokenId] != address(0),
-            "ERC721: INVALID_TOKEN"
+            "ERC721: NOT_OWNER_OR_NOT_APPROVED_OR_NOT_OPERATOR"
         );
 
         _;
@@ -90,7 +77,19 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
      */
     constructor() public {
         // ERC721
-        _supportedInterfaces[0x80ac58cd] = true;
+        _interfaceIdToIsSupportedMap[0x80ac58cd] = true;
+    }
+
+    /// @notice Query if a contract implements an interface
+    /// @param __interfaceId The interface identifier, as specified in ERC-165
+    /// @dev Interface identification is specified in ERC-165. This function
+    ///  uses less than 30,000 gas.
+    /// @return `true` if the contract implements `interfaceID` and
+    ///  `interfaceID` is not 0xffffffff, `false` otherwise
+    function supportsInterface(
+        bytes4 __interfaceId
+    ) external view returns (bool) {
+        return __interfaceId != 0xffffffff && _interfaceIdToIsSupportedMap[__interfaceId];
     }
 
     /**
@@ -151,8 +150,8 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         uint256 __tokenId
     )
     external
-    canTransfer(__tokenId)
-    onlyValidNft(__tokenId) {
+    requireCanTransfer(__tokenId)
+    requireIsValidNft(__tokenId) {
         address tokenOwner = _idToOwnerMap[__tokenId];
 
         require(
@@ -164,7 +163,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
             "ERC721::transferFrom: INVALID_RECIPIENT"
         );
 
-        _transfer(__to, __tokenId);
+        _transfer(__to, __tokenId, false);
     }
 
     /**
@@ -179,8 +178,8 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         uint256 __tokenId
     )
     external
-    onlyOperator(__tokenId)
-    onlyValidNft(__tokenId) {
+    requireIsOperator(__tokenId)
+    requireIsValidNft(__tokenId) {
         address tokenOwner = _idToOwnerMap[__tokenId];
         require(
             __spender != tokenOwner,
@@ -208,15 +207,15 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
     }
 
     /**
-     * @dev Returns the number of NFTs owned by `_owner`. NFTs assigned to the zero address are
+     * @dev Returns the number of NFTs owned by `__owner`. NFTs assigned to the zero address are
      * considered invalid, and this function throws for queries about the zero address.
-     * @param _owner Address for whom to query the balance.
+     * @param __owner Address for whom to query the balance.
      * @return Balance of _owner.
      */
     function balanceOf(
         address __owner
     )
-    external
+    public
     view
     returns (uint256) {
         require(
@@ -243,17 +242,22 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         return _allTokens[__index];
     }
 
-    function tokenByIndex(
+    function tokenOfOwnerByIndex(
+        address __owner,
         uint __index
     )
     external
     view returns (uint) {
         require(
-            __index < _totalSupply,
-            "ERC721::tokenByIndex: INVALID_INDEX"
+            __index < balanceOf(__owner),
+            "ERC721::tokenOfOwnerByIndex: INVALID_INDEX"
         );
 
-        return _allTokens[__index];
+        uint tokenId = LINKED_LIST_GUARD;
+        for (uint i = 0; i <= __index; i++) {
+            tokenId = _ownerToTokenIds[__owner][tokenId];
+        }
+        return tokenId;
     }
 
     /**
@@ -287,7 +291,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
     )
     external
     view
-    onlyValidNft(__tokenId)
+    requireIsValidNft(__tokenId)
     returns (address) {
         return _idToSpenderMap[__tokenId];
     }
@@ -329,16 +333,23 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
     // *************************
 
     /**
-     * @dev Actually preforms the transfer.
-     * @notice Does NO checks.
+     * @dev Actually preforms the transfer. Checks that "__to" is not this contract
      * @param __to Address of a new owner.
      * @param __tokenId The NFT that is being transferred.
+     * @param __shouldAllowTransferIntoThisContract True if this call to _transfer should allow transferring funds to
+     *        this contract or false if it should disallow it.
      */
     function _transfer(
         address __to,
-        uint256 __tokenId
+        uint256 __tokenId,
+        bool __shouldAllowTransferIntoThisContract
     )
     internal {
+        require(
+            __shouldAllowTransferIntoThisContract || __to != address(this),
+            "ERC721::_transfer INVALID_RECIPIENT"
+        );
+
         address from = _idToOwnerMap[__tokenId];
         _clearApproval(__tokenId);
 
@@ -371,6 +382,9 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         );
 
         _addTokenToNewOwner(__to, __tokenId);
+        _allTokens.push(__tokenId);
+        _totalSupply += 1;
+
         emit Transfer(address(0), __to, __tokenId);
     }
 
@@ -389,6 +403,17 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         address tokenOwner = _idToOwnerMap[__tokenId];
         _clearApproval(__tokenId);
         _removeToken(tokenOwner, __tokenId);
+
+        uint[] memory allTokens = _allTokens;
+        for (uint i = 0; i < allTokens.length; i++) {
+            if (allTokens[i] == __tokenId) {
+                delete _allTokens[i];
+                break;
+            }
+        }
+
+        _totalSupply -= 1;
+
         emit Transfer(tokenOwner, address(0), __tokenId);
     }
 
@@ -455,7 +480,20 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
             indexedTokenId = _ownerToTokenIds[__to][indexedTokenId];
         }
         _ownerToTokenIds[__to][previousIndex] = __tokenId;
+    }
 
+    function getAllTokenIdsByOwner(
+        address __owner
+    )
+    public
+    view returns (uint[] memory) {
+        uint[] memory result = new uint[](balanceOf(__owner));
+        uint tokenId = LINKED_LIST_GUARD;
+        for (uint i = 0; i < result.length; i++) {
+            result[i] = _ownerToTokenIds[__owner][tokenId];
+            tokenId = result[i];
+        }
+        return result;
     }
 
     /**
@@ -487,8 +525,8 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         bytes memory __data
     )
     internal
-    canTransfer(__tokenId)
-    onlyValidNft(__tokenId) {
+    requireCanTransfer(__tokenId)
+    requireIsValidNft(__tokenId) {
         address tokenOwner = _idToOwnerMap[__tokenId];
         require(
             tokenOwner == __from,
@@ -499,7 +537,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
             "ERC721::_safeTransferFrom INVALID_RECIPIENT"
         );
 
-        _transfer(__to, __tokenId);
+        _transfer(__to, __tokenId, false);
 
         if (__to.isContract()) {
             bytes4 retval = IERC721TokenReceiver(__to).onERC721Received(msg.sender, __from, __tokenId, __data);

@@ -16,6 +16,7 @@
 
 
 pragma solidity ^0.5.0;
+pragma experimental ABIEncoderV2;
 
 import "../AssetIntroducerData.sol";
 
@@ -27,6 +28,7 @@ interface IAssetIntroducerV1 {
 
     event SignatureValidated(address indexed signer, uint nonce);
     event AssetIntroducerBought(uint indexed tokenId, address indexed buyer, uint dmgAmount);
+    event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
 
     // *************************
     // ***** Admin Functions
@@ -79,7 +81,7 @@ interface IAssetIntroducerV1 {
     function getPriorVotes(
         address user,
         uint blockNumber
-    ) external view returns (uint);
+    ) external view returns (uint128);
 
     function getCurrentVotes(
         address user
