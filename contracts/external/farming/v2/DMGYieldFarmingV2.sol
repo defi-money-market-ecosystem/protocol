@@ -717,7 +717,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         uint16 __fee
     ) internal pure {
         require(
-            __fee >= 0 && __fee < FEE_AMOUNT_FACTOR,
+            __fee < FEE_AMOUNT_FACTOR,
             "DMGYieldFarmingV2::_verifyTokenFee: INVALID_FEES"
         );
     }
