@@ -8,9 +8,8 @@ const {createProposalForUpgradingController} = require('./encode_abi/EncodeGover
 const {createProposalForBurningTokens} = require('./encode_abi/EncodeBurning')
 const {approveGloballyTrustedProxy} = require('./encode_abi/EncodeFarming')
 
-const loader = setupLoader({provider: provider, defaultGasPrice: 8e9});
-
 const web3 = new Web3(provider);
+const loader = setupLoader({provider: web3, defaultGasPrice: 8e9});
 const defaultGasPrice = 6e9;
 
 exports.defaultGasPrice = defaultGasPrice;
@@ -70,8 +69,8 @@ const main = async () => {
   web3.eth.accounts.wallet.add(account);
   web3.eth.defaultAccount = account.address;
   const deployerAddress = account.address;
-
   const DelayedOwner = loader.truffle.fromArtifact('DelayedOwner');
+
   const DMGToken = loader.truffle.fromArtifact('DMGToken');
   const DMGYieldFarmingV1 = loader.truffle.fromArtifact('DMGYieldFarmingV1');
   const DmmController = loader.truffle.fromArtifact('DmmController');
@@ -108,16 +107,16 @@ const main = async () => {
   // console.log('--------------------------------------------------')
   // await createProposalForYieldFarming(governorAlpha, gnosisSafeAddress, dmg, deployerAddress, governorTimelockAddress, yieldFarming, rewardAmountWei, targetDurationDays, maxDebtCeiling);
 
-  // const burnAmountWei = new BN('35147000000')
-  // await createProposalForBurningTokens(governorAlpha, usdc, governorTimelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmg);
+  const burnAmountWei = new BN('21134000000');
+  await createProposalForBurningTokens(governorAlpha, usdc, governorTimelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmg);
 
-  await createProposalForUpgradingController(
-    governorAlpha,
-    dmmController,
-    offChainAssetValuatorProxyAddress,
-    offChainCurrencyValuatorProxyAddress,
-    underlyingTokenValuatorProxy,
-  );
+  // await createProposalForUpgradingController(
+  //   governorAlpha,
+  //   dmmController,
+  //   offChainAssetValuatorProxyAddress,
+  //   offChainCurrencyValuatorProxyAddress,
+  //   underlyingTokenValuatorProxy,
+  // );
 
   // const _1000_DAI = new BN('1000000000000000000000');
   // const usdcAmount = new BN('5929500000');

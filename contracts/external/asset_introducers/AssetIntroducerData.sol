@@ -36,7 +36,12 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
     // ***** V1 State Variables
     // *************************
 
+    /// The timestamp at which this contract was initialized
+    uint64 _initTimestamp;
+
     address internal _dmg;
+
+    address internal _underlyingTokenValuator;
 
     uint internal _totalDmgLocked;
 
@@ -63,12 +68,15 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
      */
     mapping(address => mapping(address => bool)) internal _ownerToOperatorToIsApprovedMap;
 
+    /**
+     * @dev Mapping for the count of each user's off-chain signed messages. 0-indexed.
+     */
     mapping(address => uint) internal _ownerToNonceMap;
 
     /**
-    * @dev  Mapping from owner address to all owned token IDs. Works as a linked list such that previous key --> next
-    *       value. The 0th key in the list is LINKED_LIST_GUARD.
-    */
+     * @dev  Mapping from owner address to all owned token IDs. Works as a linked list such that previous key --> next
+     *       value. The 0th key in the list is LINKED_LIST_GUARD.
+     */
     mapping(address => mapping(uint => uint)) internal _ownerToTokenIds;
 
     /**
@@ -93,6 +101,12 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
      */
     mapping(address => uint64) internal _ownerToCheckpointCountMap;
 
+    /**
+     * @dev A mapping from the country code to asset introducer type to the cost needed to buy one. The cost is
+     *      represented in USD (with 18 decimals) and is purchased using DMG, so a conversion is needed using Chainlink.
+     */
+    mapping(bytes3 => mapping(uint8 => uint96)) internal _countryCodeToAssetIntroducerTypeToPriceUsd;
+
     // *************************
     // ***** Data Structures
     // *************************
@@ -110,13 +124,16 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
         /// An override on how much this asset introducer can manager; the default amount for a `countryCode` and
         /// `introducerType` can be retrieved via function call
         uint104 dollarAmountToManage;
+        uint tokenId;
     }
 
+    /// Used for tracking delegation and number of votes each user has at a given block height.
     struct Checkpoint {
         uint64 fromBlock;
         uint128 votes;
     }
 
+    /// Used to prevent the "stack too deep" error and make code more readable
     struct DmgApprovalStruct {
         address spender;
         uint rawAmount;
@@ -131,6 +148,7 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
     // ***** Modifiers
     // *************************
 
+    /// Enforces that an NFT has NOT been sold to a user yet
     modifier requireIsPrimaryMarketNft(uint __tokenId) {
         require(
             !_idToAssetIntroducer[__tokenId].isOnSecondaryMarket,
@@ -140,6 +158,7 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
         _;
     }
 
+    /// Enforces that an NFT has been sold to a user
     modifier requireIsSecondaryMarketNft(uint __tokenId) {
         require(
             _idToAssetIntroducer[__tokenId].isOnSecondaryMarket,
