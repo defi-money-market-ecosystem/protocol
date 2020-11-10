@@ -49,7 +49,16 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
 
     uint internal _totalSupply;
 
-    uint[] internal _allTokens;
+    /**
+     * @dev The last token ID in the linked list.
+     */
+    uint internal _lastTokenId;
+
+    /**
+     * @dev Mapping of all token IDs. Works as a linked list such that previous key --> next value. The 0th key in the
+     *      list is LINKED_LIST_GUARD.
+     */
+    mapping(uint => uint) internal _allTokens;
 
     mapping(uint => AssetIntroducer) internal _idToAssetIntroducer;
 

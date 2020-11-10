@@ -40,6 +40,8 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     // ***** Constants
     // *************************
 
+    uint public constant ONE_ETH = 1e18;
+
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPE_HASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
@@ -287,7 +289,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         return _dmg;
     }
 
-    function domainSeparator() external view returns (address) {
+    function domainSeparator() external view returns (bytes32) {
         return _domainSeparator;
     }
 
@@ -317,8 +319,17 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         return _idToAssetIntroducer[__tokenId].dmgLocked;
     }
 
-    function getAssetIntroducerDiscount() public returns (uint) {
-        return _initTimestamp;
+    function getAssetIntroducerDiscount() public view returns (uint) {
+        uint diff = block.timestamp.sub(_initTimestamp);
+        uint discountDurationInSeconds = 86400 * 30 * 18;
+        if (diff > discountDurationInSeconds) {
+            // The discount expired
+            return 0;
+        } else {
+            // Discount is 90% at t=0
+            uint originalDiscount = 0.9 ether;
+            return originalDiscount.mul(discountDurationInSeconds.sub(diff)).div(discountDurationInSeconds);
+        }
     }
 
     function getAssetIntroducerPriceUsd(
@@ -328,8 +339,8 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     public
     returns (uint) {
         AssetIntroducer memory assetIntroducer = _idToAssetIntroducer[__tokenId];
-        uint priceUsd = _countryCodeToAssetIntroducerTypeToPriceUsd[assetIntroducer.countryCode][assetIntroducer.introducerType];
-        return priceUsd.mul(1e18.sub(getAssetIntroducerDiscount())).div(1e18);
+        uint priceUsd = _countryCodeToAssetIntroducerTypeToPriceUsd[assetIntroducer.countryCode][uint8(assetIntroducer.introducerType)];
+        return priceUsd.mul(ONE_ETH.sub(getAssetIntroducerDiscount())).div(ONE_ETH);
     }
 
     function getAssetIntroducerPriceDmg(
@@ -346,8 +357,8 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         string calldata __countryCode
     ) external view returns (AssetIntroducer[] memory) {
         bytes3 countryCode = _verifyAndConvertCountryCodeToBytes(__countryCode);
-        uint[] memory affiliates = _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][AssetIntroducerType.AFFILIATE];
-        uint[] memory principals = _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][AssetIntroducerType.PRINCIPAL];
+        uint[] memory affiliates = _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(AssetIntroducerType.AFFILIATE)];
+        uint[] memory principals = _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(AssetIntroducerType.PRINCIPAL)];
 
         AssetIntroducer[] memory assetIntroducers = new AssetIntroducer[](affiliates.length + principals.length);
         for (uint i = 0; i < affiliates.length + principals.length; i++) {
@@ -361,10 +372,11 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     }
 
     function getAllAssetIntroducers() public view returns (AssetIntroducer[] memory) {
-        uint[] memory tokenIds = _allTokens;
-        AssetIntroducer[] memory assetIntroducers = new AssetIntroducer[](tokenIds.length);
-        for (uint i = 0; i < tokenIds.length; i++) {
-            assetIntroducers[i] = _idToAssetIntroducer[tokenIds[i]];
+        uint nextTokenId = LINKED_LIST_GUARD;
+        AssetIntroducer[] memory assetIntroducers = new AssetIntroducer[](_totalSupply);
+        for (uint i = 0; i < assetIntroducers.length; i++) {
+            assetIntroducers[i] = _idToAssetIntroducer[_allTokens[nextTokenId]];
+            nextTokenId = _allTokens[nextTokenId];
         }
         return assetIntroducers;
     }
@@ -471,7 +483,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         address __recipient,
         uint __tokenId
     ) internal {
-        uint dmgPurchasePrice = getAssetIntroducerPrice(__tokenId);
+        uint dmgPurchasePrice = getAssetIntroducerPriceDmg(__tokenId);
         IERC20(_dmg).safeTransferFrom(__buyer, address(this), dmgPurchasePrice);
         _totalDmgLocked = _totalDmgLocked.add(dmgPurchasePrice);
 
