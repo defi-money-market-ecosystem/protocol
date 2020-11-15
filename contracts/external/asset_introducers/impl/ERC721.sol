@@ -75,7 +75,9 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
     /**
      * @dev Contract constructor.
      */
-    constructor() public {
+    function initialize()
+    public
+    initializer {
         // ERC721
         _interfaceIdToIsSupportedMap[0x80ac58cd] = true;
     }

@@ -54,11 +54,24 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     )
     public
     initializer {
+        ERC721Token.initialize();
         IOwnableOrGuardian.initialize(__owner, __guardian);
 
         _domainSeparator = keccak256(
             abi.encode(DOMAIN_TYPE_HASH, keccak256(bytes(NAME)), EvmUtil.getChainId(), address(this))
         );
+    }
+
+    function name() external view returns (string memory) {
+        return "Asset Introducer";
+    }
+
+    function tokenURI(
+        uint256 __tokenId
+    )
+    external
+    view returns (string memory) {
+        return "";
     }
 
     function createAssetIntroducersForPrimaryMarket(
@@ -319,6 +332,23 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     requireIsValidNft(__tokenId)
     view returns (uint) {
         return _idToAssetIntroducer[__tokenId].dmgLocked;
+    }
+
+    function getAssetIntroducersByCountryCode(
+        string calldata __countryCode
+    ) external view returns (uint[] memory) {
+        bytes3 countryCode = _verifyAndConvertCountryCodeToBytes(__countryCode);
+        uint[] memory principalTokenIds = _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(AssetIntroducerType.PRINCIPAL)];
+        uint[] memory affiliateTokenIds = _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(AssetIntroducerType.AFFILIATE)];
+        uint[] memory allTokenIds = new uint[](principalTokenIds.length + affiliateTokenIds.length);
+        for (uint i = 0; i < allTokenIds.length; i++) {
+            if (i < principalTokenIds.length) {
+                allTokenIds[i] = principalTokenIds[i];
+            } else {
+                allTokenIds[i] = affiliateTokenIds[i - principalTokenIds.length];
+            }
+        }
+        return allTokenIds;
     }
 
     // *************************
