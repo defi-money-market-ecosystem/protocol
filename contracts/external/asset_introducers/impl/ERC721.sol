@@ -241,7 +241,12 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
             "ERC721::tokenByIndex: INVALID_INDEX"
         );
 
-        return _allTokens[__index];
+        uint tokenId = LINKED_LIST_GUARD;
+        for (uint i = 0; i <= __index; i++) {
+            tokenId = _allTokens[tokenId];
+        }
+
+        return tokenId;
     }
 
     function tokenOfOwnerByIndex(
@@ -311,7 +316,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
     external
     view
     returns (bool) {
-        return _ownerToOperatorToIsApprovedMap[_owner][__operator];
+        return _ownerToOperatorToIsApprovedMap[__owner][__operator];
     }
 
     function getAllTokensOf(
@@ -384,7 +389,10 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         );
 
         _addTokenToNewOwner(__to, __tokenId);
-        _allTokens.push(__tokenId);
+
+        _allTokens[_lastTokenId] = __tokenId;
+        _lastTokenId = __tokenId;
+
         _totalSupply += 1;
 
         emit Transfer(address(0), __to, __tokenId);
@@ -406,15 +414,20 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         _clearApproval(__tokenId);
         _removeToken(tokenOwner, __tokenId);
 
-        uint[] memory allTokens = _allTokens;
-        for (uint i = 0; i < allTokens.length; i++) {
-            if (allTokens[i] == __tokenId) {
-                delete _allTokens[i];
+        uint totalSupply = _totalSupply;
+        uint previousTokenId = LINKED_LIST_GUARD;
+        for (uint i = 0; i < totalSupply; i++) {
+            if (_allTokens[previousTokenId] == __tokenId) {
+                _allTokens[previousTokenId] = _allTokens[__tokenId];
                 break;
             }
+            previousTokenId = _allTokens[previousTokenId];
+        }
+        if (__tokenId == _lastTokenId) {
+            _lastTokenId = _allTokens[previousTokenId];
         }
 
-        _totalSupply -= 1;
+        _totalSupply = totalSupply - 1;
 
         emit Transfer(tokenOwner, address(0), __tokenId);
     }

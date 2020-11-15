@@ -1,4 +1,4 @@
-const BN = require('BN.js');
+const BN = require('bn.js');
 const Web3 = require('web3');
 
 const createProposalForYieldFarming = async (governorAlpha, safeAddress, dmg, dmmDeployerAddress, timelockAddress, yieldFarming, rewardAmountWei, targetDurationDays, maxDebtCeilingWei) => {

@@ -24,6 +24,8 @@ import "../../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../utils/EvmUtil.sol";
 
 import "../../../governance/dmg/SafeBitMath.sol";
+import "../../../protocol/interfaces/IUnderlyingTokenValuator.sol";
+
 import "../impl/ERC721.sol";
 
 import "./IAssetIntroducerV1.sol";
@@ -38,6 +40,8 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     // ***** Constants
     // *************************
 
+    uint public constant ONE_ETH = 1e18;
+
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPE_HASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
@@ -50,13 +54,19 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
 
     function initialize(
         address __owner,
-        address __guardian
+        address __guardian,
+        address __dmg,
+        address __underlyingTokenValuator
     )
     public
     initializer {
         ERC721Token.initialize();
         IOwnableOrGuardian.initialize(__owner, __guardian);
 
+        _dmg = __dmg;
+        _underlyingTokenValuator = __underlyingTokenValuator;
+
+        _initTimestamp = uint64(block.timestamp);
         _domainSeparator = keccak256(
             abi.encode(DOMAIN_TYPE_HASH, keccak256(bytes(NAME)), EvmUtil.getChainId(), address(this))
         );
@@ -76,7 +86,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
 
     function createAssetIntroducersForPrimaryMarket(
         string[] calldata __countryCodes,
-        AssetIntroducerData.AssetIntroducerType[] calldata __introducerTypes,
+        AssetIntroducerType[] calldata __introducerTypes,
         uint[] calldata __dmgPriceAmounts
     )
     external
@@ -103,7 +113,8 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
             introducerType : __introducerTypes[i],
             isOnSecondaryMarket : false,
             dmgLocked : 0,
-            dollarAmountToManage : 0
+            dollarAmountToManage : 0,
+            tokenId : tokenIds[i]
             });
 
             _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(__introducerTypes[i])].push(tokenIds[i]);
@@ -131,7 +142,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
 
     function setDollarAmountToManageByCountryCodeAndIntroducerType(
         string calldata __countryCode,
-        AssetIntroducerData.AssetIntroducerType __introducerType,
+        AssetIntroducerType __introducerType,
         uint __dollarAmountToManage
     )
     external
@@ -152,10 +163,6 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     // ***** User Functions
     // *************************
 
-    /**
-     * Buys the slot for the appropriate amount of DMG, by attempting to transfer the DMG from `msg.sender` to this
-     * contract
-     */
     function buyAssetIntroducerSlot(
         uint __tokenId
     )
@@ -163,7 +170,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     requireIsValidNft(__tokenId)
     requireIsPrimaryMarketNft(__tokenId)
     returns (bool) {
-        _buyAssetIntroducer(msg.sender, __tokenId);
+        _buyAssetIntroducer(msg.sender, msg.sender, __tokenId);
         return true;
     }
 
@@ -189,7 +196,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     returns (bool) {
         bytes32 structHash = keccak256(abi.encode(BUY_ASSET_INTRODUCER_TYPE_HASH, __amount, __nonce, __expiry));
         address signer = _validateOfflineSignature(structHash, __nonce, __expiry, __v, __r, __s);
-        _buyAssetIntroducer(signer, __tokenId);
+        _buyAssetIntroducer(signer, __recipient, __tokenId);
         return true;
     }
 
@@ -221,18 +228,8 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         bytes32 structHash = keccak256(abi.encode(BUY_ASSET_INTRODUCER_TYPE_HASH, __amount, __nonce, __expiry));
         address signer = _validateOfflineSignature(structHash, __nonce, __expiry, __v, __r, __s);
 
-        _buyAssetIntroducer(signer, __tokenId);
+        _buyAssetIntroducer(signer, __recipient, __tokenId);
         return true;
-    }
-
-    function getAssetIntroducerPrice(
-        uint __tokenId
-    )
-    requireIsValidNft(__tokenId)
-    public
-    returns (uint) {
-        // TODO
-        return 0;
     }
 
     function getCurrentVotes(
@@ -301,17 +298,22 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     // ***** Misc Functions
     // *************************
 
-    /**
-     * @return  The total amount of DMG locked in the asset introducer reserves
-     */
+    function dmg() external view returns (address) {
+        return _dmg;
+    }
+
+    function domainSeparator() external view returns (bytes32) {
+        return _domainSeparator;
+    }
+
+    function underlyingTokenValuator() external view returns (address) {
+        return _underlyingTokenValuator;
+    }
+
     function getTotalDmgLocked() external view returns (uint) {
         return _totalDmgLocked;
     }
 
-    /**
-     * @return  The amount that this asset introducer can manager, represented in wei format (a number with 18
-     *          decimals). Meaning, 10,000.25 * 1e18 == $10,000.25
-     */
     function getDollarAmountToManageByTokenId(
         uint __tokenId
     )
@@ -321,10 +323,6 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         return _idToAssetIntroducer[__tokenId].dollarAmountToManage;
     }
 
-    /**
-     * @return  The amount of DMG that this asset introducer has locked in order to maintain a valid status as an asset
-     *          introducer.
-     */
     function getDmgLockedByTokenId(
         uint __tokenId
     )
@@ -334,21 +332,104 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         return _idToAssetIntroducer[__tokenId].dmgLocked;
     }
 
+    function getAssetIntroducerDiscount() public view returns (uint) {
+        uint diff = block.timestamp.sub(_initTimestamp);
+        uint discountDurationInSeconds = 86400 * 30 * 18;
+        if (diff > discountDurationInSeconds) {
+            // The discount expired
+            return 0;
+        } else {
+            // Discount is 90% at t=0
+            uint originalDiscount = 0.9 ether;
+            return originalDiscount.mul(discountDurationInSeconds.sub(diff)).div(discountDurationInSeconds);
+        }
+    }
+
+    function getAssetIntroducerPriceUsd(
+        uint __tokenId
+    )
+    requireIsValidNft(__tokenId)
+    public
+    returns (uint) {
+        AssetIntroducer memory assetIntroducer = _idToAssetIntroducer[__tokenId];
+        uint priceUsd = _countryCodeToAssetIntroducerTypeToPriceUsd[assetIntroducer.countryCode][uint8(assetIntroducer.introducerType)];
+        return priceUsd.mul(ONE_ETH.sub(getAssetIntroducerDiscount())).div(ONE_ETH);
+    }
+
+    function getAssetIntroducerPriceDmg(
+        uint __tokenId
+    )
+    requireIsValidNft(__tokenId)
+    public
+    returns (uint) {
+        uint dmgPriceUsd = IUnderlyingTokenValuator(_underlyingTokenValuator).getTokenValue(_dmg, 1e18);
+        return getAssetIntroducerPriceUsd(__tokenId).mul(1e18).div(dmgPriceUsd);
+    }
+
     function getAssetIntroducersByCountryCode(
         string calldata __countryCode
-    ) external view returns (uint[] memory) {
+    ) external view returns (AssetIntroducer[] memory) {
         bytes3 countryCode = _verifyAndConvertCountryCodeToBytes(__countryCode);
-        uint[] memory principalTokenIds = _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(AssetIntroducerType.PRINCIPAL)];
-        uint[] memory affiliateTokenIds = _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(AssetIntroducerType.AFFILIATE)];
-        uint[] memory allTokenIds = new uint[](principalTokenIds.length + affiliateTokenIds.length);
-        for (uint i = 0; i < allTokenIds.length; i++) {
-            if (i < principalTokenIds.length) {
-                allTokenIds[i] = principalTokenIds[i];
+        uint[] memory affiliates = _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(AssetIntroducerType.AFFILIATE)];
+        uint[] memory principals = _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(AssetIntroducerType.PRINCIPAL)];
+
+        AssetIntroducer[] memory assetIntroducers = new AssetIntroducer[](affiliates.length + principals.length);
+        for (uint i = 0; i < affiliates.length + principals.length; i++) {
+            if (i < affiliates.length) {
+                assetIntroducers[i] = _idToAssetIntroducer[affiliates[i]];
             } else {
-                allTokenIds[i] = affiliateTokenIds[i - principalTokenIds.length];
+                assetIntroducers[i] = _idToAssetIntroducer[principals[i - affiliates.length]];
             }
         }
-        return allTokenIds;
+        return assetIntroducers;
+    }
+
+    function getAllAssetIntroducers() public view returns (AssetIntroducer[] memory) {
+        uint nextTokenId = LINKED_LIST_GUARD;
+        AssetIntroducer[] memory assetIntroducers = new AssetIntroducer[](_totalSupply);
+        for (uint i = 0; i < assetIntroducers.length; i++) {
+            assetIntroducers[i] = _idToAssetIntroducer[_allTokens[nextTokenId]];
+            nextTokenId = _allTokens[nextTokenId];
+        }
+        return assetIntroducers;
+    }
+
+    function getPrimaryMarketAssetIntroducers() external view returns (AssetIntroducer[] memory) {
+        AssetIntroducer[] memory allAssetIntroducers = getAllAssetIntroducers();
+        uint primaryMarketCount = 0;
+        for (uint i = 0; i < allAssetIntroducers.length; i++) {
+            if (!allAssetIntroducers[i].isOnSecondaryMarket) {
+                primaryMarketCount += 1;
+            }
+        }
+
+        AssetIntroducer[] memory primaryMarketAssetIntroducers = new AssetIntroducer[](primaryMarketCount);
+        uint j = 0;
+        for (uint i = 0; i < allAssetIntroducers.length; i++) {
+            if (!allAssetIntroducers[i].isOnSecondaryMarket) {
+                primaryMarketAssetIntroducers[j++] = allAssetIntroducers[i];
+            }
+        }
+        return primaryMarketAssetIntroducers;
+    }
+
+    function getSecondaryMarketAssetIntroducers() external view returns (AssetIntroducer[] memory) {
+        AssetIntroducer[] memory allAssetIntroducers = getAllAssetIntroducers();
+        uint secondaryMarketCount = 0;
+        for (uint i = 0; i < allAssetIntroducers.length; i++) {
+            if (allAssetIntroducers[i].isOnSecondaryMarket) {
+                secondaryMarketCount += 1;
+            }
+        }
+
+        AssetIntroducer[] memory secondaryMarketAssetIntroducers = new AssetIntroducer[](secondaryMarketCount);
+        uint j = 0;
+        for (uint i = 0; i < allAssetIntroducers.length; i++) {
+            if (allAssetIntroducers[i].isOnSecondaryMarket) {
+                secondaryMarketAssetIntroducers[j++] = allAssetIntroducers[i];
+            }
+        }
+        return secondaryMarketAssetIntroducers;
     }
 
     // *************************
@@ -412,9 +493,10 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
 
     function _buyAssetIntroducer(
         address __buyer,
+        address __recipient,
         uint __tokenId
     ) internal {
-        uint dmgPurchasePrice = getAssetIntroducerPrice(__tokenId);
+        uint dmgPurchasePrice = getAssetIntroducerPriceDmg(__tokenId);
         IERC20(_dmg).safeTransferFrom(__buyer, address(this), dmgPurchasePrice);
         _totalDmgLocked = _totalDmgLocked.add(dmgPurchasePrice);
 
@@ -422,9 +504,9 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         introducer.isOnSecondaryMarket = true;
         introducer.dmgLocked = uint96(dmgPurchasePrice);
 
-        _transfer(__buyer, __tokenId, false);
+        _transfer(__recipient, __tokenId, false);
 
-        emit AssetIntroducerBought(__tokenId, __buyer, dmgPurchasePrice);
+        emit AssetIntroducerBought(__tokenId, __buyer, __recipient, dmgPurchasePrice);
     }
 
     function _moveDelegates(
