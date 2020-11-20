@@ -31,6 +31,7 @@ interface IDMGYieldFarmingV2 {
     event TokenRemoved(address indexed token);
 
     event FarmSeasonBegun(uint indexed seasonIndex, uint dmgAmount);
+    event FarmSeasonExtended(uint indexed seasonIndex, uint dmgAmount);
     event FarmSeasonEnd(uint indexed seasonIndex, address dustRecipient, uint dustyDmgAmount);
 
     event DmgGrowthCoefficientSet(uint coefficient);
@@ -135,6 +136,15 @@ interface IDMGYieldFarmingV2 {
      * @param dmgAmount The amount of DMG that will be used to fund this campaign.
      */
     function beginFarmingSeason(
+        uint dmgAmount
+    ) external;
+
+    /**
+     * Adds DMG to the already-existing farming season, if there is one. Else, this function reverts.
+     *
+     * @param dmgAmount The amount of DMG that will be added to the existing campaign.
+     */
+    function addToFarmingSeason(
         uint dmgAmount
     ) external;
 
@@ -351,6 +361,8 @@ interface IDMGYieldFarmingV2 {
      * @return  True if there is an active season for farming, or false if there isn't one.
      */
     function isFarmActive() external view returns (bool);
+
+    function dmmController() external view returns (address);
 
     /**
      * The address that acts as a "secondary" owner with quicker access to function calling than the owner. Typically,

@@ -24,8 +24,6 @@ import "../../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "../../uniswap/interfaces/IUniswapV2Pair.sol";
 
 import "../../../governance/dmg/IDMGToken.sol";
-import "../../../protocol/interfaces/IDmmController.sol";
-import "../../../protocol/interfaces/IUnderlyingTokenValuator.sol";
 import "../../../utils/IERC20WithDecimals.sol";
 
 import "./IDMGYieldFarmingV2.sol";
@@ -118,10 +116,11 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
             "DMGYieldFarmingV2::addAllowableToken: TOKEN_ALREADY_SUPPORTED"
         );
         _verifyTokenFee(__fees);
-        _verifyTokenType(__tokenType, __underlyingToken);
+        _verifyTokenType(__tokenType, __underlyingToken, __token, __underlyingTokenDecimals);
         _verifyPoints(__points);
 
         _tokenToIndexPlusOneMap[__token] = _supportedFarmTokens.push(__token);
+        _tokenToFeeAmountMap[__token] = __fees;
         _tokenToRewardPointMap[__token] = __points;
         _tokenToDecimalsMap[__token] = __underlyingTokenDecimals;
         _tokenToTokenType[__token] = __tokenType;
@@ -166,6 +165,24 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         _seasonIndexToStartTimestamp[_seasonIndex] = uint64(block.timestamp);
 
         emit FarmSeasonBegun(_seasonIndex, __dmgAmount);
+    }
+
+    function addToFarmingSeason(
+        uint __dmgAmount
+    )
+    public
+    onlyOwnerOrGuardian
+    nonReentrant {
+        require(
+            _isFarmActive,
+            "DMGYieldFarmingV2::addToFarmingSeason: FARM_NOT_ACTIVE"
+        );
+
+        address dmgToken = _dmgToken;
+        IERC20(dmgToken).safeTransferFrom(msg.sender, address(this), __dmgAmount);
+        _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken] = _addressToTokenToBalanceMap[ZERO_ADDRESS][dmgToken].add(__dmgAmount);
+
+        emit FarmSeasonExtended(_seasonIndex, __dmgAmount);
     }
 
     function endActiveFarmingSeason(
@@ -286,7 +303,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
     nonReentrant
     requireIsFarmToken(__token)
     public {
-        _verifyTokenType(__tokenType, _tokenToUnderlyingTokenMap[__token]);
+        _verifyTokenType(__tokenType, _tokenToUnderlyingTokenMap[__token], __token, _tokenToDecimalsMap[__token]);
         _tokenToTokenType[__token] = __tokenType;
         emit TokenTypeChanged(__token, __tokenType);
     }
@@ -314,6 +331,10 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
 
     function isFarmActive() external view returns (bool) {
         return _isFarmActive;
+    }
+
+    function dmmController() external view returns (address) {
+        return _dmmController;
     }
 
     function guardian() external view returns (address) {
@@ -496,6 +517,14 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         } else {
             return 0;
         }
+    }
+
+    function getUsdBalanceByOwnerAndToken(
+        address __owner,
+        address __token
+    ) public view returns (uint) {
+        uint balance = _addressToTokenToBalanceMap[__owner][__token];
+        return DMGYieldFarmingV2Lib._getUsdValueByTokenAndTokenAmount(this, __token, balance);
     }
 
     function balanceOf(
@@ -698,7 +727,9 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
 
     function _verifyTokenType(
         DMGYieldFarmingV2Lib.TokenType __tokenType,
-        address __underlyingToken
+        address __underlyingToken,
+        address __farmToken,
+        uint8 __farmTokenDecimals
     ) internal {
         require(
             __tokenType != DMGYieldFarmingV2Lib.TokenType.Unknown,
@@ -710,6 +741,21 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
             if (IERC20(__underlyingToken).allowance(address(this), __uniswapV2Router) == 0) {
                 IERC20(__underlyingToken).safeApprove(__uniswapV2Router, uint(- 1));
             }
+        } else if (__tokenType == DMGYieldFarmingV2Lib.TokenType.UniswapPureLpToken) {
+            address __uniswapV2Router = _uniswapV2Router;
+            if (IERC20(__underlyingToken).allowance(address(this), __uniswapV2Router) == 0) {
+                IERC20(__underlyingToken).safeApprove(__uniswapV2Router, uint(- 1));
+            }
+            uint8 token0Decimals = IERC20WithDecimals(IUniswapV2Pair(__farmToken).token0()).decimals();
+            uint8 token1Decimals = IERC20WithDecimals(IUniswapV2Pair(__farmToken).token1()).decimals();
+            require(
+                token0Decimals == __farmTokenDecimals,
+                "DMGYieldFarmingV2::_verifyTokenType: INVALID_TOKEN_0_DECIMALS"
+            );
+            require(
+                token1Decimals == __farmTokenDecimals,
+                "DMGYieldFarmingV2::_verifyTokenType: INVALID_TOKEN_1_DECIMALS"
+            );
         }
     }
 
@@ -769,7 +815,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
         uint balance = _addressToTokenToBalanceMap[__owner][__token];
 
         if (balance > 0 && __previousIndexTimestamp != 0) {
-            uint usdValue = _getUsdValueByTokenAndTokenAmount(__token, balance);
+            uint usdValue = DMGYieldFarmingV2Lib._getUsdValueByTokenAndTokenAmount(this, __token, balance);
             uint16 points = getRewardPointsByToken(__token);
             return _calculateRewardBalance(
                 usdValue,
@@ -813,110 +859,6 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
 
         return _getUnindexedRewardsByUserAndToken(__owner, __token, previousIndexTimestamp)
         .add(_seasonIndexToUserToTokenToEarnedDmgAmountMap[__seasonIndex][__owner][__token]);
-    }
-
-    /**
-     * @return  The dollar value of `tokenAmount`, formatted as a number with 18 decimal places
-     */
-    function _getUsdValueByTokenAndTokenAmount(
-        address __farmToken,
-        uint __tokenAmount
-    ) internal view returns (uint) {
-        address underlyingToken = _tokenToUnderlyingTokenMap[__farmToken];
-        address mToken;
-        address __underlyingTokenValuator = _underlyingTokenValuator;
-        DMGYieldFarmingV2Lib.TokenType tokenType = _tokenToTokenType[__farmToken];
-
-        if (tokenType == DMGYieldFarmingV2Lib.TokenType.UniswapLpToken) {
-            {
-                // New context to prevent "stack too deep" errors
-                address token0 = IUniswapV2Pair(__farmToken).token0();
-                mToken = underlyingToken == token0 ? IUniswapV2Pair(__farmToken).token1() : token0;
-            }
-            uint totalSupply = IERC20(__farmToken).totalSupply();
-            require(
-                totalSupply > 0,
-                "DMGYieldFarmingV2::_getUsdValueByTokenAndTokenAmount: INVALID_TOTAL_SUPPLY"
-            );
-
-            address dmmController = _dmmController;
-
-            uint underlyingTokenUsdValue = _getUnderlyingTokenUsdValueFromUniswapPool(
-                __tokenAmount,
-                totalSupply,
-                __farmToken,
-                underlyingToken,
-                __underlyingTokenValuator
-            );
-
-            uint mTokenUsdValue = _getMTokenUsdValueFromUniswapPool(
-                __tokenAmount,
-                totalSupply,
-                __farmToken,
-                mToken,
-                dmmController,
-                __underlyingTokenValuator
-            );
-
-            return underlyingTokenUsdValue.add(mTokenUsdValue);
-        } else {
-            revert(
-                "DMGYieldFarmingV2::_getUsdValueByTokenAndTokenAmount: INVALID_TOKEN_TYPE"
-            );
-        }
-    }
-
-    function _getUnderlyingTokenUsdValueFromUniswapPool(
-        uint __tokenAmount,
-        uint __totalSupply,
-        address __farmToken,
-        address __underlyingToken,
-        address __underlyingTokenValuator
-    ) internal view returns (uint) {
-        uint underlyingTokenValue = __tokenAmount
-        .mul(IERC20(__underlyingToken).balanceOf(__farmToken)) // For Uniswap, underlying tokens are held in the contract.
-        .div(__totalSupply);
-
-        return _getUsdValueForUnderlyingTokenAmount(
-            __underlyingToken,
-            __underlyingTokenValuator,
-            _tokenToDecimalsMap[__farmToken],
-            underlyingTokenValue
-        );
-    }
-
-    function _getMTokenUsdValueFromUniswapPool(
-        uint __tokenAmount,
-        uint __totalSupply,
-        address __farmToken,
-        address __mToken,
-        address __dmmController,
-        address __underlyingTokenValuator
-    ) internal view returns (uint) {
-        uint mTokenAmount = __tokenAmount
-        .mul(IERC20(__mToken).balanceOf(__farmToken)) // For Uniswap, underlying tokens are held in the contract.
-        .div(__totalSupply);
-
-        return _getUsdValueForUnderlyingTokenAmount(
-            IDmmController(__dmmController).getUnderlyingTokenForDmm(__mToken),
-            __underlyingTokenValuator,
-            IERC20WithDecimals(__mToken).decimals(),
-            mTokenAmount.mul(IDmmController(__dmmController).getExchangeRate(__mToken)).div(1e18)
-        );
-    }
-
-    function _getUsdValueForUnderlyingTokenAmount(
-        address __underlyingToken,
-        address __underlyingTokenValuator,
-        uint8 __decimals,
-        uint __amount
-    ) internal view returns (uint) {
-        if (__decimals < 18) {
-            __amount = __amount.mul((10 ** (18 - uint(__decimals))));
-        } else if (__decimals > 18) {
-            __amount = __amount.div((10 ** (uint(__decimals) - 18)));
-        }
-        return IUnderlyingTokenValuator(__underlyingTokenValuator).getTokenValue(__underlyingToken, __amount);
     }
 
     function _calculateRewardBalance(
