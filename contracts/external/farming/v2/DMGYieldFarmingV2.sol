@@ -116,7 +116,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
             "DMGYieldFarmingV2::addAllowableToken: TOKEN_ALREADY_SUPPORTED"
         );
         _verifyTokenFee(__fees);
-        _verifyTokenType(__tokenType, __underlyingToken, __token, __underlyingTokenDecimals);
+        _verifyTokenType(__tokenType, __underlyingToken, __token);
         _verifyPoints(__points);
 
         _tokenToIndexPlusOneMap[__token] = _supportedFarmTokens.push(__token);
@@ -303,7 +303,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
     nonReentrant
     requireIsFarmToken(__token)
     public {
-        _verifyTokenType(__tokenType, _tokenToUnderlyingTokenMap[__token], __token, _tokenToDecimalsMap[__token]);
+        _verifyTokenType(__tokenType, _tokenToUnderlyingTokenMap[__token], __token);
         _tokenToTokenType[__token] = __tokenType;
         emit TokenTypeChanged(__token, __tokenType);
     }
@@ -728,8 +728,7 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
     function _verifyTokenType(
         DMGYieldFarmingV2Lib.TokenType __tokenType,
         address __underlyingToken,
-        address __farmToken,
-        uint8 __farmTokenDecimals
+        address __farmToken
     ) internal {
         require(
             __tokenType != DMGYieldFarmingV2Lib.TokenType.Unknown,
@@ -741,6 +740,16 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
             if (IERC20(__underlyingToken).allowance(address(this), __uniswapV2Router) == 0) {
                 IERC20(__underlyingToken).safeApprove(__uniswapV2Router, uint(- 1));
             }
+            uint8 token0Decimals = IERC20WithDecimals(IUniswapV2Pair(__farmToken).token0()).decimals();
+            uint8 token1Decimals = IERC20WithDecimals(IUniswapV2Pair(__farmToken).token1()).decimals();
+            require(
+                token0Decimals > 0,
+                "DMGYieldFarmingV2::_verifyTokenType: INVALID_TOKEN_0_DECIMALS"
+            );
+            require(
+                token1Decimals > 0,
+                "DMGYieldFarmingV2::_verifyTokenType: INVALID_TOKEN_1_DECIMALS"
+            );
         } else if (__tokenType == DMGYieldFarmingV2Lib.TokenType.UniswapPureLpToken) {
             address __uniswapV2Router = _uniswapV2Router;
             if (IERC20(__underlyingToken).allowance(address(this), __uniswapV2Router) == 0) {
@@ -749,11 +758,11 @@ contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
             uint8 token0Decimals = IERC20WithDecimals(IUniswapV2Pair(__farmToken).token0()).decimals();
             uint8 token1Decimals = IERC20WithDecimals(IUniswapV2Pair(__farmToken).token1()).decimals();
             require(
-                token0Decimals == __farmTokenDecimals,
+                token0Decimals > 0,
                 "DMGYieldFarmingV2::_verifyTokenType: INVALID_TOKEN_0_DECIMALS"
             );
             require(
-                token1Decimals == __farmTokenDecimals,
+                token1Decimals > 0,
                 "DMGYieldFarmingV2::_verifyTokenType: INVALID_TOKEN_1_DECIMALS"
             );
         }

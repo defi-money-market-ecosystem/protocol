@@ -108,7 +108,7 @@ library DMGYieldFarmingV2Lib {
                 totalSupply,
                 otherToken,
                 otherTokenReserveAmount,
-                underlyingTokenDecimals,
+                IERC20WithDecimals(otherToken).decimals(),
                 __underlyingTokenValuator
             );
 
@@ -148,7 +148,7 @@ library DMGYieldFarmingV2Lib {
             totalSupply,
             mToken,
             mTokenAmount,
-            __underlyingTokenDecimals,
+            IERC20WithDecimals(mToken).decimals(),
             __dmmController,
             __underlyingTokenValuator
         );

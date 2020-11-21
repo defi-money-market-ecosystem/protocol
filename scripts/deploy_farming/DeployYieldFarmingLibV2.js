@@ -7,7 +7,7 @@ const {setupLoader} = require('@openzeppelin/contract-loader');
 const {deployContract} = require('../ContractUtils');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 60e9;
+const defaultGasPrice = 82e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
@@ -31,7 +31,7 @@ const main = async () => {
     DMGYieldFarmingV2Lib,
     [],
     deployer,
-    3e6,
+    2.5e6,
     web3,
     defaultGasPrice,
   );
