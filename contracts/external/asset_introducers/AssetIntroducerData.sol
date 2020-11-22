@@ -41,11 +41,15 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
 
     address internal _dmg;
 
+    address internal _dmmController;
+
     address internal _underlyingTokenValuator;
 
     uint internal _totalDmgLocked;
 
     bytes32 _domainSeparator;
+
+    uint internal _guardCounter;
 
     uint internal _totalSupply;
 
@@ -116,6 +120,9 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
      */
     mapping(bytes3 => mapping(uint8 => uint96)) internal _countryCodeToAssetIntroducerTypeToPriceUsd;
 
+    /// The dollar amount that has actually been deployed by the asset introducer
+    mapping(uint => mapping(address => uint)) _tokenIdToUnderlyingTokenToWithdrawnAmount;
+
     // *************************
     // ***** Data Structures
     // *************************
@@ -129,9 +136,11 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
         AssetIntroducerType introducerType;
         /// True if the asset introducer has been purchased yet, false if it hasn't and is thus
         bool isOnSecondaryMarket;
+        /// True if the asset introducer can withdraw tokens from mToken deposits, false if it cannot yet. This value
+        /// must only be changed to `true` via governance vote
+        bool isAllowedToWithdrawFunds;
         uint96 dmgLocked;
-        /// An override on how much this asset introducer can manager; the default amount for a `countryCode` and
-        /// `introducerType` can be retrieved via function call
+        /// How much this asset introducer can manage
         uint104 dollarAmountToManage;
         uint tokenId;
     }
@@ -157,6 +166,13 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
     // ***** Modifiers
     // *************************
 
+    modifier nonReentrant() {
+        _guardCounter += 1;
+        uint256 localCounter = _guardCounter;
+        _;
+        require(localCounter == _guardCounter, "AssetIntroducerData: REENTRANCY");
+    }
+
     /// Enforces that an NFT has NOT been sold to a user yet
     modifier requireIsPrimaryMarketNft(uint __tokenId) {
         require(
@@ -181,6 +197,24 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
         require(
             _idToOwnerMap[__tokenId] != address(0),
             "AssetIntroducerData: INVALID_NFT"
+        );
+
+        _;
+    }
+
+    modifier requireIsNftOwner(uint __tokenId) {
+        require(
+            _idToOwnerMap[__tokenId] == msg.sender,
+            "AssetIntroducerData: INVALID_NFT_OWNER"
+        );
+
+        _;
+    }
+
+    modifier requireCanWithdrawFunds(uint __tokenId) {
+        require(
+            _idToAssetIntroducer[__tokenId].isAllowedToWithdrawFunds,
+            "AssetIntroducerData: CANNOT_WITHDRAW_FUNDS"
         );
 
         _;

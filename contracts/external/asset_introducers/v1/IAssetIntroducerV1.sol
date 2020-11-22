@@ -139,7 +139,6 @@ interface IAssetIntroducerV1 {
     function buyAssetIntroducerSlotBySig(
         uint tokenId,
         address recipient,
-        uint amount,
         uint nonce,
         uint expiry,
         uint8 v,
@@ -159,5 +158,39 @@ interface IAssetIntroducerV1 {
     function getDmgLockedByUser(
         address user
     ) external view returns (uint);
+
+    /**
+     * @return  The amount of capital that has been withdrawn by this asset introducer, denominated in USD with 18
+     *          decimals
+     */
+    function getDeployedCapitalByTokenId(
+        uint tokenId
+    ) external view returns (uint);
+
+    /**
+     * @dev Deactivates the specified asset introducer from being able to withdraw funds. Doing so enables it to
+     *      be transferred. NOTE: NFTs can only be deactivated once all deployed capital is returned.
+     */
+    function deactivateAssetIntroducerByTokenId(
+        uint tokenId
+    ) external;
+
+    function withdrawCapitalByTokenId(
+        uint tokenId,
+        address token,
+        uint amount
+    ) external;
+
+    function depositCapitalByTokenId(
+        uint tokenId,
+        address token,
+        uint amount
+    ) external;
+
+    function payInterestByTokenId(
+        uint tokenId,
+        address token,
+        uint amount
+    ) external;
 
 }

@@ -24,7 +24,11 @@ import "../../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../utils/EvmUtil.sol";
 
 import "../../../governance/dmg/SafeBitMath.sol";
+
 import "../../../protocol/interfaces/IUnderlyingTokenValuator.sol";
+import "../../../protocol/interfaces/IDmmController.sol";
+
+import "../../../utils/IERC20WithDecimals.sol";
 
 import "../impl/ERC721.sol";
 
@@ -46,7 +50,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     bytes32 public constant DOMAIN_TYPE_HASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
     /// @notice The EIP-712 typehash for the purchase struct used by the contract
-    bytes32 public constant BUY_ASSET_INTRODUCER_TYPE_HASH = keccak256("BuyAssetIntroducer(uint256 purchasePrice,uint256 nonce,uint256 expiry)");
+    bytes32 public constant BUY_ASSET_INTRODUCER_TYPE_HASH = keccak256("BuyAssetIntroducer(uint256 tokenId,uint256 nonce,uint256 expiry)");
 
     // *************************
     // ***** Admin Functions
@@ -56,6 +60,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         address __owner,
         address __guardian,
         address __dmg,
+        address __dmmController,
         address __underlyingTokenValuator
     )
     public
@@ -64,6 +69,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         IOwnableOrGuardian.initialize(__owner, __guardian);
 
         _dmg = __dmg;
+        _dmmController = __dmmController;
         _underlyingTokenValuator = __underlyingTokenValuator;
 
         _initTimestamp = uint64(block.timestamp);
@@ -73,7 +79,11 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     }
 
     function name() external view returns (string memory) {
-        return "Asset Introducer";
+        return "DMM: Asset Introducer";
+    }
+
+    function symbol() external view returns (string memory) {
+        return "aDMM";
     }
 
     function tokenURI(
@@ -90,6 +100,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         uint[] calldata __dmgPriceAmounts
     )
     external
+    nonReentrant
     onlyOwnerOrGuardian
     returns (uint[] memory) {
         require(
@@ -112,6 +123,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
             countryCode : countryCode,
             introducerType : __introducerTypes[i],
             isOnSecondaryMarket : false,
+            isAllowedToWithdrawFunds : false,
             dmgLocked : 0,
             dollarAmountToManage : 0,
             tokenId : tokenIds[i]
@@ -167,10 +179,11 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         uint __tokenId
     )
     external
+    nonReentrant
     requireIsValidNft(__tokenId)
     requireIsPrimaryMarketNft(__tokenId)
     returns (bool) {
-        _buyAssetIntroducer(msg.sender, msg.sender, __tokenId);
+        _buyAssetIntroducer(__tokenId, msg.sender, msg.sender);
         return true;
     }
 
@@ -183,7 +196,6 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     function buyAssetIntroducerSlotBySig(
         uint __tokenId,
         address __recipient,
-        uint __amount,
         uint __nonce,
         uint __expiry,
         uint8 __v,
@@ -191,12 +203,16 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         bytes32 __s
     )
     external
+    nonReentrant
     requireIsValidNft(__tokenId)
     requireIsPrimaryMarketNft(__tokenId)
     returns (bool) {
-        bytes32 structHash = keccak256(abi.encode(BUY_ASSET_INTRODUCER_TYPE_HASH, __amount, __nonce, __expiry));
-        address signer = _validateOfflineSignature(structHash, __nonce, __expiry, __v, __r, __s);
-        _buyAssetIntroducer(signer, __recipient, __tokenId);
+        address signer;
+        {
+            bytes32 structHash = keccak256(abi.encode(BUY_ASSET_INTRODUCER_TYPE_HASH, __tokenId, __nonce, __expiry));
+            signer = _validateOfflineSignature(structHash, __nonce, __expiry, __v, __r, __s);
+        }
+        _buyAssetIntroducer(__tokenId, signer, __recipient);
         return true;
     }
 
@@ -212,6 +228,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         DmgApprovalStruct memory dmgApprovalStruct
     )
     public
+    nonReentrant
     requireIsValidNft(__tokenId)
     requireIsPrimaryMarketNft(__tokenId)
     returns (bool) {
@@ -225,10 +242,13 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
             dmgApprovalStruct.s
         );
 
-        bytes32 structHash = keccak256(abi.encode(BUY_ASSET_INTRODUCER_TYPE_HASH, __amount, __nonce, __expiry));
-        address signer = _validateOfflineSignature(structHash, __nonce, __expiry, __v, __r, __s);
+        address signer;
+        {
+            bytes32 structHash = keccak256(abi.encode(BUY_ASSET_INTRODUCER_TYPE_HASH, __tokenId, __nonce, __expiry));
+            signer = _validateOfflineSignature(structHash, __nonce, __expiry, __v, __r, __s);
+        }
 
-        _buyAssetIntroducer(signer, __recipient, __tokenId);
+        _buyAssetIntroducer(__tokenId, signer, __recipient);
         return true;
     }
 
@@ -432,6 +452,112 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         return secondaryMarketAssetIntroducers;
     }
 
+    function getDeployedCapitalByTokenId(
+        uint __tokenId
+    ) public view returns (uint) {
+        IDmmController dmmController = IDmmController(_dmmController);
+        IUnderlyingTokenValuator underlyingTokenValuator = IUnderlyingTokenValuator(_underlyingTokenValuator);
+        uint[] memory tokenIds = dmmController.getDmmTokenIds();
+
+        uint totalDeployedCapital = 0;
+        for (uint i = 0; i < tokenIds.length; i++) {
+            address token = dmmController.getUnderlyingTokenForDmm(dmmController.getDmmTokenAddressByDmmTokenId(tokenIds[i]));
+            uint rawDeployedAmount = _tokenIdToUnderlyingTokenToWithdrawnAmount[__tokenId][token];
+            rawDeployedAmount = _standardizeTokenAmountForUsdDecimals(
+                rawDeployedAmount,
+                IERC20WithDecimals(token).decimals()
+            );
+
+            totalDeployedCapital = totalDeployedCapital.add(underlyingTokenValuator.getTokenValue(token, rawDeployedAmount));
+        }
+
+        return totalDeployedCapital;
+    }
+
+    function deactivateAssetIntroducerByTokenId(
+        uint __tokenId
+    )
+    external
+    nonReentrant
+    requireIsValidNft(__tokenId)
+    requireIsSecondaryMarketNft(__tokenId)
+    requireIsNftOwner(__tokenId) {
+        _idToAssetIntroducer[__tokenId].isAllowedToWithdrawFunds = false;
+    }
+
+    function withdrawCapitalByTokenId(
+        uint __tokenId,
+        address __token,
+        uint __amount
+    )
+    external
+    nonReentrant
+    requireIsValidNft(__tokenId)
+    requireIsSecondaryMarketNft(__tokenId)
+    requireIsNftOwner(__tokenId)
+    requireCanWithdrawFunds(__tokenId) {
+        uint standardizedAmount = _standardizeTokenAmountForUsdDecimals(
+            __amount,
+            IERC20WithDecimals(__token).decimals()
+        );
+        uint deployedCapital = getDeployedCapitalByTokenId(__tokenId);
+        uint usdAmountToWithdraw = IUnderlyingTokenValuator(_underlyingTokenValuator).getTokenValue(__token, standardizedAmount);
+
+        require(
+            deployedCapital.add(usdAmountToWithdraw) <= _idToAssetIntroducer[__tokenId].dollarAmountToManage,
+            "AssetIntroducerV1::withdrawCapitalByTokenId: AUM_OVERFLOW"
+        );
+
+        _tokenIdToUnderlyingTokenToWithdrawnAmount[__tokenId][__token] = _tokenIdToUnderlyingTokenToWithdrawnAmount[__tokenId][__token].add(__amount);
+
+        IDmmController dmmController = IDmmController(_dmmController);
+        uint dmmTokenId = dmmController.getTokenIdFromDmmTokenAddress(dmmController.getDmmTokenForUnderlying(__token));
+        dmmController.adminWithdrawFunds(dmmTokenId, __amount);
+        IERC20(__token).safeTransfer(msg.sender, __amount);
+    }
+
+    function depositCapitalByTokenId(
+        uint __tokenId,
+        address __token,
+        uint __amount
+    )
+    external
+    nonReentrant
+    requireIsValidNft(__tokenId)
+    requireIsSecondaryMarketNft(__tokenId)
+    requireCanWithdrawFunds(__tokenId)
+    requireIsNftOwner(__tokenId) {
+        require(
+            _tokenIdToUnderlyingTokenToWithdrawnAmount[__tokenId][__token] >= __amount,
+            "AssetIntroducerV1::depositCapitalByTokenId: AUM_UNDERFLOW"
+        );
+        _tokenIdToUnderlyingTokenToWithdrawnAmount[__tokenId][__token] = _tokenIdToUnderlyingTokenToWithdrawnAmount[__tokenId][__token].sub(__amount);
+
+        IERC20(__token).safeTransferFrom(msg.sender, address(this), __amount);
+
+        IDmmController dmmController = IDmmController(_dmmController);
+        uint dmmTokenId = dmmController.getTokenIdFromDmmTokenAddress(dmmController.getDmmTokenForUnderlying(__token));
+        dmmController.adminDepositFunds(dmmTokenId, __amount);
+    }
+
+    function payInterestByTokenId(
+        uint __tokenId,
+        address __token,
+        uint __amount
+    )
+    external
+    nonReentrant
+    requireIsValidNft(__tokenId)
+    requireIsSecondaryMarketNft(__tokenId)
+    requireCanWithdrawFunds(__tokenId)
+    requireIsNftOwner(__tokenId) {
+        IERC20(__token).safeTransferFrom(msg.sender, address(this), __amount);
+
+        IDmmController dmmController = IDmmController(_dmmController);
+        uint dmmTokenId = dmmController.getTokenIdFromDmmTokenAddress(dmmController.getDmmTokenForUnderlying(__token));
+        dmmController.adminDepositFunds(dmmTokenId, __amount);
+    }
+
     // *************************
     // ***** Internal Functions
     // *************************
@@ -442,10 +568,17 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         bool __shouldAllowTransferIntoThisContract
     )
     internal {
+        // The token must be unactivated in order to withdraw funds
+        AssetIntroducer memory assetIntroducer = _idToAssetIntroducer[__tokenId];
+        require(
+            !assetIntroducer.isAllowedToWithdrawFunds,
+            "AssetIntroducerV1::_transfer: TRANSFER_DISABLED"
+        );
+
         // Get the "from" address (the owner) before effectuating the transfer via the call to "super"
         address from = _idToOwnerMap[__tokenId];
         super._transfer(__to, __tokenId, __shouldAllowTransferIntoThisContract);
-        _moveDelegates(from, __to, _idToAssetIntroducer[__tokenId].dmgLocked);
+        _moveDelegates(from, __to, assetIntroducer.dmgLocked);
     }
 
     function _verifyAndConvertCountryCodeToBytes(
@@ -492,9 +625,9 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     }
 
     function _buyAssetIntroducer(
+        uint __tokenId,
         address __buyer,
-        address __recipient,
-        uint __tokenId
+        address __recipient
     ) internal {
         uint dmgPurchasePrice = getAssetIntroducerPriceDmg(__tokenId);
         IERC20(_dmg).safeTransferFrom(__buyer, address(this), dmgPurchasePrice);
@@ -559,6 +692,19 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         }
 
         emit DelegateVotesChanged(owner, oldVotes, newVotes);
+    }
+
+    function _standardizeTokenAmountForUsdDecimals(
+        uint __amount,
+        uint8 __decimals
+    ) internal pure returns (uint) {
+        if (__decimals > 18) {
+            return __amount.div(10 ** uint(__decimals - 18));
+        } else if (__decimals < 18) {
+            return __amount.mul(10 ** uint(18 - __decimals));
+        } else {
+            return __amount;
+        }
     }
 
 }
