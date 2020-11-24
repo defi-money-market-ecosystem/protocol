@@ -85,14 +85,21 @@ library DMGYieldFarmingV2Lib {
                 __underlyingTokenValuator
             );
         } else if (tokenType == DMGYieldFarmingV2Lib.TokenType.UniswapPureLpToken) {
-            (address otherToken, uint underlyingTokenReserveAmount, uint otherTokenReserveAmount) = _getUniswapParams(__farmToken, underlyingToken);
+            uint8 underlyingTokenDecimals = state.getTokenDecimalsByToken(__farmToken);
+            (address otherToken, uint underlyingTokenReserveAmount, uint otherTokenReserveAmount) = _getUniswapParams(
+                __farmToken,
+                underlyingToken,
+                underlyingTokenDecimals,
+                __underlyingTokenValuator,
+                address(0)
+            );
+            uint8 otherTokenDecimals = IERC20WithDecimals(otherToken).decimals();
 
             uint totalSupply = IERC20(__farmToken).totalSupply();
             require(
                 totalSupply > 0,
                 "DMGYieldFarmingV2::_getUsdValueByTokenAndTokenAmount: INVALID_TOTAL_SUPPLY"
             );
-            uint8 underlyingTokenDecimals = state.getTokenDecimalsByToken(__farmToken);
 
             uint underlyingTokenUsdValue = _getUnderlyingTokenUsdValueFromUniswapPool(
                 __tokenAmount,
@@ -108,7 +115,7 @@ library DMGYieldFarmingV2Lib {
                 totalSupply,
                 otherToken,
                 otherTokenReserveAmount,
-                IERC20WithDecimals(otherToken).decimals(),
+                otherTokenDecimals,
                 __underlyingTokenValuator
             );
 
@@ -126,7 +133,14 @@ library DMGYieldFarmingV2Lib {
         address __dmmController,
         address __underlyingTokenValuator
     ) internal view returns (uint) {
-        (address mToken, uint underlyingTokenAmount, uint mTokenAmount) = _getUniswapParams(__farmToken, __underlyingToken);
+        (address mToken, uint underlyingTokenAmount, uint mTokenAmount) = _getUniswapParams(
+            __farmToken,
+            __underlyingToken,
+            __underlyingTokenDecimals,
+            __underlyingTokenValuator,
+            __dmmController
+        );
+        uint8 mTokenDecimals = IERC20WithDecimals(mToken).decimals();
 
         uint totalSupply = IERC20(__farmToken).totalSupply();
         require(
@@ -148,7 +162,7 @@ library DMGYieldFarmingV2Lib {
             totalSupply,
             mToken,
             mTokenAmount,
-            IERC20WithDecimals(mToken).decimals(),
+            mTokenDecimals,
             __dmmController,
             __underlyingTokenValuator
         );
@@ -158,7 +172,10 @@ library DMGYieldFarmingV2Lib {
 
     function _getUniswapParams(
         address __farmToken,
-        address __underlyingToken
+        address __underlyingToken,
+        uint8 __underlyingTokenDecimals,
+        address __underlyingTokenValuator,
+        address __dmmController
     ) public view returns (address otherToken, uint underlyingTokenAmount, uint otherTokenAmount) {
         address token0 = IUniswapV2Pair(__farmToken).token0();
         address token1 = IUniswapV2Pair(__farmToken).token1();
@@ -170,9 +187,63 @@ library DMGYieldFarmingV2Lib {
 
         otherToken = __underlyingToken == token0 ? token1 : token0;
 
-        (uint112 reserve0, uint112 reserve1,) = IUniswapV2Pair(__farmToken).getReserves();
-        underlyingTokenAmount = __underlyingToken == token0 ? reserve0 : reserve1;
-        otherTokenAmount = __underlyingToken == token0 ? reserve1 : reserve0;
+        {
+            (uint112 reserve0, uint112 reserve1,) = IUniswapV2Pair(__farmToken).getReserves();
+            underlyingTokenAmount = __underlyingToken == token0 ? reserve0 : reserve1;
+            otherTokenAmount = __underlyingToken == token0 ? reserve1 : reserve0;
+        }
+
+        {
+            (uint newUnderlyingAmount, uint newOtherAmount) = _scaleUniswapPriceBasedOnOraclePrice(
+                __underlyingToken,
+                __underlyingTokenDecimals,
+                underlyingTokenAmount,
+                otherToken,
+                IERC20WithDecimals(otherToken).decimals(),
+                otherTokenAmount,
+                __underlyingTokenValuator,
+                __dmmController
+            );
+
+            underlyingTokenAmount = newUnderlyingAmount;
+            otherTokenAmount = newOtherAmount;
+        }
+    }
+
+    /**
+     * @dev Scales the price (Uniswap reserve ratio) by lowering whichever asset's value is too high to achieve the
+     *      appropriate ratio.
+     */
+    function _scaleUniswapPriceBasedOnOraclePrice(
+        address __underlyingToken,
+        uint8 __underlyingDecimals,
+        uint __underlyingAmount,
+        address __otherToken,
+        uint8 __otherDecimals,
+        uint __otherAmount,
+        address __underlyingTokenValuator,
+        address __dmmController
+    ) internal view returns (uint, uint) {
+        __underlyingAmount = _standardizeAmountBasedOnDecimals(__underlyingAmount, __underlyingDecimals);
+        __otherAmount = _standardizeAmountBasedOnDecimals(__otherAmount, __otherDecimals);
+
+        if (__dmmController != address(0)) {
+            // The __otherToken is an mToken
+            __otherAmount = __otherAmount.mul(IDmmController(__dmmController).getExchangeRate(__otherToken)).div(1e18);
+        }
+
+        uint foundPrice = IUnderlyingTokenValuator(__underlyingTokenValuator).getTokenValue(__underlyingToken, __underlyingAmount.mul(1e18).div(__otherAmount));
+        uint expectedPrice = IUnderlyingTokenValuator(__underlyingTokenValuator).getTokenValue(__underlyingToken, 1e18);
+
+        if (foundPrice > expectedPrice) {
+            // We need to lower the Uni reserve ratio; we can do this by lowering the numerator == __underlyingAmount
+            __underlyingAmount = __underlyingAmount.mul(expectedPrice).div(foundPrice);
+        } else /* expectedPrice >= foundPrice */ {
+            // We need to raise the Uni reserve ratio; we can do this by lowering the denominator == __otherAmount
+            __otherAmount = __otherAmount.mul(foundPrice).div(expectedPrice);
+        }
+
+        return (__underlyingAmount, __otherAmount);
     }
 
     function _getUnderlyingTokenUsdValueFromUniswapPool(
@@ -223,12 +294,21 @@ library DMGYieldFarmingV2Lib {
         uint8 __decimals,
         uint __amount
     ) public view returns (uint) {
-        if (__decimals < 18) {
-            __amount = __amount.mul((10 ** (18 - uint(__decimals))));
-        } else if (__decimals > 18) {
-            __amount = __amount.div((10 ** (uint(__decimals) - 18)));
-        }
+        __amount = _standardizeAmountBasedOnDecimals(__amount, __decimals);
         return IUnderlyingTokenValuator(__underlyingTokenValuator).getTokenValue(__underlyingToken, __amount);
+    }
+
+    function _standardizeAmountBasedOnDecimals(
+        uint __amount,
+        uint8 __decimals
+    ) internal pure returns (uint) {
+        if (__decimals < 18) {
+            return __amount.mul((10 ** (18 - uint(__decimals))));
+        } else if (__decimals > 18) {
+            return __amount.div((10 ** (uint(__decimals) - 18)));
+        } else {
+            return __amount;
+        }
     }
 
     /**
