@@ -224,22 +224,22 @@ library DMGYieldFarmingV2Lib {
         address __underlyingTokenValuator,
         address __dmmController
     ) internal view returns (uint, uint) {
-        __underlyingAmount = _standardizeAmountBasedOnDecimals(__underlyingAmount, __underlyingDecimals);
-        __otherAmount = _standardizeAmountBasedOnDecimals(__otherAmount, __otherDecimals);
+        uint standardizedUnderlyingAmount = _standardizeAmountBasedOnDecimals(__underlyingAmount, __underlyingDecimals);
+        uint standardizedOtherAmount = _standardizeAmountBasedOnDecimals(__otherAmount, __otherDecimals);
 
         if (__dmmController != address(0)) {
             // The __otherToken is an mToken
-            __otherAmount = __otherAmount.mul(IDmmController(__dmmController).getExchangeRate(__otherToken)).div(1e18);
+            standardizedOtherAmount = standardizedOtherAmount.mul(IDmmController(__dmmController).getExchangeRate(__otherToken)).div(1e18);
         }
 
-        uint foundPrice = IUnderlyingTokenValuator(__underlyingTokenValuator).getTokenValue(__underlyingToken, __underlyingAmount.mul(1e18).div(__otherAmount));
+        uint foundPrice = IUnderlyingTokenValuator(__underlyingTokenValuator).getTokenValue(__underlyingToken, standardizedUnderlyingAmount.mul(1e18).div(standardizedOtherAmount));
         uint expectedPrice = IUnderlyingTokenValuator(__underlyingTokenValuator).getTokenValue(__underlyingToken, 1e18);
 
         if (foundPrice > expectedPrice) {
-            // We need to lower the Uni reserve ratio; we can do this by lowering the numerator == __underlyingAmount
+            // We need to lower the Uni reserve ratio; we can do this by lowering the numerator == underlyingAmount
             __underlyingAmount = __underlyingAmount.mul(expectedPrice).div(foundPrice);
         } else /* expectedPrice >= foundPrice */ {
-            // We need to raise the Uni reserve ratio; we can do this by lowering the denominator == __otherAmount
+            // We need to raise the Uni reserve ratio; we can do this by lowering the denominator == otherAmount
             __otherAmount = __otherAmount.mul(foundPrice).div(expectedPrice);
         }
 

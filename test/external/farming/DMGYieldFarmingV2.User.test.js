@@ -169,9 +169,15 @@ describe('DMGYieldFarmingV2.User', () => {
     const wethUsdValue = new BN('1010000000000000000'); // $1.01 - a messed up value but that's what we initialize it to in the tests
     const dmgUsdValue = _1().div(new BN('2')); // $0.50
 
-    let usdValue = balance_underlying_weth.mul(wethUsdValue).div(_1());
-    usdValue = usdValue.add(balance_underlying_dmg.mul(dmgUsdValue).div(_1()));
+    // Right now, the Chainlink price is $1.01 and the reserves price is 0.0101; hence we must divide the DMG value by
+    // the slippage amount, in order to adjust the price based on the oracle.
+    const slippageNumerator = new BN('101');
+    const slippageDenominator = new BN('10100');
 
+    let usdValue = balance_underlying_weth.mul(wethUsdValue).div(_1());
+    usdValue = usdValue.add(balance_underlying_dmg.mul(slippageNumerator).div(slippageDenominator).mul(dmgUsdValue).div(_1()));
+
+    // ETH-DMG pool is running 1:100 for now (spot price $0.0101; oracle price $1.01)
     const expectedRewardAmount = timeDifference.mul(dmgGrowthCoefficient).mul(usdValue).div(_1());
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
 
