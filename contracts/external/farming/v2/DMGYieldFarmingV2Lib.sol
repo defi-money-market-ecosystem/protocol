@@ -39,6 +39,8 @@ library DMGYieldFarmingV2Lib {
     using SafeERC20 for IERC20;
     using UniswapV2Library for *;
 
+    uint constant private ONE_WEI = 1e18;
+
     // ////////////////////
     // Enums
     // ////////////////////
@@ -201,8 +203,8 @@ library DMGYieldFarmingV2Lib {
                 otherToken,
                 IERC20WithDecimals(otherToken).decimals(),
                 otherTokenAmount,
-                __underlyingTokenValuator,
-                __dmmController
+                IUnderlyingTokenValuator(__underlyingTokenValuator),
+                IDmmController(__dmmController)
             );
 
             underlyingTokenAmount = newUnderlyingAmount;
@@ -221,19 +223,29 @@ library DMGYieldFarmingV2Lib {
         address __otherToken,
         uint8 __otherDecimals,
         uint __otherAmount,
-        address __underlyingTokenValuator,
-        address __dmmController
+        IUnderlyingTokenValuator __underlyingTokenValuator,
+        IDmmController __dmmController
     ) internal view returns (uint, uint) {
-        uint standardizedUnderlyingAmount = _standardizeAmountBasedOnDecimals(__underlyingAmount, __underlyingDecimals);
-        uint standardizedOtherAmount = _standardizeAmountBasedOnDecimals(__otherAmount, __otherDecimals);
+        uint foundPrice;
+        {
+            uint standardizedUnderlyingAmount = _standardizeAmountBasedOnDecimals(__underlyingAmount, __underlyingDecimals);
+            uint standardizedOtherAmount = _standardizeAmountBasedOnDecimals(__otherAmount, __otherDecimals);
 
-        if (__dmmController != address(0)) {
-            // The __otherToken is an mToken
-            standardizedOtherAmount = standardizedOtherAmount.mul(IDmmController(__dmmController).getExchangeRate(__otherToken)).div(1e18);
+            // Get the actual value of 1 value of otherToken according to Uniswap --> IE value of 1 DMG or 1 mETH or 1 mUSDC
+            foundPrice = __underlyingTokenValuator.getTokenValue(__underlyingToken, standardizedUnderlyingAmount.mul(ONE_WEI).div(standardizedOtherAmount));
         }
 
-        uint foundPrice = IUnderlyingTokenValuator(__underlyingTokenValuator).getTokenValue(__underlyingToken, standardizedUnderlyingAmount.mul(1e18).div(standardizedOtherAmount));
-        uint expectedPrice = IUnderlyingTokenValuator(__underlyingTokenValuator).getTokenValue(__underlyingToken, 1e18);
+        // Get the expected value of other token
+        uint expectedPrice;
+        if (address(__dmmController) == address(0)) {
+            // The __otherToken is not an mToken; we get its value through the usual means
+            expectedPrice = __underlyingTokenValuator.getTokenValue(__otherToken, ONE_WEI);
+        } else {
+            // The __otherToken is an mToken; we must get its value by using its exchange rate against its underlying
+            address underlyingForMToken = __dmmController.getUnderlyingTokenForDmm(__otherToken);
+            uint exchangeRate = __dmmController.getExchangeRate(__otherToken);
+            expectedPrice = __underlyingTokenValuator.getTokenValue(underlyingForMToken, ONE_WEI.mul(exchangeRate).div(ONE_WEI));
+        }
 
         if (foundPrice > expectedPrice) {
             // We need to lower the Uni reserve ratio; we can do this by lowering the numerator == underlyingAmount

@@ -7,12 +7,12 @@ const {setupLoader} = require('@openzeppelin/contract-loader');
 const {deployContract, linkContract} = require('../ContractUtils');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 82e9;
+const defaultGasPrice = 45e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
 
-const v2LibAddress = '0xa5d7A11A2f43893535AE8D14135964fdB6F6abe1';
+const v2LibAddress = '0xAE0a3D6a10854bD86B8CD63B370148f0FeAB2Deb';
 
 const main = async () => {
   let deployer;

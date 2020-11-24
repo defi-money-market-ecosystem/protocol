@@ -169,10 +169,11 @@ describe('DMGYieldFarmingV2.User', () => {
     const wethUsdValue = new BN('1010000000000000000'); // $1.01 - a messed up value but that's what we initialize it to in the tests
     const dmgUsdValue = _1().div(new BN('2')); // $0.50
 
-    // Right now, the Chainlink price is $1.01 and the reserves price is 0.0101; hence we must divide the DMG value by
-    // the slippage amount, in order to adjust the price based on the oracle.
-    const slippageNumerator = new BN('101');
-    const slippageDenominator = new BN('10100');
+    // Right now, the Chainlink price is $0.50 and the reserves price is $0.0101 (0.01 @ $1.01 per ETH --> $0.0101);
+    // Meaning, the actual price is WAY lower than the expected price. We need to raise the price by shrinking the
+    // denominator. When determining price, the base asset (DMG) is the denominator, not the quote asset (ETH).
+    const slippageNumerator = new BN('101'); // $0.0101
+    const slippageDenominator = new BN('5000'); // $0.50
 
     let usdValue = balance_underlying_weth.mul(wethUsdValue).div(_1());
     usdValue = usdValue.add(balance_underlying_dmg.mul(slippageNumerator).div(slippageDenominator).mul(dmgUsdValue).div(_1()));

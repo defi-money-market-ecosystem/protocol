@@ -27,7 +27,6 @@ import "../../../governance/dmg/IDMGToken.sol";
 import "../../../utils/IERC20WithDecimals.sol";
 
 import "./IDMGYieldFarmingV2.sol";
-import "./DMGYieldFarmingV2Lib.sol";
 import "../DMGYieldFarmingData.sol";
 
 contract DMGYieldFarmingV2 is IDMGYieldFarmingV2, DMGYieldFarmingData {
