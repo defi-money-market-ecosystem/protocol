@@ -55,16 +55,11 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
         uint amountBMin;
     }
 
+    // Events
+    event TokenEnabled(address indexed token, address indexed spender);
+
     modifier ensureDeadline(uint __deadline) {
         require(__deadline >= block.timestamp, "DMGYieldFarmingFundingProxy: EXPIRED");
-        _;
-    }
-
-    modifier ensurePairIsSupported(address __tokenA, address __tokenB) {
-        require(
-            IDMGYieldFarmingV1(dmgYieldFarming).isSupportedToken(UniswapV2Library.pairFor(uniswapV2Factory, __tokenA, __tokenB, initCodeHash)),
-            "DMGYieldFarmingFundingProxy: TOKEN_UNSUPPORTED"
-        );
         _;
     }
 
@@ -115,6 +110,7 @@ contract DMGYieldFarmingRouter is Ownable, ReentrancyGuard {
 
         for (uint i = 0; i < __tokens.length; i++) {
             IERC20(__tokens[i]).safeApprove(__spenders[i], uint(- 1));
+            emit TokenEnabled(__tokens[i], __spenders[i]);
         }
     }
 

@@ -1,9 +1,9 @@
 const {accounts, contract, web3, provider} = require('@openzeppelin/test-environment');
-require('@openzeppelin/test-helpers/src/config/web3').getWeb3 = () => web3;
+// require('@openzeppelin/test-helpers/src/config/web3').getWeb3 = () => web3;
 require('chai').should();
 const {BN, constants, expectRevert, expectEvent, time} = require('@openzeppelin/test-helpers');
 
-const {snapshotChain, resetChain, _0, _1, _10, _100, _10000} = require('../../helpers/DmmTokenTestHelpers');
+const {snapshotChain, resetChain, _0, _1, _10, _100} = require('../../helpers/DmmTokenTestHelpers');
 const {doYieldFarmingExternalProxyBeforeEach, startFarmSeason, endFarmSeason} = require('../../helpers/YieldFarmingHelpers');
 
 // Use the different accounts, which are unlocked and funded with Ether
@@ -27,6 +27,7 @@ describe('DMGYieldFarmingV2.User', () => {
     this.wallet = web3.eth.accounts.create();
     const password = 'password';
     await web3.eth.personal.importRawKey(this.wallet.privateKey, password);
+
     await web3.eth.personal.unlockAccount(this.wallet.address, password, 600);
 
     await doYieldFarmingExternalProxyBeforeEach(this, contract, web3, provider);
@@ -52,6 +53,11 @@ describe('DMGYieldFarmingV2.User', () => {
     } else if (token.address === this.tokenC.address) {
       underlyingToken_1 = this.underlyingTokenC;
       underlyingToken_2 = this.underlyingTokenC_2;
+    } else if (token.address === this.dmg_weth.address) {
+      underlyingToken_1 = this.weth;
+      underlyingToken_2 = this.dmgToken;
+    } else {
+      throw 'Invalid token!'
     }
 
     await underlyingToken_1.setBalance(user, _100(), {from: user});
@@ -65,8 +71,8 @@ describe('DMGYieldFarmingV2.User', () => {
       underlyingToken_2.address,
       _100(),
       _100(),
-      _100(),
-      _100(),
+      _1(),
+      _1(),
       user,
       (await time.latest()).add(timeBuffer),
       {from: user}
@@ -127,6 +133,70 @@ describe('DMGYieldFarmingV2.User', () => {
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
   });
 
+  it('beginFarming: should farm properly for 1 pure LP token with 1 deposit', async () => {
+    // Prices are $1.01 and $0.99
+    await startFarmSeason(this);
+    const token = this.dmg_weth;
+
+    const deposit1 = await mintTokensForDeposit(token);
+    const result = await this.yieldFarming.beginFarming(user, user, token.address, deposit1, {from: user});
+    expectEvent(
+      result,
+      'BeginFarming',
+      {owner: user, token: token.address, depositedAmount: deposit1},
+    );
+    (await token.balanceOf(user)).should.be.bignumber.eq(_0());
+    (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
+
+    const _100Seconds = new BN('100');
+    await time.increase(_100Seconds);
+    const lastIndexTimestamp = await this.yieldFarming.getMostRecentDepositTimestampByOwnerAndToken(user, token.address);
+    const latestTimestamp = await time.latest();
+    const timeDifference = latestTimestamp.sub(lastIndexTimestamp);
+
+    (timeDifference).should.be.bignumber.gte(_100Seconds);
+    (timeDifference).should.be.bignumber.lte(_100Seconds.add(timeBuffer));
+
+    (await this.yieldFarming.balanceOf(user, token.address)).should.be.bignumber.eq(deposit1);
+
+    const reserves_weth = await this.weth.balanceOf(token.address);
+    const reserves_dmg = await this.dmgToken.balanceOf(token.address);
+
+    const totalSupply = await token.totalSupply();
+    const balance_underlying_weth = deposit1.mul(reserves_weth).div(totalSupply);
+    const balance_underlying_dmg = deposit1.mul(reserves_dmg).div(totalSupply);
+
+    const wethUsdValue = new BN('1010000000000000000'); // $1.01 - a messed up value but that's what we initialize it to in the tests
+    const dmgUsdValue = _1().div(new BN('2')); // $0.50
+
+    // Right now, the Chainlink price is $0.50 and the reserves price is $0.0101 (0.01 @ $1.01 per ETH --> $0.0101);
+    // Meaning, the actual price is WAY lower than the expected price. We need to raise the price by shrinking the
+    // denominator. When determining price, the base asset (DMG) is the denominator, not the quote asset (ETH).
+    const slippageNumerator = new BN('101'); // $0.0101
+    const slippageDenominator = new BN('5000'); // $0.50
+
+    let usdValue = balance_underlying_weth.mul(wethUsdValue).div(_1());
+    usdValue = usdValue.add(balance_underlying_dmg.mul(slippageNumerator).div(slippageDenominator).mul(dmgUsdValue).div(_1()));
+
+    // ETH-DMG pool is running 1:100 for now (spot price $0.0101; oracle price $1.01)
+    const expectedRewardAmount = timeDifference.mul(dmgGrowthCoefficient).mul(usdValue).div(_1());
+    (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
+
+    const feeAmount = new BN('50');
+    const feeAmountBase = new BN('10000');
+
+    const resultHarvest = await this.yieldFarming.harvestDmgByUserAndToken(user, user, token.address, {from: user});
+    expectEvent(
+      resultHarvest,
+      'HarvestFeePaid',
+      {
+        owner: user,
+        token: token.address,
+        tokenAmountToConvert: deposit1.mul(feeAmount).div(feeAmountBase),
+      }
+    );
+  });
+
   it('beginFarming: should farm properly for 1 token with 1 deposit from global proxy', async () => {
     await this.yieldFarming.approveGloballyTrustedProxy(proxy, true, {from: owner})
 
@@ -160,7 +230,7 @@ describe('DMGYieldFarmingV2.User', () => {
     (await this.yieldFarming.getRewardBalanceByOwner(user)).should.be.bignumber.eq(expectedRewardAmount);
   });
 
-  it('beginFarming: should farm properly for 1 token with 1 deposit, then should redeposit 0 for next season', async () => {
+  it('beginFarming: should farm properly for 1 token with 1 deposit, then should redeposit 0 for the next season', async () => {
     // Prices are $1.01 and $0.99
     await startFarmSeason(this);
     const token = this.tokenA;

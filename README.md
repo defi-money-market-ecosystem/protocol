@@ -99,7 +99,7 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | Yield Farming Proxy                               | 0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975    | [Etherscan](https://etherscan.io/address/0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975)
 | Yield Farming Router                              | 0x8209eD0259F99Abd593E8cd26e6a14f224C6cccA    | [Etherscan](https://etherscan.io/address/0x8209eD0259F99Abd593E8cd26e6a14f224C6cccA)
 | ~~Yield Farming Impl V1~~ DEPRECATED              | 0x061f57eA8383558A7E20F84948d0F11A6e1BcDe2    | [Etherscan](https://etherscan.io/address/0x061f57eA8383558A7E20F84948d0F11A6e1BcDe2)
-| Yield Farming Impl V2 (*DO NOT INTERACT*)         | 0x3193704eABC859D652BfFea6A89dd5f40E9458C5    | [Etherscan](https://etherscan.io/address/0x3193704eABC859D652BfFea6A89dd5f40E9458C5)
+| Yield Farming Impl V2 (*DO NOT INTERACT*)         | 0x35D03780f32DEB5218197e6664D15B40eAA347C4    | [Etherscan](https://etherscan.io/address/0x35d03780f32deb5218197e6664d15b40eaa347c4)
 
 #### Ropsten Testnet
 

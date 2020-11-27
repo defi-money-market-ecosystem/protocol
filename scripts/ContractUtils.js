@@ -14,7 +14,9 @@ const getAndSetUpDeployer = (web3, deployer) => {
 }
 
 const linkContract = (artifact, libraryName, address) => {
-  artifact.bytecode = artifact.bytecode.split(`__${libraryName}_________________________`).join(address.substring(2))
+  const dashCount = 38 - libraryName.length;
+  const dashes = '_'.repeat(dashCount);
+  artifact.bytecode = artifact.bytecode.split(`__${libraryName}${dashes}`).join(address.substring(2))
 };
 
 const deployContract = async (artifact, params, deployer, gasLimit, web3, gasPrice) => {
