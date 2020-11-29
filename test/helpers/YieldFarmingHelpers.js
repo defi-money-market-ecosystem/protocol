@@ -110,7 +110,7 @@ const doYieldFarmingExternalProxyBeforeEach = async (thisInstance, contracts, we
     100,
     50,
     2,
-    {from: thisInstance.guardian}
+    {from: thisInstance.guardian},
   );
 
   await thisInstance.yieldFarmingRouter.enableTokens(

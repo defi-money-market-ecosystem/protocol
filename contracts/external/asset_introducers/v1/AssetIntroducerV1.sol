@@ -30,12 +30,16 @@ import "../../../protocol/interfaces/IDmmController.sol";
 
 import "../../../utils/IERC20WithDecimals.sol";
 
-import "../impl/ERC721.sol";
+import "../impl/ERC721Token.sol";
+import "../impl/AssetIntroducerVotingLib.sol";
 
 import "./IAssetIntroducerV1.sol";
+import "./AssetIntroducerV1UserLib.sol";
 
 contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
 
+    using AssetIntroducerV1Lib for *;
+    using AssetIntroducerVotingLib for *;
     using SafeERC20 for IERC20;
     using SafeBitMath for uint128;
     using SafeMath for uint;
@@ -61,19 +65,21 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         address __guardian,
         address __dmg,
         address __dmmController,
-        address __underlyingTokenValuator
+        address __underlyingTokenValuator,
+        string calldata __baseURI
     )
-    public
+    external
     initializer {
         ERC721Token.initialize();
         IOwnableOrGuardian.initialize(__owner, __guardian);
 
-        _dmg = __dmg;
-        _dmmController = __dmmController;
-        _underlyingTokenValuator = __underlyingTokenValuator;
+        _assetIntroducerStateV1.dmg = __dmg;
+        _assetIntroducerStateV1.dmmController = __dmmController;
+        _assetIntroducerStateV1.underlyingTokenValuator = __underlyingTokenValuator;
+        _assetIntroducerStateV1.baseURI = __baseURI;
 
-        _initTimestamp = uint64(block.timestamp);
-        _domainSeparator = keccak256(
+        _assetIntroducerStateV1.initTimestamp = uint64(block.timestamp);
+        _assetIntroducerStateV1.domainSeparator = keccak256(
             abi.encode(DOMAIN_TYPE_HASH, keccak256(bytes(NAME)), EvmUtil.getChainId(), address(this))
         );
     }
@@ -86,12 +92,24 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         return "aDMM";
     }
 
+    function baseURI() external view returns (string memory) {
+        return _assetIntroducerStateV1.baseURI;
+    }
+
+    function setBaseURI(
+        string calldata __baseURI
+    )
+    onlyOwnerOrGuardian
+    external {
+        _assetIntroducerStateV1.setBaseURI(__baseURI);
+    }
+
     function tokenURI(
         uint256 __tokenId
     )
-    external
-    view returns (string memory) {
-        return "";
+    requireIsValidNft(__tokenId)
+    external view returns (string memory) {
+        return _assetIntroducerStateV1.tokenURI(__tokenId);
     }
 
     function createAssetIntroducersForPrimaryMarket(
@@ -103,38 +121,12 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     nonReentrant
     onlyOwnerOrGuardian
     returns (uint[] memory) {
-        require(
-            __countryCodes.length == __introducerTypes.length,
-            "AssetIntroducerV1::createAssetIntroducersForPrimaryMarket: INVALID_LENGTH"
+        return _assetIntroducerStateV1.createAssetIntroducersForPrimaryMarket(
+            _erc721StateV1,
+            __countryCodes,
+            __introducerTypes,
+            __dmgPriceAmounts
         );
-        require(
-            __countryCodes.length == __dmgPriceAmounts.length,
-            "AssetIntroducerV1::createAssetIntroducersForPrimaryMarket: INVALID_LENGTH"
-        );
-
-        uint[] memory tokenIds = new uint[](__countryCodes.length);
-
-        for (uint i = 0; i < __countryCodes.length; i++) {
-            bytes3 countryCode = _verifyAndConvertCountryCodeToBytes(__countryCodes[i]);
-            uint nonce = _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(__introducerTypes[i])].length;
-            tokenIds[i] = uint(keccak256(abi.encodePacked(countryCode, uint8(__introducerTypes[i]), nonce)));
-
-            _idToAssetIntroducer[tokenIds[i]] = AssetIntroducer({
-            countryCode : countryCode,
-            introducerType : __introducerTypes[i],
-            isOnSecondaryMarket : false,
-            isAllowedToWithdrawFunds : false,
-            dmgLocked : 0,
-            dollarAmountToManage : 0,
-            tokenId : tokenIds[i]
-            });
-
-            _countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(__introducerTypes[i])].push(tokenIds[i]);
-
-            _mint(address(this), tokenIds[i]);
-        }
-
-        return tokenIds;
     }
 
     function setDollarAmountToManageByTokenId(
@@ -210,7 +202,8 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         address signer;
         {
             bytes32 structHash = keccak256(abi.encode(BUY_ASSET_INTRODUCER_TYPE_HASH, __tokenId, __nonce, __expiry));
-            signer = _validateOfflineSignature(structHash, __nonce, __expiry, __v, __r, __s);
+            signer = AssetIntroducerV1Lib.validateOfflineSignature(this, structHash, __nonce, __expiry, __v, __r, __s);
+            _ownerToNonceMap[signer]++;
         }
         _buyAssetIntroducer(__tokenId, signer, __recipient);
         return true;
@@ -219,7 +212,6 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     function buyAssetIntroducerSlotBySigWithDmgPermit(
         uint __tokenId,
         address __recipient,
-        uint __amount,
         uint __nonce,
         uint __expiry,
         uint8 __v,
@@ -245,7 +237,8 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         address signer;
         {
             bytes32 structHash = keccak256(abi.encode(BUY_ASSET_INTRODUCER_TYPE_HASH, __tokenId, __nonce, __expiry));
-            signer = _validateOfflineSignature(structHash, __nonce, __expiry, __v, __r, __s);
+            signer = AssetIntroducerV1Lib.validateOfflineSignature(this, structHash, __nonce, __expiry, __v, __r, __s);
+            _ownerToNonceMap[signer]++;
         }
 
         _buyAssetIntroducer(__tokenId, signer, __recipient);
@@ -255,8 +248,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     function getCurrentVotes(
         address __owner
     ) external view returns (uint) {
-        uint64 checkpointCount = _ownerToCheckpointCountMap[__owner];
-        return checkpointCount > 0 ? _ownerToCheckpointIndexToCheckpointMap[__owner][checkpointCount - 1].votes : 0;
+        return _voteStateV1.getCurrentVotes(__owner);
     }
 
     function getPriorVotes(
@@ -265,48 +257,14 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     )
     external
     view returns (uint128) {
-        require(
-            __blockNumber < block.number,
-            "AssetIntroducerV1::getPriorVotes: not yet determined"
-        );
-
-        uint64 checkpointCount = _ownerToCheckpointCountMap[__owner];
-        if (checkpointCount == 0) {
-            return 0;
-        }
-
-        // First check most recent balance
-        if (_ownerToCheckpointIndexToCheckpointMap[__owner][checkpointCount - 1].fromBlock <= __blockNumber) {
-            return _ownerToCheckpointIndexToCheckpointMap[__owner][checkpointCount - 1].votes;
-        }
-
-        // Next check implicit zero balance
-        if (_ownerToCheckpointIndexToCheckpointMap[__owner][0].fromBlock > __blockNumber) {
-            return 0;
-        }
-
-        uint64 lower = 0;
-        uint64 upper = checkpointCount - 1;
-        while (upper > lower) {
-            // ceil, avoiding overflow
-            uint64 center = upper - (upper - lower) / 2;
-            Checkpoint memory checkpoint = _ownerToCheckpointIndexToCheckpointMap[__owner][center];
-            if (checkpoint.fromBlock == __blockNumber) {
-                return checkpoint.votes;
-            } else if (checkpoint.fromBlock < __blockNumber) {
-                lower = center;
-            } else {
-                upper = center - 1;
-            }
-        }
-        return _ownerToCheckpointIndexToCheckpointMap[__owner][lower].votes;
+        return _voteStateV1.getPriorVotes(__owner, __blockNumber);
     }
 
 
     function getDmgLockedByUser(
         address __user
     ) external view returns (uint) {
-        uint[] memory tokenIds = getAllTokenIdsByOwner(__user);
+        uint[] memory tokenIds = getAllTokensOf(__user);
         uint dmgLocked = 0;
         for (uint i = 0; i < tokenIds.length; i++) {
             dmgLocked = dmgLocked.add(_idToAssetIntroducer[tokenIds[i]].dmgLocked);
@@ -320,6 +278,10 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
 
     function dmg() external view returns (address) {
         return _dmg;
+    }
+
+    function dmmController() external view returns (address) {
+        return _dmmController;
     }
 
     function domainSeparator() external view returns (bytes32) {
@@ -354,6 +316,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
 
     function getAssetIntroducerDiscount() public view returns (uint) {
         uint diff = block.timestamp.sub(_initTimestamp);
+        // 18 months or 540 days
         uint discountDurationInSeconds = 86400 * 30 * 18;
         if (diff > discountDurationInSeconds) {
             // The discount expired
@@ -452,26 +415,21 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         return secondaryMarketAssetIntroducers;
     }
 
+    function getNonceByUser(address __user) external view returns (uint) {
+        return _ownerToNonceMap[__user];
+    }
+
     function getDeployedCapitalByTokenId(
         uint __tokenId
     ) public view returns (uint) {
-        IDmmController dmmController = IDmmController(_dmmController);
-        IUnderlyingTokenValuator underlyingTokenValuator = IUnderlyingTokenValuator(_underlyingTokenValuator);
-        uint[] memory tokenIds = dmmController.getDmmTokenIds();
+        return AssetIntroducerV1Lib.getDeployedCapitalByTokenId(this, __tokenId);
+    }
 
-        uint totalDeployedCapital = 0;
-        for (uint i = 0; i < tokenIds.length; i++) {
-            address token = dmmController.getUnderlyingTokenForDmm(dmmController.getDmmTokenAddressByDmmTokenId(tokenIds[i]));
-            uint rawDeployedAmount = _tokenIdToUnderlyingTokenToWithdrawnAmount[__tokenId][token];
-            rawDeployedAmount = _standardizeTokenAmountForUsdDecimals(
-                rawDeployedAmount,
-                IERC20WithDecimals(token).decimals()
-            );
-
-            totalDeployedCapital = totalDeployedCapital.add(underlyingTokenValuator.getTokenValue(token, rawDeployedAmount));
-        }
-
-        return totalDeployedCapital;
+    function getTotalWithdrawnUnderlyingByTokenId(
+        uint __tokenId,
+        address __underlyingToken
+    ) external view returns (uint) {
+        return _tokenIdToUnderlyingTokenToWithdrawnAmount[__tokenId][__underlyingToken];
     }
 
     function deactivateAssetIntroducerByTokenId(
@@ -496,7 +454,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
     requireIsSecondaryMarketNft(__tokenId)
     requireIsNftOwner(__tokenId)
     requireCanWithdrawFunds(__tokenId) {
-        uint standardizedAmount = _standardizeTokenAmountForUsdDecimals(
+        uint standardizedAmount = AssetIntroducerV1Lib.standardizeTokenAmountForUsdDecimals(
             __amount,
             IERC20WithDecimals(__token).decimals()
         );
@@ -578,7 +536,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         // Get the "from" address (the owner) before effectuating the transfer via the call to "super"
         address from = _idToOwnerMap[__tokenId];
         super._transfer(__to, __tokenId, __shouldAllowTransferIntoThisContract);
-        _moveDelegates(from, __to, assetIntroducer.dmgLocked);
+        _voteStateV1.moveDelegates(from, __to, assetIntroducer.dmgLocked);
     }
 
     function _verifyAndConvertCountryCodeToBytes(
@@ -593,35 +551,6 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
             result := mload(add(__countryCode, 3))
         }
         return result;
-    }
-
-    function _validateOfflineSignature(
-        bytes32 __structHash,
-        uint __nonce,
-        uint __expiry,
-        uint8 __v,
-        bytes32 __r,
-        bytes32 __s
-    )
-    internal
-    returns (address signer) {
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", _domainSeparator, __structHash));
-        signer = ecrecover(digest, __v, __r, __s);
-
-        require(
-            signer != address(0),
-            "AssetIntroducerV1::_validateOfflineSignature: INVALID_SIGNATURE"
-        );
-        require(
-            __nonce == _ownerToNonceMap[signer]++,
-            "AssetIntroducerV1::_validateOfflineSignature: INVALID_NONCE"
-        );
-        require(
-            now <= __expiry,
-            "AssetIntroducerV1::_validateOfflineSignature: EXPIRED"
-        );
-
-        emit SignatureValidated(signer, __nonce);
     }
 
     function _buyAssetIntroducer(
@@ -640,71 +569,6 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1 {
         _transfer(__recipient, __tokenId, false);
 
         emit AssetIntroducerBought(__tokenId, __buyer, __recipient, dmgPurchasePrice);
-    }
-
-    function _moveDelegates(
-        address fromOwner,
-        address toOwner,
-        uint128 amount
-    ) internal {
-        if (fromOwner != toOwner && amount > 0) {
-            if (fromOwner != address(0)) {
-                uint64 fromCheckpointCount = _ownerToCheckpointCountMap[fromOwner];
-                uint128 fromVotesOld = fromCheckpointCount > 0 ? _ownerToCheckpointIndexToCheckpointMap[fromOwner][fromCheckpointCount - 1].votes : 0;
-                uint128 fromVotesNew = SafeBitMath.sub128(
-                    fromVotesOld,
-                    amount,
-                    "AssetIntroducerV1::_moveVotes: VOTE_UNDERFLOW"
-                );
-                _writeCheckpoint(fromOwner, fromCheckpointCount, fromVotesOld, fromVotesNew);
-            }
-
-            if (toOwner != address(0)) {
-                uint64 toCheckpointCount = _ownerToCheckpointCountMap[toOwner];
-                uint128 toVotesOld = toCheckpointCount > 0 ? _ownerToCheckpointIndexToCheckpointMap[toOwner][toCheckpointCount - 1].votes : 0;
-                uint128 toVotesNew = SafeBitMath.add128(
-                    toVotesOld,
-                    amount,
-                    "AssetIntroducerV1::_moveVotes: VOTE_OVERFLOW"
-                );
-                _writeCheckpoint(toOwner, toCheckpointCount, toVotesOld, toVotesNew);
-            }
-        }
-    }
-
-
-    function _writeCheckpoint(
-        address owner,
-        uint64 checkpointCount,
-        uint128 oldVotes,
-        uint128 newVotes
-    ) internal {
-        uint64 blockNumber = SafeBitMath.safe64(
-            block.number,
-            "AssetIntroducerV1::_writeCheckpoint: INVALID_BLOCK_NUMBER"
-        );
-
-        if (checkpointCount > 0 && _ownerToCheckpointIndexToCheckpointMap[owner][checkpointCount - 1].fromBlock == blockNumber) {
-            _ownerToCheckpointIndexToCheckpointMap[owner][checkpointCount - 1].votes = newVotes;
-        } else {
-            _ownerToCheckpointIndexToCheckpointMap[owner][checkpointCount] = Checkpoint(blockNumber, newVotes);
-            _ownerToCheckpointCountMap[owner] = checkpointCount + 1;
-        }
-
-        emit DelegateVotesChanged(owner, oldVotes, newVotes);
-    }
-
-    function _standardizeTokenAmountForUsdDecimals(
-        uint __amount,
-        uint8 __decimals
-    ) internal pure returns (uint) {
-        if (__decimals > 18) {
-            return __amount.div(10 ** uint(__decimals - 18));
-        } else if (__decimals < 18) {
-            return __amount.mul(10 ** uint(18 - __decimals));
-        } else {
-            return __amount;
-        }
     }
 
 }

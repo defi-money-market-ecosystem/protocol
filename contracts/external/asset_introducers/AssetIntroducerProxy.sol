@@ -24,25 +24,29 @@ import "./v1/IAssetIntroducerV1Initializable.sol";
 contract AssetIntroducerProxy is AdminUpgradeabilityProxy {
 
     /**
-     * @param logic     The address of the initial implementation.
-     * @param admin     The address of the proxy administrator.
-     * @param owner     The address of the owner of the implementation of the contract.
-     * @param guardian  The address of the guardian of the implementation contract.
-     * @param dmgToken  The address of the DMG token.
+     * @param logic                     The address of the initial implementation.
+     * @param admin                     The address of the proxy administrator.
+     * @param owner                     The address of the owner of the implementation of the contract.
+     * @param guardian                  The address of the guardian of the implementation contract.
+     * @param dmgToken                  The address of the DMG token.
+     * @param dmmController             The address of the DMM controller.
+     * @param underlyingTokenValuator   The address of the DMM token valuator.
      */
     constructor(
         address logic,
         address admin,
         address owner,
         address guardian,
-        address dmgToken
+        address dmgToken,
+        address dmmController,
+        address underlyingTokenValuator
     )
     AdminUpgradeabilityProxy(
         logic,
         admin,
         abi.encodePacked(
             IAssetIntroducerV1Initializable(address(0)).initialize.selector,
-            abi.encode(owner, guardian, dmgToken)
+            abi.encode(owner, guardian, dmgToken, dmmController, underlyingTokenValuator)
         )
     )
     public {}

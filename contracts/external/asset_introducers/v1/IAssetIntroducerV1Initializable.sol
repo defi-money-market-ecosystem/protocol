@@ -22,7 +22,9 @@ interface IAssetIntroducerV1Initializable {
     function initialize(
         address owner,
         address guardian,
-        address dmgToken
+        address dmgToken,
+        address dmmController,
+        address underlyingTokenValuator
     ) external;
 
 }

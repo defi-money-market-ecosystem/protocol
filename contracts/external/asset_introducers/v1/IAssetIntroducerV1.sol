@@ -26,6 +26,7 @@ interface IAssetIntroducerV1 {
     // ***** Events
     // *************************
 
+    event BaseURIChanged(string newBaseURI);
     event SignatureValidated(address indexed signer, uint nonce);
     event AssetIntroducerBought(uint indexed tokenId, address indexed buyer, address indexed recipient, uint dmgAmount);
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
@@ -66,7 +67,17 @@ interface IAssetIntroducerV1 {
      */
     function dmg() external view returns (address);
 
+    function dmmController() external view returns (address);
+
     function underlyingTokenValuator() external view returns (address);
+
+    function tokenURI(
+        uint __tokenId
+    ) external view returns (string memory);
+
+    function setBaseURI(
+        string calldata __baseURI
+    ) external;
 
     /**
      * @return  The discount applied to the price of the asset introducer for being an early purchaser. Represented as
@@ -124,6 +135,8 @@ interface IAssetIntroducerV1 {
     // ***** User Functions
     // *************************
 
+    function getNonceByUser(address user) external view returns (uint);
+
     /**
      * Buys the slot for the appropriate amount of DMG, by attempting to transfer the DMG from `msg.sender` to this
      * contract
@@ -146,6 +159,17 @@ interface IAssetIntroducerV1 {
         bytes32 s
     ) external returns (bool);
 
+    function buyAssetIntroducerSlotBySigWithDmgPermit(
+        uint __tokenId,
+        address __recipient,
+        uint __nonce,
+        uint __expiry,
+        uint8 __v,
+        bytes32 __r,
+        bytes32 __s,
+        AssetIntroducerData.DmgApprovalStruct calldata dmgApprovalStruct
+    ) external returns (bool);
+
     function getPriorVotes(
         address user,
         uint blockNumber
@@ -165,6 +189,11 @@ interface IAssetIntroducerV1 {
      */
     function getDeployedCapitalByTokenId(
         uint tokenId
+    ) external view returns (uint);
+
+    function getTotalWithdrawnUnderlyingByTokenId(
+        uint tokenId,
+        address underlyingToken
     ) external view returns (uint);
 
     /**

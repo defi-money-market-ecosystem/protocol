@@ -28,100 +28,20 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
     // ***** Constants
     // *************************
 
-    uint internal constant LINKED_LIST_GUARD = uint(1);
-
     string public constant NAME = "AssetIntroducer";
 
     // *************************
     // ***** V1 State Variables
     // *************************
 
-    /// The timestamp at which this contract was initialized
-    uint64 _initTimestamp;
+    /// For preventing reentrancy attacks
+    uint64 internal _guardCounter;
 
-    address internal _dmg;
+    AssetIntroducerStateV1 internal _assetIntroducerStateV1;
 
-    address internal _dmmController;
+    ERC721StateV1 internal _erc721StateV1;
 
-    address internal _underlyingTokenValuator;
-
-    uint internal _totalDmgLocked;
-
-    bytes32 _domainSeparator;
-
-    uint internal _guardCounter;
-
-    uint internal _totalSupply;
-
-    /**
-     * @dev The last token ID in the linked list.
-     */
-    uint internal _lastTokenId;
-
-    /**
-     * @dev Mapping of all token IDs. Works as a linked list such that previous key --> next value. The 0th key in the
-     *      list is LINKED_LIST_GUARD.
-     */
-    mapping(uint => uint) internal _allTokens;
-
-    mapping(uint => AssetIntroducer) internal _idToAssetIntroducer;
-
-    /**
-     * @dev Mapping from NFT ID to owner address.
-     */
-    mapping(uint256 => address) internal _idToOwnerMap;
-
-    /**
-     * @dev Mapping from NFT ID to approved address.
-     */
-    mapping(uint256 => address) internal _idToSpenderMap;
-
-    /**
-     * @dev Mapping from owner to an operator that can spend all of owner's NFTs.
-     */
-    mapping(address => mapping(address => bool)) internal _ownerToOperatorToIsApprovedMap;
-
-    /**
-     * @dev Mapping for the count of each user's off-chain signed messages. 0-indexed.
-     */
-    mapping(address => uint) internal _ownerToNonceMap;
-
-    /**
-     * @dev  Mapping from owner address to all owned token IDs. Works as a linked list such that previous key --> next
-     *       value. The 0th key in the list is LINKED_LIST_GUARD.
-     */
-    mapping(address => mapping(uint => uint)) internal _ownerToTokenIds;
-
-    /**
-    * @dev Mapping from owner address to a count of all owned NFTs.
-    */
-    mapping(address => uint32) internal _ownerToTokenCount;
-
-    mapping(bytes3 => mapping(uint8 => uint[])) internal _countryCodeToAssetIntroducerTypeToTokenIdsMap;
-
-    /**
-     * @dev Mapping from an interface to whether or not it's supported.
-     */
-    mapping(bytes4 => bool) internal _interfaceIdToIsSupportedMap;
-
-    /**
-     * @dev Taken from the DMG token implementation
-     */
-    mapping(address => mapping(uint64 => Checkpoint)) internal _ownerToCheckpointIndexToCheckpointMap;
-
-    /**
-     * @dev Taken from the DMG token implementation
-     */
-    mapping(address => uint64) internal _ownerToCheckpointCountMap;
-
-    /**
-     * @dev A mapping from the country code to asset introducer type to the cost needed to buy one. The cost is
-     *      represented in USD (with 18 decimals) and is purchased using DMG, so a conversion is needed using Chainlink.
-     */
-    mapping(bytes3 => mapping(uint8 => uint96)) internal _countryCodeToAssetIntroducerTypeToPriceUsd;
-
-    /// The dollar amount that has actually been deployed by the asset introducer
-    mapping(uint => mapping(address => uint)) _tokenIdToUnderlyingTokenToWithdrawnAmount;
+    VoteStateV1 internal _voteStateV1;
 
     // *************************
     // ***** Data Structures
@@ -129,6 +49,84 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
 
     enum AssetIntroducerType {
         PRINCIPAL, AFFILIATE
+    }
+
+    struct AssetIntroducerStateV1 {
+        /// The timestamp at which this contract was initialized
+        uint64 _initTimestamp;
+
+        /// Total amount of DMG locked in this contract
+        uint128 _totalDmgLocked;
+
+        /// For calculating the results of off-chain signature requests
+        bytes32 domainSeparator;
+
+        /// Address of the DMG token
+        address _dmg;
+
+        /// Address of the DMM Controller
+        address _dmmController;
+
+        /// Address of the DMM token valuator, which gets the USD value of a token
+        address _underlyingTokenValuator;
+
+        /// Mapping from NFT ID to the asset introducer struct.
+        mapping(uint => AssetIntroducer) _idToAssetIntroducer;
+
+        /// Mapping from country code to asset introducer type to token IDs
+        mapping(bytes3 => mapping(uint8 => uint[])) _countryCodeToAssetIntroducerTypeToTokenIdsMap;
+
+        /// A mapping from the country code to asset introducer type to the cost needed to buy one. The cost is represented
+        /// in USD (with 18 decimals) and is purchased using DMG, so a conversion is needed using Chainlink.
+        mapping(bytes3 => mapping(uint8 => uint96)) _countryCodeToAssetIntroducerTypeToPriceUsd;
+
+        /// The dollar amount that has actually been deployed by the asset introducer
+        mapping(uint => mapping(address => uint)) _tokenIdToUnderlyingTokenToWithdrawnAmount;
+    }
+
+    struct ERC721StateV1 {
+        /// Total number of NFTs created
+        uint64 totalSupply;
+
+        /// The last token ID in the linked list.
+        uint lastTokenId;
+
+        /// The base URI for getting NFT information by token ID.
+        string baseURI;
+
+        /// Mapping of all token IDs. Works as a linked list such that previous key --> next value. The 0th key in the
+        /// list is LINKED_LIST_GUARD.
+        mapping(uint => uint) allTokens;
+
+        /// Mapping from NFT ID to owner address.
+        mapping(uint256 => address) idToOwnerMap;
+
+        /// Mapping from NFT ID to approved address.
+        mapping(uint256 => address) idToSpenderMap;
+
+        /// Mapping from owner to an operator that can spend all of owner's NFTs.
+        mapping(address => mapping(address => bool)) ownerToOperatorToIsApprovedMap;
+
+        /// Mapping for the count of each user's off-chain signed messages. 0-indexed.
+        mapping(address => uint) ownerToNonceMap;
+
+        /// Mapping from owner address to all owned token IDs. Works as a linked list such that previous key --> next value.
+        /// The 0th key in the list is LINKED_LIST_GUARD.
+        mapping(address => mapping(uint => uint)) ownerToTokenIds;
+
+        /// Mapping from owner address to a count of all owned NFTs.
+        mapping(address => uint32) ownerToTokenCount;
+
+        /// Mapping from an interface to whether or not it's supported.
+        mapping(bytes4 => bool) interfaceIdToIsSupportedMap;
+    }
+
+    /// Used for storing information about voting
+    struct VoteStateV1 {
+        /// Taken from the DMG token implementation
+        mapping(address => mapping(uint64 => Checkpoint)) ownerToCheckpointIndexToCheckpointMap;
+        /// Taken from the DMG token implementation
+        mapping(address => uint64) ownerToCheckpointCountMap;
     }
 
     struct AssetIntroducer {
@@ -169,14 +167,19 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
     modifier nonReentrant() {
         _guardCounter += 1;
         uint256 localCounter = _guardCounter;
+
         _;
-        require(localCounter == _guardCounter, "AssetIntroducerData: REENTRANCY");
+
+        require(
+            localCounter == _guardCounter,
+            "AssetIntroducerData: REENTRANCY"
+        );
     }
 
     /// Enforces that an NFT has NOT been sold to a user yet
     modifier requireIsPrimaryMarketNft(uint __tokenId) {
         require(
-            !_idToAssetIntroducer[__tokenId].isOnSecondaryMarket,
+            !_assetIntroducerStateV1.idToAssetIntroducer[__tokenId].isOnSecondaryMarket,
             "AssetIntroducerData: IS_SECONDARY_MARKET"
         );
 
@@ -186,7 +189,7 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
     /// Enforces that an NFT has been sold to a user
     modifier requireIsSecondaryMarketNft(uint __tokenId) {
         require(
-            _idToAssetIntroducer[__tokenId].isOnSecondaryMarket,
+            _assetIntroducerStateV1.idToAssetIntroducer[__tokenId].isOnSecondaryMarket,
             "AssetIntroducerData: IS_PRIMARY_MARKET"
         );
 
@@ -195,7 +198,7 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
 
     modifier requireIsValidNft(uint __tokenId) {
         require(
-            _idToOwnerMap[__tokenId] != address(0),
+            _erc721StateV1.idToOwnerMap[__tokenId] != address(0),
             "AssetIntroducerData: INVALID_NFT"
         );
 
@@ -204,7 +207,7 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
 
     modifier requireIsNftOwner(uint __tokenId) {
         require(
-            _idToOwnerMap[__tokenId] == msg.sender,
+            _erc721StateV1.idToOwnerMap[__tokenId] == msg.sender,
             "AssetIntroducerData: INVALID_NFT_OWNER"
         );
 
@@ -213,7 +216,7 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
 
     modifier requireCanWithdrawFunds(uint __tokenId) {
         require(
-            _idToAssetIntroducer[__tokenId].isAllowedToWithdrawFunds,
+            _assetIntroducerStateV1.idToAssetIntroducer[__tokenId].isAllowedToWithdrawFunds,
             "AssetIntroducerData: CANNOT_WITHDRAW_FUNDS"
         );
 

@@ -45,6 +45,8 @@
     "send-tokens": "node scripts/playground/SendTokens.js",
     "start-chain": "ganache-cli --deterministic --port 8545 -l 10000000 -i 1337",
     "test": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/** --slow 2500",
+    "test-asset-introduction": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/asset_introducers/*.test.js --slow 2500",
+    "test-asset-introduction-proxy": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/asset_introducers/AssetIntroducerProxy.test.js --slow 2500",
     "test-burner": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/external/burning/TestBurner*.test.js --slow 2500",
     "test-controller": "npm run compile && npx mocha-parallel-tests --exit --async-only --timeout 15000 --recursive test/protocol/DmmController*.test.js --slow 2500",
     "test-controller-admin-reserves": "npm run compile && npx mocha --exit --async-only --timeout 15000 --recursive test/protocol/DmmController.AdminReserves.test.js --slow 2500",
@@ -92,9 +94,7 @@
     "prompt": "^1.0.0",
     "truffle": "^5.1.54",
     "truffle-plugin-verify": "^0.4.0",
-    "truffle-typings": "^1.0.8",
-    "typechain": "^4.0.0",
-    "typechain-target-truffle": "^1.0.2"
+    "typechain-target-truffle": "^1.0.2",
     "web3": "^1.3.0"
   },
   "devDependencies": {
