@@ -35,6 +35,7 @@ contract AssetIntroducerProxy is AdminUpgradeabilityProxy {
     constructor(
         address logic,
         address admin,
+        string memory baseURI,
         address owner,
         address guardian,
         address dmgToken,
@@ -46,7 +47,7 @@ contract AssetIntroducerProxy is AdminUpgradeabilityProxy {
         admin,
         abi.encodePacked(
             IAssetIntroducerV1Initializable(address(0)).initialize.selector,
-            abi.encode(owner, guardian, dmgToken, dmmController, underlyingTokenValuator)
+            abi.encode(baseURI, owner, guardian, dmgToken, dmmController, underlyingTokenValuator)
         )
     )
     public {}

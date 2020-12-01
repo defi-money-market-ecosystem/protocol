@@ -18,7 +18,6 @@
 pragma solidity ^0.5.0;
 
 import "../../../../node_modules/@openzeppelin/upgrades/contracts/Initializable.sol";
-import "../../../../node_modules/@openzeppelin/upgrades/contracts/utils/Address.sol";
 import "../../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../interfaces/IERC721.sol";
@@ -37,7 +36,6 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
 
     using ERC721TokenLib for ERC721StateV1;
     using SafeMath for uint256;
-    using OpenZeppelinUpgradesAddress for address;
 
     // *************************
     // ***** Modifiers
@@ -80,11 +78,13 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
     /**
      * @dev Contract constructor.
      */
-    function initialize()
+    function initialize(
+        string memory __baseURI
+    )
     public
     initializer {
         _guardCounter = 1;
-        _erc721StateV1.initialize();
+        _erc721StateV1.initialize(__baseURI);
     }
 
     /// @notice Query if a contract implements an interface
@@ -97,6 +97,26 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         bytes4 __interfaceId
     ) external view returns (bool) {
         return _erc721StateV1.supportsInterface(__interfaceId);
+    }
+
+    function baseURI() external view returns (string memory) {
+        return _erc721StateV1.baseURI;
+    }
+
+    function setBaseURI(
+        string calldata __baseURI
+    )
+    onlyOwnerOrGuardian
+    external {
+        _erc721StateV1.setBaseURI(__baseURI);
+    }
+
+    function tokenURI(
+        uint256 __tokenId
+    )
+    requireIsValidNft(__tokenId)
+    external view returns (string memory) {
+        return _erc721StateV1.tokenURI(__tokenId);
     }
 
     /**
@@ -120,14 +140,17 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         bytes calldata __data
     )
     external
+    nonReentrant
     requireCanTransfer(__tokenId)
     requireIsValidNft(__tokenId) {
+        AssetIntroducer memory assetIntroducer = _assetIntroducerStateV1.idToAssetIntroducer[__tokenId];
         _erc721StateV1.safeTransferFrom(
+            _voteStateV1,
             __from,
             __to,
             __tokenId,
             __data,
-            _assetIntroducerStateV1._idToAssetIntroducer[__tokenId]
+            assetIntroducer
         );
     }
 
@@ -146,14 +169,16 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         uint256 __tokenId
     )
     external
+    nonReentrant
     requireCanTransfer(__tokenId)
     requireIsValidNft(__tokenId) {
         _erc721StateV1.safeTransferFrom(
+            _voteStateV1,
             __from,
             __to,
             __tokenId,
             "",
-            _assetIntroducerStateV1._idToAssetIntroducer[__tokenId]
+            _assetIntroducerStateV1.idToAssetIntroducer[__tokenId]
         );
     }
 
@@ -173,9 +198,16 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         uint256 __tokenId
     )
     external
+    nonReentrant
     requireCanTransfer(__tokenId)
     requireIsValidNft(__tokenId) {
-        _erc721StateV1.transferFrom(__from, __to, __tokenId, _assetIntroducerStateV1._idToAssetIntroducer[__tokenId]);
+        _erc721StateV1.transferFrom(
+            _voteStateV1,
+            __from,
+            __to,
+            __tokenId,
+            _assetIntroducerStateV1.idToAssetIntroducer[__tokenId]
+        );
     }
 
     /**
@@ -190,6 +222,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         uint256 __tokenId
     )
     external
+    nonReentrant
     requireIsOperator(__tokenId)
     requireIsValidNft(__tokenId) {
         _erc721StateV1.approve(__spender, __tokenId);
@@ -206,7 +239,8 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         address __operator,
         bool __isApproved
     )
-    external {
+    external
+    nonReentrant {
         _erc721StateV1.setApprovalForAll(__operator, __isApproved);
     }
 
@@ -219,9 +253,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
     function balanceOf(
         address __owner
     )
-    public
-    view
-    returns (uint) {
+    public view returns (uint) {
         return _erc721StateV1.balanceOf(__owner);
     }
 
@@ -255,9 +287,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
     function ownerOf(
         uint256 __tokenId
     )
-    external
-    view
-    returns (address) {
+    external view returns (address) {
         return _erc721StateV1.ownerOf(__tokenId);
     }
 
@@ -270,10 +300,8 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
     function getApproved(
         uint256 __tokenId
     )
-    external
-    view
     requireIsValidNft(__tokenId)
-    returns (address) {
+    external view returns (address) {
         return _erc721StateV1.getApproved(__tokenId);
     }
 

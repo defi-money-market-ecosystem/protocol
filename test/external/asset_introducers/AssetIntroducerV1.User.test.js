@@ -9,7 +9,7 @@ const {doAssetIntroductionV1BeforeEach} = require('../../helpers/AssetIntroducti
 // Use the different accounts, which are unlocked and funded with Ether
 const [admin, guardian, user, owner] = accounts;
 
-describe('AssetIntroducerV1', () => {
+describe('AssetIntroducerV1.User', () => {
   let snapshotId;
   before(async () => {
     this.admin = admin;
@@ -29,6 +29,11 @@ describe('AssetIntroducerV1', () => {
 
   beforeEach(async () => {
     await resetChain(provider, snapshotId);
+  });
+
+  it('admin: should get admin on proxy contract', async () => {
+    const result = await this.proxy.admin({from: admin});
+    (result.receipt.status).should.eq(true)
   });
 
   it('admin: should get admin on proxy contract', async () => {

@@ -1,4 +1,4 @@
-const {accounts, contract, web3, provider} = require('@openzeppelin/test-environment');
+let {accounts, contract, web3, provider} = require('@openzeppelin/test-environment');
 require('@openzeppelin/test-helpers/src/config/web3').getWeb3 = () => web3;
 require('chai').should();
 const {expectRevert, expectEvent} = require('@openzeppelin/test-helpers');
@@ -53,8 +53,9 @@ describe('AssetIntroducer.Proxy', () => {
   });
 
   it('initialize: should not call initialize again', async () => {
-    const methodName = 'initialize(address,address,address,address,address)';
+    const methodName = 'initialize(string,address,address,address,address,address)';
     const promise = this.assetIntroducer.methods[methodName](
+      'https://api.defimoneymarket.com/v1/asset-introducers/',
       guardian,
       guardian,
       this.dmgToken.address,

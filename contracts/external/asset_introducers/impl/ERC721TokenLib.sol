@@ -16,9 +16,12 @@
 
 
 pragma solidity ^0.5.0;
+pragma experimental ABIEncoderV2;
 
 import "../../../../node_modules/@openzeppelin/upgrades/contracts/utils/Address.sol";
 import "../../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
+
+import "../impl/AssetIntroducerVotingLib.sol";
 
 import "../interfaces/IERC721.sol";
 import "../interfaces/IERC721Enumerable.sol";
@@ -33,6 +36,8 @@ import "../AssetIntroducerData.sol";
 library ERC721TokenLib {
 
     using SafeMath for uint;
+    using OpenZeppelinUpgradesAddress for address;
+    using AssetIntroducerVotingLib for AssetIntroducerData.VoteStateV1;
 
     // *************************
     // ***** Events
@@ -56,6 +61,8 @@ library ERC721TokenLib {
         bool _approved
     );
 
+    event BaseURIChanged(string newBaseURI);
+
     // *************************
     // ***** Constants
     // *************************
@@ -73,11 +80,38 @@ library ERC721TokenLib {
     // ***** Functions
     // *************************
 
+    function linkedListGuard() public pure returns (uint) {
+        return LINKED_LIST_GUARD;
+    }
+
     function initialize(
-        AssetIntroducerData.ERC721StateV1 storage __state
+        AssetIntroducerData.ERC721StateV1 storage __state,
+        string memory __baseURI
     )
     public {
         __state.interfaceIdToIsSupportedMap[0x80ac58cd] = true;
+        __state.baseURI = __baseURI;
+    }
+
+    function setBaseURI(
+        AssetIntroducerData.ERC721StateV1 storage __state,
+        string calldata __baseURI
+    ) external {
+        __state.baseURI = __baseURI;
+        emit BaseURIChanged(__baseURI);
+    }
+
+    function tokenURI(
+        AssetIntroducerData.ERC721StateV1 storage __state,
+        uint __tokenId
+    ) public view returns (string memory) {
+        bytes32 tokenIdBytes;
+        while (__tokenId > 0) {
+            tokenIdBytes = bytes32(uint(tokenIdBytes) / (2 ** 8));
+            tokenIdBytes |= bytes32(((__tokenId % 10) + 48) * 2 ** (8 * 31));
+            __tokenId /= 10;
+        }
+        return string(abi.encodePacked(__state.baseURI, tokenIdBytes));
     }
 
     function supportsInterface(
@@ -90,6 +124,7 @@ library ERC721TokenLib {
 
     function safeTransferFrom(
         AssetIntroducerData.ERC721StateV1 storage __state,
+        AssetIntroducerData.VoteStateV1 storage __voteState,
         address __from,
         address __to,
         uint256 __tokenId,
@@ -107,7 +142,7 @@ library ERC721TokenLib {
             "ERC721Token::_safeTransferFrom INVALID_RECIPIENT"
         );
 
-        _transfer(__to, __tokenId, false, __assetIntroducer);
+        _transfer(__state, __voteState, __to, __tokenId, false, __assetIntroducer);
 
         if (__to.isContract()) {
             bytes4 retval = IERC721TokenReceiver(__to).onERC721Received(msg.sender, __from, __tokenId, __data);
@@ -120,6 +155,7 @@ library ERC721TokenLib {
 
     function transferFrom(
         AssetIntroducerData.ERC721StateV1 storage __state,
+        AssetIntroducerData.VoteStateV1 storage __voteState,
         address __from,
         address __to,
         uint256 __tokenId,
@@ -137,7 +173,7 @@ library ERC721TokenLib {
             "ERC721Token::transferFrom: INVALID_RECIPIENT"
         );
 
-        _transfer(__to, __tokenId, false, __assetIntroducer);
+        _transfer(__state, __voteState, __to, __tokenId, false, __assetIntroducer);
     }
 
     function mint(
@@ -188,7 +224,7 @@ library ERC721TokenLib {
             __state.lastTokenId = __state.allTokens[previousTokenId];
         }
 
-        __state.totalSupply = totalSupply - 1;
+        __state.totalSupply -= 1;
 
         emit Transfer(tokenOwner, address(0), __tokenId);
     }
@@ -223,7 +259,7 @@ library ERC721TokenLib {
         AssetIntroducerData.ERC721StateV1 storage __state,
         address __owner
     )
-    public returns (uint) {
+    public view returns (uint) {
         require(
             __owner != address(0),
             "ERC721Token::balanceOf: INVALID_OWNER"
@@ -256,7 +292,7 @@ library ERC721TokenLib {
     )
     public view returns (uint) {
         require(
-            __index < __state.balanceOf(__owner),
+            __index < balanceOf(__state, __owner),
             "ERC721Token::tokenOfOwnerByIndex: INVALID_INDEX"
         );
 
@@ -327,17 +363,28 @@ library ERC721TokenLib {
      */
     function _transfer(
         AssetIntroducerData.ERC721StateV1 storage __state,
+        AssetIntroducerData.VoteStateV1 storage __voteState,
         address __to,
         uint256 __tokenId,
-        bool __shouldAllowTransferIntoThisContract
+        bool __shouldAllowTransferIntoThisContract,
+        AssetIntroducerData.AssetIntroducer memory assetIntroducer
     )
     internal {
+        // The token must be unactivated in order to withdraw funds
+        require(
+            !assetIntroducer.isAllowedToWithdrawFunds,
+            "AssetIntroducerV1::_transfer: TRANSFER_DISABLED"
+        );
+
+        // Get the "from" address (the owner) before effectuating the transfer via the call to "super"
+        address from = __state.idToOwnerMap[__tokenId];
+        __voteState.moveDelegates(from, __to, assetIntroducer.dmgLocked);
+
         require(
             __shouldAllowTransferIntoThisContract || __to != address(this),
             "ERC721Token::_transfer INVALID_RECIPIENT"
         );
 
-        address from = __state.idToOwnerMap[__tokenId];
         _clearApproval(__state, __tokenId);
 
         _removeToken(__state, from, __tokenId);

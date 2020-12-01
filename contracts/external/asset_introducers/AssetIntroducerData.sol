@@ -53,35 +53,41 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
 
     struct AssetIntroducerStateV1 {
         /// The timestamp at which this contract was initialized
-        uint64 _initTimestamp;
+        uint64 initTimestamp;
 
         /// Total amount of DMG locked in this contract
-        uint128 _totalDmgLocked;
+        uint128 totalDmgLocked;
 
         /// For calculating the results of off-chain signature requests
         bytes32 domainSeparator;
 
         /// Address of the DMG token
-        address _dmg;
+        address dmg;
 
         /// Address of the DMM Controller
-        address _dmmController;
+        address dmmController;
 
         /// Address of the DMM token valuator, which gets the USD value of a token
-        address _underlyingTokenValuator;
+        address underlyingTokenValuator;
+
+        /// Address of the implementation for the discount
+        address assetIntroducerDiscount;
 
         /// Mapping from NFT ID to the asset introducer struct.
-        mapping(uint => AssetIntroducer) _idToAssetIntroducer;
+        mapping(uint => AssetIntroducer) idToAssetIntroducer;
 
         /// Mapping from country code to asset introducer type to token IDs
-        mapping(bytes3 => mapping(uint8 => uint[])) _countryCodeToAssetIntroducerTypeToTokenIdsMap;
+        mapping(bytes3 => mapping(uint8 => uint[])) countryCodeToAssetIntroducerTypeToTokenIdsMap;
 
         /// A mapping from the country code to asset introducer type to the cost needed to buy one. The cost is represented
         /// in USD (with 18 decimals) and is purchased using DMG, so a conversion is needed using Chainlink.
-        mapping(bytes3 => mapping(uint8 => uint96)) _countryCodeToAssetIntroducerTypeToPriceUsd;
+        mapping(bytes3 => mapping(uint8 => uint96)) countryCodeToAssetIntroducerTypeToPriceUsd;
 
         /// The dollar amount that has actually been deployed by the asset introducer
-        mapping(uint => mapping(address => uint)) _tokenIdToUnderlyingTokenToWithdrawnAmount;
+        mapping(uint => mapping(address => uint)) tokenIdToUnderlyingTokenToWithdrawnAmount;
+
+        /// Mapping for the count of each user's off-chain signed messages. 0-indexed.
+        mapping(address => uint) ownerToNonceMap;
     }
 
     struct ERC721StateV1 {
@@ -106,9 +112,6 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
 
         /// Mapping from owner to an operator that can spend all of owner's NFTs.
         mapping(address => mapping(address => bool)) ownerToOperatorToIsApprovedMap;
-
-        /// Mapping for the count of each user's off-chain signed messages. 0-indexed.
-        mapping(address => uint) ownerToNonceMap;
 
         /// Mapping from owner address to all owned token IDs. Works as a linked list such that previous key --> next value.
         /// The 0th key in the list is LINKED_LIST_GUARD.
@@ -158,6 +161,10 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
         uint8 v;
         bytes32 r;
         bytes32 s;
+    }
+
+    struct DiscountStruct {
+        uint64 initTimestamp;
     }
 
     // *************************

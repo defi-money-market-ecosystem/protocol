@@ -30,6 +30,8 @@ interface IAssetIntroducerV1 {
     event SignatureValidated(address indexed signer, uint nonce);
     event AssetIntroducerBought(uint indexed tokenId, address indexed buyer, address indexed recipient, uint dmgAmount);
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
+    event InterestPaid(uint indexed tokenId, address indexed token, uint amount);
+    event CapitalWithdrawn(uint indexed tokenId, address indexed token, uint amount);
 
     // *************************
     // ***** Admin Functions
@@ -57,6 +59,11 @@ interface IAssetIntroducerV1 {
     // *************************
 
     /**
+     * @return  The timestamp at which this contract was created
+     */
+    function initTimestamp() external view returns (uint64);
+
+    /**
      * @return  The domain separator used in off-chain signatures. See EIP 712 for more:
      *          https://eips.ethereum.org/EIPS/eip-712
      */
@@ -71,14 +78,6 @@ interface IAssetIntroducerV1 {
 
     function underlyingTokenValuator() external view returns (address);
 
-    function tokenURI(
-        uint __tokenId
-    ) external view returns (string memory);
-
-    function setBaseURI(
-        string calldata __baseURI
-    ) external;
-
     /**
      * @return  The discount applied to the price of the asset introducer for being an early purchaser. Represented as
      *          a number with 18 decimals, such that 0.1 * 1e18 == 10%
@@ -90,7 +89,7 @@ interface IAssetIntroducerV1 {
      */
     function getAssetIntroducerPriceUsd(
         uint tokenId
-    ) external returns (uint);
+    ) external view returns (uint);
 
     /**
      * @return  The price of the asset introducer, represented in DMG. DMG is the needed currency to purchase an asset
@@ -98,7 +97,7 @@ interface IAssetIntroducerV1 {
      */
     function getAssetIntroducerPriceDmg(
         uint tokenId
-    ) external returns (uint);
+    ) external view returns (uint);
 
     /**
      * @return  The total amount of DMG locked in the asset introducer reserves
@@ -187,7 +186,7 @@ interface IAssetIntroducerV1 {
      * @return  The amount of capital that has been withdrawn by this asset introducer, denominated in USD with 18
      *          decimals
      */
-    function getDeployedCapitalByTokenId(
+    function getDeployedCapitalUsdByTokenId(
         uint tokenId
     ) external view returns (uint);
 
@@ -204,19 +203,19 @@ interface IAssetIntroducerV1 {
         uint tokenId
     ) external;
 
-    function withdrawCapitalByTokenId(
+    function withdrawCapitalByTokenIdAndToken(
         uint tokenId,
         address token,
         uint amount
     ) external;
 
-    function depositCapitalByTokenId(
+    function depositCapitalByTokenIdAndToken(
         uint tokenId,
         address token,
         uint amount
     ) external;
 
-    function payInterestByTokenId(
+    function payInterestByTokenIdAndToken(
         uint tokenId,
         address token,
         uint amount

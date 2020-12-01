@@ -16,16 +16,14 @@
 
 
 pragma solidity ^0.5.0;
+pragma experimental ABIEncoderV2;
 
-interface IAssetIntroducerV1Initializable {
+import "../AssetIntroducerData.sol";
 
-    function initialize(
-        string calldata baseURI,
-        address owner,
-        address guardian,
-        address dmgToken,
-        address dmmController,
-        address underlyingTokenValuator
-    ) external;
+interface IAssetIntroducerDiscount {
+
+    function getAssetIntroducerDiscount(
+        AssetIntroducerData.DiscountStruct calldata data
+    ) external view returns (uint);
 
 }
