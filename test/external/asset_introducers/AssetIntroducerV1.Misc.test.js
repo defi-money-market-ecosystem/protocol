@@ -9,7 +9,7 @@ const {doAssetIntroductionV1BeforeEach} = require('../../helpers/AssetIntroducti
 // Use the different accounts, which are unlocked and funded with Ether
 const [admin, guardian, user, owner] = accounts;
 
-describe('AssetIntroducerV1.Admin', () => {
+describe('AssetIntroducerV1.Misc', () => {
   let snapshotId;
   before(async () => {
     this.admin = admin;

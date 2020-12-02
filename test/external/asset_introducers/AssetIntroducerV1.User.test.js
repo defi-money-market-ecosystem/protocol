@@ -4,10 +4,10 @@ require('chai').should();
 const {expectRevert, expectEvent} = require('@openzeppelin/test-helpers');
 
 const {snapshotChain, resetChain, _1} = require('../../helpers/DmmTokenTestHelpers');
-const {doAssetIntroductionV1BeforeEach} = require('../../helpers/AssetIntroductionHelpers');
+const {doAssetIntroductionV1BeforeEach, createNFTs} = require('../../helpers/AssetIntroductionHelpers');
 
 // Use the different accounts, which are unlocked and funded with Ether
-const [admin, guardian, user, owner] = accounts;
+const [admin, guardian, user, user2, owner] = accounts;
 
 describe('AssetIntroducerV1.User', () => {
   let snapshotId;
@@ -16,6 +16,7 @@ describe('AssetIntroducerV1.User', () => {
     this.guardian = guardian;
     this.owner = owner;
     this.user = user;
+    this.user2 = user2;
 
     this.wallet = web3.eth.accounts.create();
     const password = 'password';
@@ -23,6 +24,7 @@ describe('AssetIntroducerV1.User', () => {
     await web3.eth.personal.unlockAccount(this.wallet.address, password, 600);
 
     await doAssetIntroductionV1BeforeEach(this, contract, web3);
+    await createNFTs(this);
 
     snapshotId = await snapshotChain(provider);
   });
@@ -31,9 +33,8 @@ describe('AssetIntroducerV1.User', () => {
     await resetChain(provider, snapshotId);
   });
 
-  it('admin: should get admin on proxy contract', async () => {
-    const result = await this.proxy.admin({from: admin});
-    (result.receipt.status).should.eq(true)
+  it('getCurrentVotes: should work for users with and without NFTs', async () => {
+    await this.assetIntroducer.getCurrentVotes(user);
   });
 
 });

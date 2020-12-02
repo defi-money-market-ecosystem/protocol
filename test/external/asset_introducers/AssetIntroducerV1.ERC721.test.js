@@ -55,7 +55,7 @@ describe('AssetIntroducerV1.ERC721', () => {
     (await this.assetIntroducer.ownerOf(this.tokenIds[0])).should.be.eq(user2);
   });
 
-  it('safeTransferFrom: should work for token sent by operator of specific token', async () => {
+  it('safeTransferFrom: should work for token sent by an operator of specific token', async () => {
     let result = await this.assetIntroducer.approve(admin, this.tokenIds[0], {from: user});
     expectEvent(
       result,
@@ -73,7 +73,7 @@ describe('AssetIntroducerV1.ERC721', () => {
     (await this.assetIntroducer.ownerOf(this.tokenIds[0])).should.be.eq(user2);
   });
 
-  it('safeTransferFrom: should work for token sent by operator approved for all', async () => {
+  it('safeTransferFrom: should work for token sent by an operator approved for all', async () => {
     let result = await this.assetIntroducer.setApprovalForAll(admin, true, {from: user});
     expectEvent(
       result,

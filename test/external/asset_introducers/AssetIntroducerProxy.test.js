@@ -53,14 +53,16 @@ describe('AssetIntroducer.Proxy', () => {
   });
 
   it('initialize: should not call initialize again', async () => {
-    const methodName = 'initialize(string,address,address,address,address,address)';
+    const methodName = 'initialize(string,address,address,address,address,address,address,address)';
     const promise = this.assetIntroducer.methods[methodName](
       'https://api.defimoneymarket.com/v1/asset-introducers/',
+      this.openSeaProxyRegistry.address,
       guardian,
       guardian,
       this.dmgToken.address,
       this.dmmController.address,
       this.underlyingTokenValuator.address,
+      this.assetIntroducerDiscount.address,
       {from: admin},
     );
     await expectRevert(promise, 'Contract instance has already been initialized')

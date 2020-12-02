@@ -150,12 +150,18 @@ const createNFTs = async (
   await thisInstance.dmgToken.approve(thisInstance.assetIntroducer.address, constants.MAX_UINT256, {from: thisInstance.user});
   await thisInstance.dmgToken.approve(thisInstance.assetIntroducer.address, constants.MAX_UINT256, {from: thisInstance.user2});
 
+  thisInstance.purchaseResults = {};
   for (let i = 0; i < countryCodes.length; i++) {
+    let user;
     if (i < countryCodes.length / 2) {
-      await thisInstance.assetIntroducer.buyAssetIntroducerSlot(thisInstance.tokenIds[i], {from: thisInstance.user});
+      user = thisInstance.user;
     } else {
-      await thisInstance.assetIntroducer.buyAssetIntroducerSlot(thisInstance.tokenIds[i], {from: thisInstance.user2});
+      user = thisInstance.user2;
     }
+    if (!thisInstance.purchaseResults[user]) {
+      thisInstance.purchaseResults[user] = [];
+    }
+    thisInstance.purchaseResults[user].push(await thisInstance.assetIntroducer.buyAssetIntroducerSlot(thisInstance.tokenIds[i], {from: user}));
   }
 
 };
