@@ -20,6 +20,7 @@ const {_001, _1, _100, _10000} = require('./DmmTokenTestHelpers');
 
 const doAssetIntroductionV1BeforeEach = async (thisInstance, contracts, web3, provider) => {
   const ERC20Mock = contracts.fromArtifact('ERC20Mock');
+  const AssetIntroducerDiscountV1 = contracts.fromArtifact('AssetIntroducerDiscountV1');
   const AssetIntroducerProxy = contracts.fromArtifact('AssetIntroducerProxy');
   const AssetIntroducerVotingLib = contracts.fromArtifact('AssetIntroducerVotingLib');
   const AssetIntroducerV1UserLib = contracts.fromArtifact('AssetIntroducerV1UserLib');
@@ -78,6 +79,8 @@ const doAssetIntroductionV1BeforeEach = async (thisInstance, contracts, web3, pr
     {from: thisInstance.admin},
   );
 
+  thisInstance.assetIntroducerDiscount = await AssetIntroducerDiscountV1.new();
+
   thisInstance.baseURI = 'https://api.defimoneymarket.com/v1/asset-introducers/';
 
   thisInstance.proxy = await AssetIntroducerProxy.new(
@@ -90,6 +93,7 @@ const doAssetIntroductionV1BeforeEach = async (thisInstance, contracts, web3, pr
     thisInstance.dmgToken.address,
     thisInstance.dmmController.address,
     thisInstance.underlyingTokenValuator.address,
+    thisInstance.assetIntroducerDiscount.address,
   );
   console.log('    AssetIntroducerProxy gas used to deploy: ', (await web3.eth.getTransactionReceipt(thisInstance.proxy.transactionHash)).gasUsed.toString());
   console.log('');
@@ -98,7 +102,39 @@ const doAssetIntroductionV1BeforeEach = async (thisInstance, contracts, web3, pr
   thisInstance.contract = thisInstance.assetIntroducer;
 
   await thisInstance.assetIntroducer.transferOwnership(thisInstance.owner, {from: thisInstance.guardian});
-}
+};
+
+const PRINCIPAL = 0;
+const AFFILIATE = 1;
+
+const PRICE_USA_PRINCIPAL = '250000000000000000000000'; // $250,000
+const PRICE_USA_AFFILIATE = '150000000000000000000000'; // $150,000
+
+const PRICE_CHN_PRINCIPAL = '208000000000000000000000'; // $208,000
+const PRICE_CHN_AFFILIATE = '125000000000000000000000'; // $125,000
+
+const PRICE_IND_PRINCIPAL = '166000000000000000000000'; // $166,000
+const PRICE_IND_AFFILIATE = '100000000000000000000000'; // $100,000
+
+const createNfts = async (
+  thisInstance,
+  countryCodes = ['USA', 'USA', 'CHN', 'CHN', 'IND'],
+  introducerTypes = [AFFILIATE, PRINCIPAL, AFFILIATE, PRINCIPAL, AFFILIATE],
+  pricesUsd = [PRICE_USA_AFFILIATE, PRICE_USA_PRINCIPAL, PRICE_CHN_AFFILIATE, PRICE_CHN_PRINCIPAL, PRICE_IND_AFFILIATE]
+) => {
+  if (countryCodes.length === 0 || introducerTypes.length === 0) {
+    throw 'lengths must be non-zero';
+  }
+  if (countryCodes.length !== introducerTypes.length) {
+    throw 'lengths must match';
+  }
+
+  for (let i = 0; i < countryCodes.length; i++) {
+    await thisInstance.assetIntroducer.setAssetIntroducerPrice(countryCodes[i], introducerTypes[i], pricesUsd[i]);
+  }
+
+  await thisInstance.assetIntroducer.createAssetIntroducersForPrimaryMarket(countryCodes, introducerTypes);
+};
 
 module.exports = {
   doAssetIntroductionV1BeforeEach,

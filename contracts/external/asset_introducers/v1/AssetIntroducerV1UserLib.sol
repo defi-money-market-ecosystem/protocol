@@ -133,7 +133,7 @@ library AssetIntroducerV1UserLib {
         AssetIntroducerData.ERC721StateV1 storage __erc721State,
         AssetIntroducerData.VoteStateV1 storage __voteState
     ) public {
-        uint dmgPurchasePrice = getAssetIntroducerPriceDmg(__state, __tokenId);
+        uint dmgPurchasePrice = getAssetIntroducerPriceDmgByTokenId(__state, __tokenId);
         IERC20(__state.dmg).safeTransferFrom(__buyer, address(this), dmgPurchasePrice);
         __state.totalDmgLocked = uint128(uint(__state.totalDmgLocked).add(dmgPurchasePrice));
 
@@ -168,23 +168,47 @@ library AssetIntroducerV1UserLib {
         return IAssetIntroducerDiscount(__state.assetIntroducerDiscount).getAssetIntroducerDiscount(discountStruct);
     }
 
-    function getAssetIntroducerPriceUsd(
+    function getAssetIntroducerPriceUsdByTokenId(
         AssetIntroducerData.AssetIntroducerStateV1 storage __state,
         uint __tokenId
     )
     public view returns (uint) {
         AssetIntroducerData.AssetIntroducer memory assetIntroducer = __state.idToAssetIntroducer[__tokenId];
-        uint priceUsd = __state.countryCodeToAssetIntroducerTypeToPriceUsd[assetIntroducer.countryCode][uint8(assetIntroducer.introducerType)];
+        return getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(
+            __state,
+            string(abi.encodePacked(assetIntroducer.countryCode)),
+            assetIntroducer.introducerType
+        );
+    }
+
+    function getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(
+        AssetIntroducerData.AssetIntroducerStateV1 storage __state,
+        string memory __countryCode,
+        AssetIntroducerData.AssetIntroducerType __introducerType
+    )
+    public view returns (uint) {
+        bytes3 countryCode = _verifyAndConvertCountryCodeToBytes(__countryCode);
+        uint priceUsd = __state.countryCodeToAssetIntroducerTypeToPriceUsd[countryCode][uint8(__introducerType)];
         return priceUsd.mul(ONE_ETH.sub(getAssetIntroducerDiscount(__state))).div(ONE_ETH);
     }
 
-    function getAssetIntroducerPriceDmg(
+    function getAssetIntroducerPriceDmgByTokenId(
         AssetIntroducerData.AssetIntroducerStateV1 storage __state,
         uint __tokenId
     )
     public view returns (uint) {
         uint dmgPriceUsd = IUnderlyingTokenValuator(__state.underlyingTokenValuator).getTokenValue(__state.dmg, 1e18);
-        return getAssetIntroducerPriceUsd(__state, __tokenId).mul(1e18).div(dmgPriceUsd);
+        return getAssetIntroducerPriceUsdByTokenId(__state, __tokenId).mul(1e18).div(dmgPriceUsd);
+    }
+
+    function getAssetIntroducerPriceDmgByCountryCodeAndIntroducerType(
+        AssetIntroducerData.AssetIntroducerStateV1 storage __state,
+        string memory __countryCode,
+        AssetIntroducerData.AssetIntroducerType __introducerType
+    )
+    public view returns (uint) {
+        uint dmgPriceUsd = IUnderlyingTokenValuator(__state.underlyingTokenValuator).getTokenValue(__state.dmg, 1e18);
+        return getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(__state, __countryCode, __introducerType).mul(1e18).div(dmgPriceUsd);
     }
 
     function getAssetIntroducersByCountryCode(
@@ -343,6 +367,15 @@ library AssetIntroducerV1UserLib {
     // ***** Internal Functions
     // ******************************
 
+    function _getAssetIntroducerTokenId(
+        AssetIntroducerData.AssetIntroducerStateV1 storage __state,
+        bytes3 __countryCode,
+        uint8 __introducerType
+    ) internal view returns (uint) {
+        uint nonce = __state.countryCodeToAssetIntroducerTypeToTokenIdsMap[__countryCode][__introducerType].length;
+        return uint(keccak256(abi.encodePacked(__countryCode, __introducerType, nonce)));
+    }
+
     function _verifyAndConvertCountryCodeToBytes(
         string memory __countryCode
     ) internal pure returns (bytes3) {
@@ -350,11 +383,11 @@ library AssetIntroducerV1UserLib {
             bytes(__countryCode).length == 3,
             "AssetIntroducerV1UserLib::_verifyAndConvertCountryCodeToBytes: INVALID_COUNTRY_CODE"
         );
-        bytes3 result;
+        bytes32 result;
         assembly {
-            result := mload(add(__countryCode, 3))
+            result := mload(add(__countryCode, 32))
         }
-        return result;
+        return bytes3(result);
     }
 
     function _standardizeTokenAmountForUsdDecimals(

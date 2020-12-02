@@ -107,6 +107,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         string calldata __baseURI
     )
     onlyOwnerOrGuardian
+    nonReentrant
     external {
         _erc721StateV1.setBaseURI(__baseURI);
     }

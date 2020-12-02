@@ -59,6 +59,8 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
     /// @notice The EIP-712 typehash for the purchase struct used by the contract
     bytes32 public constant BUY_ASSET_INTRODUCER_TYPE_HASH = keccak256("BuyAssetIntroducer(uint256 tokenId,uint256 nonce,uint256 expiry)");
 
+    string internal constant NAME = "DMM: Asset Introducer";
+
     // *************************
     // ***** Admin Functions
     // *************************
@@ -69,7 +71,8 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         address __guardian,
         address __dmg,
         address __dmmController,
-        address __underlyingTokenValuator
+        address __underlyingTokenValuator,
+        address __assetIntroducerDiscount
     )
     external
     initializer {
@@ -79,6 +82,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         _assetIntroducerStateV1.dmg = __dmg;
         _assetIntroducerStateV1.dmmController = __dmmController;
         _assetIntroducerStateV1.underlyingTokenValuator = __underlyingTokenValuator;
+        _assetIntroducerStateV1.assetIntroducerDiscount = __assetIntroducerDiscount;
 
         _assetIntroducerStateV1.initTimestamp = uint64(block.timestamp);
         _assetIntroducerStateV1.domainSeparator = keccak256(
@@ -87,7 +91,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
     }
 
     function name() external view returns (string memory) {
-        return "DMM: Asset Introducer";
+        return NAME;
     }
 
     function symbol() external view returns (string memory) {
@@ -96,8 +100,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
 
     function createAssetIntroducersForPrimaryMarket(
         string[] calldata __countryCodes,
-        AssetIntroducerType[] calldata __introducerTypes,
-        uint[] calldata __dmgPriceAmounts
+        AssetIntroducerType[] calldata __introducerTypes
     )
     external
     nonReentrant
@@ -106,8 +109,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         return _assetIntroducerStateV1.createAssetIntroducersForPrimaryMarket(
             _erc721StateV1,
             __countryCodes,
-            __introducerTypes,
-            __dmgPriceAmounts
+            __introducerTypes
         );
     }
 
@@ -135,9 +137,36 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         );
     }
 
+    function setAssetIntroducerDiscount(
+        address __assetIntroducerDiscount
+    )
+    external
+    onlyOwnerOrGuardian {
+        _assetIntroducerStateV1.setAssetIntroducerDiscount(__assetIntroducerDiscount);
+    }
+
+    function setAssetIntroducerPrice(
+        string calldata __countryCode,
+        AssetIntroducerData.AssetIntroducerType __introducerType,
+        uint __priceUsd
+    )
+    external
+    onlyOwnerOrGuardian {
+        _assetIntroducerStateV1.setAssetIntroducerPrice(__countryCode, __introducerType, __priceUsd);
+    }
+
     // *************************
     // ***** User Functions
     // *************************
+
+    function getNextAssetIntroducerTokenId(
+        string calldata __countryCode,
+        AssetIntroducerType __introducerType
+    ) external view returns (uint) {
+        bytes3 countryCode = AssetIntroducerV1UserLib._verifyAndConvertCountryCodeToBytes(__countryCode);
+        uint8 introducerType = uint8(__introducerType);
+        return _assetIntroducerStateV1._getAssetIntroducerTokenId(countryCode, introducerType);
+    }
 
     function buyAssetIntroducerSlot(
         uint __tokenId
@@ -267,6 +296,10 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         return _assetIntroducerStateV1.underlyingTokenValuator;
     }
 
+    function assetIntroducerDiscount() external view returns (address) {
+        return _assetIntroducerStateV1.assetIntroducerDiscount;
+    }
+
     function getTotalDmgLocked() external view returns (uint) {
         return _assetIntroducerStateV1.totalDmgLocked;
     }
@@ -289,24 +322,48 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         return _assetIntroducerStateV1.idToAssetIntroducer[__tokenId].dmgLocked;
     }
 
+    function getAssetIntroducerByTokenId(
+        uint __tokenId
+    )
+    requireIsValidNft(__tokenId)
+    external view returns (AssetIntroducerData.AssetIntroducer memory) {
+        return _assetIntroducerStateV1.idToAssetIntroducer[__tokenId];
+    }
+
     function getAssetIntroducerDiscount() public view returns (uint) {
         return _assetIntroducerStateV1.getAssetIntroducerDiscount();
     }
 
-    function getAssetIntroducerPriceUsd(
+    function getAssetIntroducerPriceUsdByTokenId(
         uint __tokenId
     )
     requireIsValidNft(__tokenId)
     public view returns (uint) {
-        return _assetIntroducerStateV1.getAssetIntroducerPriceUsd(__tokenId);
+        return _assetIntroducerStateV1.getAssetIntroducerPriceUsdByTokenId(__tokenId);
     }
 
-    function getAssetIntroducerPriceDmg(
+    function getAssetIntroducerPriceDmgByTokenId(
         uint __tokenId
     )
     requireIsValidNft(__tokenId)
     public view returns (uint) {
-        return _assetIntroducerStateV1.getAssetIntroducerPriceDmg(__tokenId);
+        return _assetIntroducerStateV1.getAssetIntroducerPriceDmgByTokenId(__tokenId);
+    }
+
+    function getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(
+        string calldata __countryCode,
+        AssetIntroducerType __introducerType
+    )
+    external view returns (uint) {
+        return _assetIntroducerStateV1.getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(__countryCode, __introducerType);
+    }
+
+    function getAssetIntroducerPriceDmgByCountryCodeAndIntroducerType(
+        string calldata __countryCode,
+        AssetIntroducerType __introducerType
+    )
+    external view returns (uint) {
+        return _assetIntroducerStateV1.getAssetIntroducerPriceDmgByCountryCodeAndIntroducerType(__countryCode, __introducerType);
     }
 
     function getAssetIntroducersByCountryCode(

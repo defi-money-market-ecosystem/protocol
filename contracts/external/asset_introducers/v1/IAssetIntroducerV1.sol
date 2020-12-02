@@ -26,12 +26,16 @@ interface IAssetIntroducerV1 {
     // ***** Events
     // *************************
 
-    event BaseURIChanged(string newBaseURI);
-    event SignatureValidated(address indexed signer, uint nonce);
     event AssetIntroducerBought(uint indexed tokenId, address indexed buyer, address indexed recipient, uint dmgAmount);
+    event AssetIntroducerCreated(uint indexed tokenId, string countryCode, AssetIntroducerData.AssetIntroducerType introducerType, uint serialNumber);
+    event AssetIntroducerDiscountChanged(address indexed oldAssetIntroducerDiscount, address indexed newAssetIntroducerDiscount);
+    event AssetIntroducerDollarAmountToManageChange(uint indexed tokenId, uint oldDollarAmountToManage, uint newDollarAmountToManage);
+    event AssetIntroducerPriceChanged(string indexed countryCode, AssetIntroducerData.AssetIntroducerType indexed introducerType, uint oldPriceUsd, uint newPriceUsd);
+    event BaseURIChanged(string newBaseURI);
+    event CapitalWithdrawn(uint indexed tokenId, address indexed token, uint amount);
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
     event InterestPaid(uint indexed tokenId, address indexed token, uint amount);
-    event CapitalWithdrawn(uint indexed tokenId, address indexed token, uint amount);
+    event SignatureValidated(address indexed signer, uint nonce);
 
     // *************************
     // ***** Admin Functions
@@ -39,8 +43,7 @@ interface IAssetIntroducerV1 {
 
     function createAssetIntroducersForPrimaryMarket(
         string[] calldata countryCode,
-        AssetIntroducerData.AssetIntroducerType[] calldata introducerType,
-        uint[] calldata dmgPriceAmount
+        AssetIntroducerData.AssetIntroducerType[] calldata introducerType
     ) external returns (uint[] memory);
 
     function setDollarAmountToManageByTokenId(
@@ -52,6 +55,16 @@ interface IAssetIntroducerV1 {
         string calldata countryCode,
         AssetIntroducerData.AssetIntroducerType introducerType,
         uint dollarAmountToManage
+    ) external;
+
+    function setAssetIntroducerDiscount(
+        address assetIntroducerDiscount
+    ) external;
+
+    function setAssetIntroducerPrice(
+        string calldata countryCode,
+        AssetIntroducerData.AssetIntroducerType introducerType,
+        uint priceUsd
     ) external;
 
     // *************************
@@ -78,6 +91,8 @@ interface IAssetIntroducerV1 {
 
     function underlyingTokenValuator() external view returns (address);
 
+    function assetIntroducerDiscount() external view returns (address);
+
     /**
      * @return  The discount applied to the price of the asset introducer for being an early purchaser. Represented as
      *          a number with 18 decimals, such that 0.1 * 1e18 == 10%
@@ -87,7 +102,7 @@ interface IAssetIntroducerV1 {
     /**
      * @return  The price of the asset introducer, represented in USD
      */
-    function getAssetIntroducerPriceUsd(
+    function getAssetIntroducerPriceUsdByTokenId(
         uint tokenId
     ) external view returns (uint);
 
@@ -95,9 +110,21 @@ interface IAssetIntroducerV1 {
      * @return  The price of the asset introducer, represented in DMG. DMG is the needed currency to purchase an asset
      *          introducer NFT.
      */
-    function getAssetIntroducerPriceDmg(
+    function getAssetIntroducerPriceDmgByTokenId(
         uint tokenId
     ) external view returns (uint);
+
+    function getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(
+        string calldata countryCode,
+        AssetIntroducerData.AssetIntroducerType introducerType
+    )
+    external view returns (uint);
+
+    function getAssetIntroducerPriceDmgByCountryCodeAndIntroducerType(
+        string calldata countryCode,
+        AssetIntroducerData.AssetIntroducerType introducerType
+    )
+    external view returns (uint);
 
     /**
      * @return  The total amount of DMG locked in the asset introducer reserves
@@ -120,6 +147,10 @@ interface IAssetIntroducerV1 {
         uint tokenId
     ) external view returns (uint);
 
+    function getAssetIntroducerByTokenId(
+        uint tokenId
+    ) external view returns (AssetIntroducerData.AssetIntroducer memory);
+
     function getAssetIntroducersByCountryCode(
         string calldata countryCode
     ) external view returns (AssetIntroducerData.AssetIntroducer[] memory);
@@ -134,7 +165,14 @@ interface IAssetIntroducerV1 {
     // ***** User Functions
     // *************************
 
-    function getNonceByUser(address user) external view returns (uint);
+    function getNonceByUser(
+        address user
+    ) external view returns (uint);
+
+    function getNextAssetIntroducerTokenId(
+        string calldata __countryCode,
+        AssetIntroducerData.AssetIntroducerType __introducerType
+    ) external view returns (uint);
 
     /**
      * Buys the slot for the appropriate amount of DMG, by attempting to transfer the DMG from `msg.sender` to this

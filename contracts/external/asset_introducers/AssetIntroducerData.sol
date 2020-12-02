@@ -28,8 +28,6 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
     // ***** Constants
     // *************************
 
-    string public constant NAME = "AssetIntroducer";
-
     // *************************
     // ***** V1 State Variables
     // *************************
@@ -132,6 +130,7 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
         mapping(address => uint64) ownerToCheckpointCountMap;
     }
 
+    /// Tightly-packed, this data structure is 2 slots; 64 bytes
     struct AssetIntroducer {
         bytes3 countryCode;
         AssetIntroducerType introducerType;
@@ -140,9 +139,11 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
         /// True if the asset introducer can withdraw tokens from mToken deposits, false if it cannot yet. This value
         /// must only be changed to `true` via governance vote
         bool isAllowedToWithdrawFunds;
+        /// 1-based index at which the asset introducer was created. Used for optics
+        uint16 serialNumber;
         uint96 dmgLocked;
         /// How much this asset introducer can manage
-        uint104 dollarAmountToManage;
+        uint96 dollarAmountToManage;
         uint tokenId;
     }
 

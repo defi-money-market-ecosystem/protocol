@@ -25,7 +25,8 @@ interface IAssetIntroducerV1Initializable {
         address guardian,
         address dmgToken,
         address dmmController,
-        address underlyingTokenValuator
+        address underlyingTokenValuator,
+        address assetIntroducerDiscount
     ) external;
 
 }

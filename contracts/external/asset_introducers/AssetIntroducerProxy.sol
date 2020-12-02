@@ -31,6 +31,7 @@ contract AssetIntroducerProxy is AdminUpgradeabilityProxy {
      * @param dmgToken                  The address of the DMG token.
      * @param dmmController             The address of the DMM controller.
      * @param underlyingTokenValuator   The address of the DMM token valuator.
+     * @param assetIntroducerDiscount   The address of the contract that implements the discount logic.
      */
     constructor(
         address logic,
@@ -40,14 +41,15 @@ contract AssetIntroducerProxy is AdminUpgradeabilityProxy {
         address guardian,
         address dmgToken,
         address dmmController,
-        address underlyingTokenValuator
+        address underlyingTokenValuator,
+        address assetIntroducerDiscount
     )
     AdminUpgradeabilityProxy(
         logic,
         admin,
         abi.encodePacked(
             IAssetIntroducerV1Initializable(address(0)).initialize.selector,
-            abi.encode(baseURI, owner, guardian, dmgToken, dmmController, underlyingTokenValuator)
+            abi.encode(baseURI, owner, guardian, dmgToken, dmmController, underlyingTokenValuator, assetIntroducerDiscount)
         )
     )
     public {}

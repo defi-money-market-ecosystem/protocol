@@ -19,6 +19,7 @@ pragma solidity ^0.5.0;
 pragma experimental ABIEncoderV2;
 
 import "../../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
+import "../../../../node_modules/@openzeppelin/contracts/utils/Address.sol";
 
 import "../../../protocol/interfaces/IDmmController.sol";
 import "../../../utils/IERC20WithDecimals.sol";
@@ -31,15 +32,19 @@ import "./IAssetIntroducerV1.sol";
 
 library AssetIntroducerV1AdminLib {
 
-    using SafeMath for uint;
-    using ERC721TokenLib for AssetIntroducerData.ERC721StateV1;
+    using Address for address;
     using AssetIntroducerV1UserLib for *;
+    using ERC721TokenLib for AssetIntroducerData.ERC721StateV1;
+    using SafeMath for uint;
 
     // *************************
     // ***** Events
     // *************************
 
-    event SignatureValidated(address indexed signer, uint nonce);
+    event AssetIntroducerCreated(uint indexed tokenId, string countryCode, AssetIntroducerData.AssetIntroducerType introducerType, uint serialNumber);
+    event AssetIntroducerDiscountChanged(address indexed oldAssetIntroducerDiscount, address indexed newAssetIntroducerDiscount);
+    event AssetIntroducerDollarAmountToManageChange(uint indexed tokenId, uint oldDollarAmountToManage, uint newDollarAmountToManage);
+    event AssetIntroducerPriceChanged(string indexed countryCode, AssetIntroducerData.AssetIntroducerType indexed introducerType, uint oldPriceUsd, uint newPriceUsd);
 
     // *************************
     // ***** Functions
@@ -49,8 +54,7 @@ library AssetIntroducerV1AdminLib {
         AssetIntroducerData.AssetIntroducerStateV1 storage __state,
         AssetIntroducerData.ERC721StateV1 storage __erc721State,
         string[] calldata __countryCodes,
-        AssetIntroducerData.AssetIntroducerType[] calldata __introducerTypes,
-        uint[] calldata __dmgPriceAmounts
+        AssetIntroducerData.AssetIntroducerType[] calldata __introducerTypes
     )
     external
     returns (uint[] memory) {
@@ -58,29 +62,37 @@ library AssetIntroducerV1AdminLib {
             __countryCodes.length == __introducerTypes.length,
             "AssetIntroducerV1Lib::createAssetIntroducersForPrimaryMarket: INVALID_LENGTH"
         );
-        require(
-            __countryCodes.length == __dmgPriceAmounts.length,
-            "AssetIntroducerV1Lib::createAssetIntroducersForPrimaryMarket: INVALID_LENGTH"
-        );
 
         uint[] memory tokenIds = new uint[](__countryCodes.length);
 
+        uint totalSupply = __erc721State.totalSupply;
+
         for (uint i = 0; i < __countryCodes.length; i++) {
             bytes3 countryCode = AssetIntroducerV1UserLib._verifyAndConvertCountryCodeToBytes(__countryCodes[i]);
-            uint nonce = __state.countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(__introducerTypes[i])].length;
-            tokenIds[i] = uint(keccak256(abi.encodePacked(countryCode, uint8(__introducerTypes[i]), nonce)));
+            uint8 introducerType = uint8(__introducerTypes[i]);
+            tokenIds[i] = AssetIntroducerV1UserLib._getAssetIntroducerTokenId(__state, countryCode, introducerType);
+
+            require(
+                __state.countryCodeToAssetIntroducerTypeToPriceUsd[countryCode][introducerType] > 0,
+                "AssetIntroducerV1Lib::createAssetIntroducersForPrimaryMarket: PRICE_NOT_SET"
+            );
+
+            uint16 serialNumber = uint16(totalSupply + i + 1);
 
             __state.idToAssetIntroducer[tokenIds[i]] = AssetIntroducerData.AssetIntroducer({
             countryCode : countryCode,
             introducerType : __introducerTypes[i],
             isOnSecondaryMarket : false,
             isAllowedToWithdrawFunds : false,
+            serialNumber : serialNumber, /// serial number is 1-based indexed
             dmgLocked : 0,
             dollarAmountToManage : 0,
             tokenId : tokenIds[i]
             });
 
             __state.countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(__introducerTypes[i])].push(tokenIds[i]);
+
+            emit AssetIntroducerCreated(tokenIds[i], __countryCodes[i], __introducerTypes[i], serialNumber);
 
             __erc721State.mint(address(this), tokenIds[i]);
         }
@@ -95,11 +107,14 @@ library AssetIntroducerV1AdminLib {
     )
     external {
         require(
-            __dollarAmountToManage == uint104(__dollarAmountToManage),
-            "AssetIntroducerV1::setDollarAmountToManageByTokenId: INVALID_DOLLAR_AMOUNT"
+            __dollarAmountToManage == uint96(__dollarAmountToManage),
+            "AssetIntroducerV1AdminLib::setDollarAmountToManageByTokenId: INVALID_DOLLAR_AMOUNT"
         );
 
-        __state.idToAssetIntroducer[__tokenId].dollarAmountToManage = uint104(__dollarAmountToManage);
+        AssetIntroducerData.AssetIntroducer storage assetIntroducer = __state.idToAssetIntroducer[__tokenId];
+        uint oldDollarAmountToManage = assetIntroducer.dollarAmountToManage;
+        assetIntroducer.dollarAmountToManage = uint96(__dollarAmountToManage);
+        emit AssetIntroducerDollarAmountToManageChange(__tokenId, oldDollarAmountToManage, __dollarAmountToManage);
     }
 
     function setDollarAmountToManageByCountryCodeAndIntroducerType(
@@ -110,15 +125,51 @@ library AssetIntroducerV1AdminLib {
     )
     external {
         require(
-            __dollarAmountToManage == uint104(__dollarAmountToManage),
-            "AssetIntroducerV1::setDollarAmountToManageByTokenId: INVALID_DOLLAR_AMOUNT"
+            __dollarAmountToManage == uint96(__dollarAmountToManage),
+            "AssetIntroducerV1AdminLib::setDollarAmountToManageByTokenId: INVALID_DOLLAR_AMOUNT"
         );
 
         bytes3 rawCountryCode = AssetIntroducerV1UserLib._verifyAndConvertCountryCodeToBytes(__countryCode);
         uint[] memory tokenIds = __state.countryCodeToAssetIntroducerTypeToTokenIdsMap[rawCountryCode][uint8(__introducerType)];
         for (uint i = 0; i < tokenIds.length; i++) {
-            __state.idToAssetIntroducer[tokenIds[i]].dollarAmountToManage = uint104(__dollarAmountToManage);
+            AssetIntroducerData.AssetIntroducer storage assetIntroducer = __state.idToAssetIntroducer[tokenIds[i]];
+            uint oldDollarAmountToManage = assetIntroducer.dollarAmountToManage;
+            assetIntroducer.dollarAmountToManage = uint96(__dollarAmountToManage);
+            emit AssetIntroducerDollarAmountToManageChange(tokenIds[i], oldDollarAmountToManage, __dollarAmountToManage);
         }
+    }
+
+    function setAssetIntroducerDiscount(
+        AssetIntroducerData.AssetIntroducerStateV1 storage __state,
+        address __assetIntroducerDiscount
+    )
+    public {
+        require(
+            __assetIntroducerDiscount != address(0) && __assetIntroducerDiscount.isContract(),
+            "AssetIntroducerV1AdminLib::setAssetIntroducerDiscount: INVALID_INTRODUCER_DISCOUNT"
+        );
+
+        address oldAssetIntroducerDiscount = __state.assetIntroducerDiscount;
+        __state.assetIntroducerDiscount = __assetIntroducerDiscount;
+        emit AssetIntroducerDiscountChanged(oldAssetIntroducerDiscount, __assetIntroducerDiscount);
+    }
+
+    function setAssetIntroducerPrice(
+        AssetIntroducerData.AssetIntroducerStateV1 storage __state,
+        string calldata __countryCode,
+        AssetIntroducerData.AssetIntroducerType __introducerType,
+        uint __priceUsd
+    )
+    external {
+        require(
+            __priceUsd == uint96(__priceUsd),
+            "AssetIntroducerV1AdminLib::setAssetIntroducerPrice: INVALID_DOLLAR_AMOUNT"
+        );
+
+        bytes3 countryCode = AssetIntroducerV1UserLib._verifyAndConvertCountryCodeToBytes(__countryCode);
+        uint oldPriceUsd = __state.countryCodeToAssetIntroducerTypeToPriceUsd[countryCode][uint8(__introducerType)];
+        __state.countryCodeToAssetIntroducerTypeToPriceUsd[countryCode][uint8(__introducerType)] = uint96(__priceUsd);
+        emit AssetIntroducerPriceChanged(__countryCode, __introducerType, oldPriceUsd, __priceUsd);
     }
 
 }
