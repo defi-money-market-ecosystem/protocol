@@ -32,7 +32,7 @@ import "./ERC721TokenLib.sol";
 /**
  * @dev Implementation of ERC-721 non-fungible token standard.
  */
-contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntroducerData {
+contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, IERC721TokenReceiver, AssetIntroducerData {
 
     using ERC721TokenLib for ERC721StateV1;
     using SafeMath for uint256;
@@ -45,11 +45,11 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
      * @dev Guarantees that the msg.sender is an owner or operator of the given NFT.
      * @param __tokenId ID of the NFT to validate.
      */
-    modifier requireIsOperator(uint256 __tokenId) {
+    modifier requireSenderIsOwner(uint256 __tokenId) {
         address tokenOwner = _erc721StateV1.idToOwnerMap[__tokenId];
         require(
-            tokenOwner == msg.sender || _erc721StateV1.ownerToOperatorToIsApprovedMap[tokenOwner][msg.sender],
-            "ERC721Token: NOT_OWNER_OR_NOT_OPERATOR"
+            tokenOwner == msg.sender,
+            "ERC721Token: NOT_OWNER"
         );
 
         _;
@@ -63,8 +63,8 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         address tokenOwner = _erc721StateV1.idToOwnerMap[__tokenId];
         require(
             tokenOwner == msg.sender ||
-            _erc721StateV1.idToSpenderMap[__tokenId] == msg.sender ||
-            _erc721StateV1.ownerToOperatorToIsApprovedMap[tokenOwner][msg.sender],
+            isApprovedForAll(tokenOwner, msg.sender) ||
+            _erc721StateV1.getApproved(__tokenId) == msg.sender,
             "ERC721Token: NOT_OWNER_OR_NOT_APPROVED_OR_NOT_OPERATOR"
         );
 
@@ -79,12 +79,13 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
      * @dev Contract constructor.
      */
     function initialize(
-        string memory __baseURI
+        string memory __baseURI,
+        address __openSeaProxyRegistry
     )
     public
     initializer {
         _guardCounter = 1;
-        _erc721StateV1.initialize(__baseURI);
+        _erc721StateV1.initialize(__baseURI, __openSeaProxyRegistry);
     }
 
     /// @notice Query if a contract implements an interface
@@ -183,6 +184,19 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         );
     }
 
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes memory data
+    )
+    public
+    nonReentrant
+    returns (bytes4) {
+        // Do not accept transfers into the contract for now
+        return bytes4(0);
+    }
+
     /**
      * @dev Throws unless `msg.sender` is the current owner, an authorized operator, or the approved
      * address for this NFT. Throws if `__from` is not the current owner. Throws if `__to` is the zero
@@ -224,7 +238,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
     )
     external
     nonReentrant
-    requireIsOperator(__tokenId)
+    requireSenderIsOwner(__tokenId)
     requireIsValidNft(__tokenId) {
         _erc721StateV1.approve(__spender, __tokenId);
     }
@@ -274,8 +288,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         address __owner,
         uint __index
     )
-    external
-    view returns (uint) {
+    external view returns (uint) {
         return _erc721StateV1.tokenOfOwnerByIndex(__owner, __index);
     }
 
@@ -302,7 +315,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         uint256 __tokenId
     )
     requireIsValidNft(__tokenId)
-    external view returns (address) {
+    public view returns (address) {
         return _erc721StateV1.getApproved(__tokenId);
     }
 
@@ -316,7 +329,7 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
         address __owner,
         address __operator
     )
-    external view returns (bool) {
+    public view returns (bool) {
         return _erc721StateV1.isApprovedForAll(__owner, __operator);
     }
 
@@ -325,41 +338,6 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, AssetIntrod
     )
     external view returns (uint[] memory) {
         return _erc721StateV1.getAllTokensOf(__owner);
-    }
-
-    // *************************
-    // ***** Internal Functions
-    // *************************
-
-    /**
-     * @dev Mints a new NFT.
-     * @notice This is an internal function which should be called from user-implemented external
-     * mint function. Its purpose is to show and properly initialize data structures when using this
-     * implementation.
-     * @param __to The address that will own the minted NFT.
-     * @param __tokenId of the NFT to be minted by the msg.sender.
-     */
-    function _mint(
-        address __to,
-        uint256 __tokenId
-    )
-    internal {
-        _erc721StateV1.mint(__to, __tokenId);
-    }
-
-    /**
-     * @dev Burns a NFT.
-     * @notice This is an internal function which should be called from user-implemented external burn
-     * function. Its purpose is to show and properly initialize data structures when using this
-     * implementation. Also, note that this burn implementation allows the minter to re-mint a burned
-     * NFT.
-     * @param __tokenId ID of the NFT to be burned.
-     */
-    function _burn(
-        uint256 __tokenId
-    )
-    internal {
-        _erc721StateV1.burn(__tokenId);
     }
 
 }

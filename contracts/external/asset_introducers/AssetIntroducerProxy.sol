@@ -26,6 +26,8 @@ contract AssetIntroducerProxy is AdminUpgradeabilityProxy {
     /**
      * @param logic                     The address of the initial implementation.
      * @param admin                     The address of the proxy administrator.
+     * @param baseURI                   The URL that is used as the basis for token URI information.
+     * @param openSeaProxyRegistry      The address of the Open Sea registry proxy, which is used for easing the trading ux.
      * @param owner                     The address of the owner of the implementation of the contract.
      * @param guardian                  The address of the guardian of the implementation contract.
      * @param dmgToken                  The address of the DMG token.
@@ -37,6 +39,7 @@ contract AssetIntroducerProxy is AdminUpgradeabilityProxy {
         address logic,
         address admin,
         string memory baseURI,
+        address openSeaProxyRegistry,
         address owner,
         address guardian,
         address dmgToken,
@@ -49,7 +52,7 @@ contract AssetIntroducerProxy is AdminUpgradeabilityProxy {
         admin,
         abi.encodePacked(
             IAssetIntroducerV1Initializable(address(0)).initialize.selector,
-            abi.encode(baseURI, owner, guardian, dmgToken, dmmController, underlyingTokenValuator, assetIntroducerDiscount)
+            abi.encode(baseURI, openSeaProxyRegistry, owner, guardian, dmgToken, dmmController, underlyingTokenValuator, assetIntroducerDiscount)
         )
     )
     public {}

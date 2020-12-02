@@ -27,6 +27,7 @@ import "../interfaces/IERC721.sol";
 import "../interfaces/IERC721Enumerable.sol";
 import "../interfaces/IERC721Metadata.sol";
 import "../interfaces/IERC721TokenReceiver.sol";
+import "../interfaces/IOpenSeaProxyRegistry.sol";
 
 import "../AssetIntroducerData.sol";
 
@@ -44,21 +45,21 @@ library ERC721TokenLib {
     // *************************
 
     event Transfer(
-        address indexed _from,
-        address indexed _to,
-        uint256 indexed _tokenId
+        address indexed from,
+        address indexed to,
+        uint256 indexed tokenId
     );
 
     event Approval(
-        address indexed _owner,
-        address indexed _approved,
-        uint256 indexed _tokenId
+        address indexed owner,
+        address indexed operator,
+        uint256 indexed tokenId
     );
 
     event ApprovalForAll(
-        address indexed _owner,
-        address indexed _operator,
-        bool _approved
+        address indexed owner,
+        address indexed operator,
+        bool approved
     );
 
     event BaseURIChanged(string newBaseURI);
@@ -73,6 +74,8 @@ library ERC721TokenLib {
      */
     bytes4 internal constant MAGIC_ON_ERC721_RECEIVED = 0x150b7a02;
 
+    bytes4 internal constant ERC721_INTERFACE_ID = 0x80ac58cd;
+
     /// The entry-point into the linked list
     uint internal constant LINKED_LIST_GUARD = uint(1);
 
@@ -86,11 +89,14 @@ library ERC721TokenLib {
 
     function initialize(
         AssetIntroducerData.ERC721StateV1 storage __state,
-        string memory __baseURI
+        string memory __baseURI,
+        address __openSeaProxyRegistry
     )
     public {
-        __state.interfaceIdToIsSupportedMap[0x80ac58cd] = true;
         __state.baseURI = __baseURI;
+        __state.openSeaProxyRegistry = __openSeaProxyRegistry;
+        __state.interfaceIdToIsSupportedMap[ERC721_INTERFACE_ID] = true;
+        __state.lastTokenId = LINKED_LIST_GUARD;
     }
 
     function setBaseURI(
@@ -105,11 +111,16 @@ library ERC721TokenLib {
         AssetIntroducerData.ERC721StateV1 storage __state,
         uint __tokenId
     ) public view returns (string memory) {
-        bytes32 tokenIdBytes;
-        while (__tokenId > 0) {
-            tokenIdBytes = bytes32(uint(tokenIdBytes) / (2 ** 8));
-            tokenIdBytes |= bytes32(((__tokenId % 10) + 48) * 2 ** (8 * 31));
-            __tokenId /= 10;
+        bytes memory reversedNumber = new bytes(96);
+        uint stringLength = 0;
+        while (__tokenId != 0) {
+            uint remainder = __tokenId % 10;
+            __tokenId = __tokenId / 10;
+            reversedNumber[stringLength++] = byte(uint8(48 + remainder));
+        }
+        bytes memory tokenIdBytes = new bytes(stringLength);
+        for (uint j = 0; j < stringLength; j++) {
+            tokenIdBytes[j] = reversedNumber[stringLength - 1 - j];
         }
         return string(abi.encodePacked(__state.baseURI, tokenIdBytes));
     }
@@ -135,22 +146,16 @@ library ERC721TokenLib {
         address tokenOwner = __state.idToOwnerMap[__tokenId];
         require(
             tokenOwner == __from,
-            "ERC721Token::_safeTransferFrom NOT_OWNER"
+            "ERC721TokenLib::_safeTransferFrom NOT_OWNER"
         );
         require(
             __to != address(0),
-            "ERC721Token::_safeTransferFrom INVALID_RECIPIENT"
+            "ERC721TokenLib::_safeTransferFrom INVALID_RECIPIENT"
         );
 
-        _transfer(__state, __voteState, __to, __tokenId, false, __assetIntroducer);
+        _transfer(__state, __voteState, __to, __tokenId, __assetIntroducer);
 
-        if (__to.isContract()) {
-            bytes4 retval = IERC721TokenReceiver(__to).onERC721Received(msg.sender, __from, __tokenId, __data);
-            require(
-                retval == MAGIC_ON_ERC721_RECEIVED,
-                "ERC721Token::_safeTransferFrom: UNABLE_TO_RECEIVE_TOKEN"
-            );
-        }
+        _verifyCanReceiveTokens(__from, __to, __tokenId, __data);
     }
 
     function transferFrom(
@@ -166,29 +171,33 @@ library ERC721TokenLib {
 
         require(
             tokenOwner == __from,
-            "ERC721Token::transferFrom: NOT_OWNER"
+            "ERC721TokenLib::transferFrom: NOT_OWNER"
         );
         require(
             __to != address(0),
-            "ERC721Token::transferFrom: INVALID_RECIPIENT"
+            "ERC721TokenLib::transferFrom: INVALID_RECIPIENT"
         );
 
-        _transfer(__state, __voteState, __to, __tokenId, false, __assetIntroducer);
+        _transfer(__state, __voteState, __to, __tokenId, __assetIntroducer);
+
+        _verifyCanReceiveTokens(__from, __to, __tokenId, "");
     }
 
     function mint(
         AssetIntroducerData.ERC721StateV1 storage __state,
+        AssetIntroducerData.VoteStateV1 storage __voteState,
         address __to,
-        uint __tokenId
+        uint __tokenId,
+        uint128 __dmgLocked
     )
     public {
         require(
             __to != address(0),
-            "ERC721Token::_mint INVALID_RECIPIENT"
+            "ERC721TokenLib::mint INVALID_RECIPIENT"
         );
         require(
             __state.idToOwnerMap[__tokenId] == address(0),
-            "ERC721Token::_mint TOKEN_ALREADY_EXISTS"
+            "ERC721TokenLib::mint TOKEN_ALREADY_EXISTS"
         );
 
         _addTokenToNewOwner(__state, __to, __tokenId);
@@ -198,12 +207,16 @@ library ERC721TokenLib {
 
         __state.totalSupply += 1;
 
+        AssetIntroducerVotingLib.moveDelegates(__voteState, address(0), __to, __dmgLocked);
+
         emit Transfer(address(0), __to, __tokenId);
     }
 
     function burn(
         AssetIntroducerData.ERC721StateV1 storage __state,
-        uint __tokenId
+        AssetIntroducerData.VoteStateV1 storage __voteState,
+        uint __tokenId,
+        uint128 __dmgLocked
     )
     public {
         address tokenOwner = __state.idToOwnerMap[__tokenId];
@@ -226,6 +239,8 @@ library ERC721TokenLib {
 
         __state.totalSupply -= 1;
 
+        AssetIntroducerVotingLib.moveDelegates(__voteState, tokenOwner, address(0), __dmgLocked);
+
         emit Transfer(tokenOwner, address(0), __tokenId);
     }
 
@@ -238,7 +253,7 @@ library ERC721TokenLib {
         address tokenOwner = __state.idToOwnerMap[__tokenId];
         require(
             __spender != tokenOwner,
-            "ERC721Token::approve: SPENDER_MUST_NOT_BE_OWNER"
+            "ERC721TokenLib::approve: SPENDER_MUST_NOT_BE_OWNER"
         );
 
         __state.idToSpenderMap[__tokenId] = __spender;
@@ -262,7 +277,7 @@ library ERC721TokenLib {
     public view returns (uint) {
         require(
             __owner != address(0),
-            "ERC721Token::balanceOf: INVALID_OWNER"
+            "ERC721TokenLib::balanceOf: INVALID_OWNER"
         );
         return __state.ownerToTokenCount[__owner];
     }
@@ -274,7 +289,7 @@ library ERC721TokenLib {
     public view returns (uint) {
         require(
             __index < __state.totalSupply,
-            "ERC721Token::tokenByIndex: INVALID_INDEX"
+            "ERC721TokenLib::tokenByIndex: INVALID_INDEX"
         );
 
         uint tokenId = LINKED_LIST_GUARD;
@@ -293,7 +308,7 @@ library ERC721TokenLib {
     public view returns (uint) {
         require(
             __index < balanceOf(__state, __owner),
-            "ERC721Token::tokenOfOwnerByIndex: INVALID_INDEX"
+            "ERC721TokenLib::tokenOfOwnerByIndex: INVALID_INDEX"
         );
 
         uint tokenId = LINKED_LIST_GUARD;
@@ -311,7 +326,7 @@ library ERC721TokenLib {
         address owner = __state.idToOwnerMap[__tokenId];
         require(
             owner != address(0),
-            "ERC721Token::ownerOf INVALID_TOKEN"
+            "ERC721TokenLib::ownerOf INVALID_TOKEN"
         );
         return owner;
     }
@@ -330,6 +345,10 @@ library ERC721TokenLib {
         address __operator
     )
     public view returns (bool) {
+        if (IOpenSeaProxyRegistry(__state.openSeaProxyRegistry).proxies(__owner) == __operator) {
+            return true;
+        }
+
         return __state.ownerToOperatorToIsApprovedMap[__owner][__operator];
     }
 
@@ -358,15 +377,12 @@ library ERC721TokenLib {
      * @dev Actually preforms the transfer. Checks that "__to" is not this contract
      * @param __to Address of a new owner.
      * @param __tokenId The NFT that is being transferred.
-     * @param __shouldAllowTransferIntoThisContract True if this call to _transfer should allow transferring funds to
-     *        this contract or false if it should disallow it.
      */
     function _transfer(
         AssetIntroducerData.ERC721StateV1 storage __state,
         AssetIntroducerData.VoteStateV1 storage __voteState,
         address __to,
         uint256 __tokenId,
-        bool __shouldAllowTransferIntoThisContract,
         AssetIntroducerData.AssetIntroducer memory assetIntroducer
     )
     internal {
@@ -379,11 +395,6 @@ library ERC721TokenLib {
         // Get the "from" address (the owner) before effectuating the transfer via the call to "super"
         address from = __state.idToOwnerMap[__tokenId];
         __voteState.moveDelegates(from, __to, assetIntroducer.dmgLocked);
-
-        require(
-            __shouldAllowTransferIntoThisContract || __to != address(this),
-            "ERC721Token::_transfer INVALID_RECIPIENT"
-        );
 
         _clearApproval(__state, __tokenId);
 
@@ -407,7 +418,7 @@ library ERC721TokenLib {
     internal {
         require(
             __state.idToOwnerMap[__tokenId] == __from,
-            "ERC721Token::_removeToken: NOT_OWNER"
+            "ERC721TokenLib::_removeToken: NOT_OWNER"
         );
 
         __state.ownerToTokenCount[__from] = __state.ownerToTokenCount[__from] - 1;
@@ -443,7 +454,7 @@ library ERC721TokenLib {
     internal {
         require(
             __state.idToOwnerMap[__tokenId] == address(0),
-            "ERC721Token::_addTokenToNewOwner TOKEN_ALREADY_EXISTS"
+            "ERC721TokenLib::_addTokenToNewOwner TOKEN_ALREADY_EXISTS"
         );
 
         __state.idToOwnerMap[__tokenId] = __to;
@@ -471,6 +482,22 @@ library ERC721TokenLib {
     internal {
         if (__state.idToSpenderMap[__tokenId] != address(0)) {
             delete __state.idToSpenderMap[__tokenId];
+        }
+    }
+
+    function _verifyCanReceiveTokens(
+        address __from,
+        address __to,
+        uint __tokenId,
+        bytes memory __data
+    ) internal {
+        if (__to.isContract()) {
+            bytes memory callData = abi.encodeWithSelector(IERC721TokenReceiver(__to).onERC721Received.selector, msg.sender, __from, __tokenId, __data);
+            (bool success, bytes memory returnData) = address(__to).call(callData);
+            require(
+                success && abi.decode(returnData, (bytes4)) == MAGIC_ON_ERC721_RECEIVED,
+                "ERC721TokenLib::_verifyCanReceiveTokens: UNABLE_TO_RECEIVE_TOKEN"
+            );
         }
     }
 

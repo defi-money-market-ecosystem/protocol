@@ -28,6 +28,7 @@ const doAssetIntroductionV1BeforeEach = async (thisInstance, contracts, web3, pr
   const AssetIntroducerV1 = contracts.fromArtifact('AssetIntroducerV1');
   const DmmControllerMock = contracts.fromArtifact('DmmControllerMock');
   const ERC721TokenLib = contracts.fromArtifact('ERC721TokenLib');
+  const TestOpenSeaProxyRegistry = contracts.fromArtifact('TestOpenSeaProxyRegistry');
   const UnderlyingTokenValuatorMock = contracts.fromArtifact('UnderlyingTokenValuatorMock');
 
   console.log('');
@@ -82,12 +83,14 @@ const doAssetIntroductionV1BeforeEach = async (thisInstance, contracts, web3, pr
   thisInstance.assetIntroducerDiscount = await AssetIntroducerDiscountV1.new();
 
   thisInstance.baseURI = 'https://api.defimoneymarket.com/v1/asset-introducers/';
+  thisInstance.openSeaProxyRegistry = await TestOpenSeaProxyRegistry.new();
 
   thisInstance.proxy = await AssetIntroducerProxy.new(
     thisInstance.implementation.address,
     thisInstance.admin,
     // Begin IMPL initializer
     thisInstance.baseURI,
+    thisInstance.openSeaProxyRegistry.address,
     thisInstance.guardian,
     thisInstance.guardian,
     thisInstance.dmgToken.address,
@@ -116,7 +119,7 @@ const PRICE_CHN_AFFILIATE = '125000000000000000000000'; // $125,000
 const PRICE_IND_PRINCIPAL = '166000000000000000000000'; // $166,000
 const PRICE_IND_AFFILIATE = '100000000000000000000000'; // $100,000
 
-const createNfts = async (
+const createNFTs = async (
   thisInstance,
   countryCodes = ['USA', 'USA', 'CHN', 'CHN', 'IND'],
   introducerTypes = [AFFILIATE, PRINCIPAL, AFFILIATE, PRINCIPAL, AFFILIATE],
@@ -130,12 +133,34 @@ const createNfts = async (
   }
 
   for (let i = 0; i < countryCodes.length; i++) {
-    await thisInstance.assetIntroducer.setAssetIntroducerPrice(countryCodes[i], introducerTypes[i], pricesUsd[i]);
+    await thisInstance.assetIntroducer.setAssetIntroducerPrice(countryCodes[i], introducerTypes[i], pricesUsd[i], {from: thisInstance.owner});
   }
 
-  await thisInstance.assetIntroducer.createAssetIntroducersForPrimaryMarket(countryCodes, introducerTypes);
+  await thisInstance.assetIntroducer.createAssetIntroducersForPrimaryMarket(countryCodes, introducerTypes, {from: thisInstance.owner});
+
+  thisInstance.tokenIds = [];
+  for (let i = 0; i < countryCodes.length; i++) {
+    thisInstance.tokenIds.push((await thisInstance.assetIntroducer.tokenByIndex(i)).toString(10));
+  }
+
+  const balance = new BN('100000000000000000000000000');
+  await thisInstance.dmgToken.setBalance(thisInstance.user, balance);
+  await thisInstance.dmgToken.setBalance(thisInstance.user2, balance);
+
+  await thisInstance.dmgToken.approve(thisInstance.assetIntroducer.address, constants.MAX_UINT256, {from: thisInstance.user});
+  await thisInstance.dmgToken.approve(thisInstance.assetIntroducer.address, constants.MAX_UINT256, {from: thisInstance.user2});
+
+  for (let i = 0; i < countryCodes.length; i++) {
+    if (i < countryCodes.length / 2) {
+      await thisInstance.assetIntroducer.buyAssetIntroducerSlot(thisInstance.tokenIds[i], {from: thisInstance.user});
+    } else {
+      await thisInstance.assetIntroducer.buyAssetIntroducerSlot(thisInstance.tokenIds[i], {from: thisInstance.user2});
+    }
+  }
+
 };
 
 module.exports = {
   doAssetIntroductionV1BeforeEach,
+  createNFTs,
 }

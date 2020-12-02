@@ -47,11 +47,12 @@ library AssetIntroducerV1UserLib {
     // ***** Events
     // *************************
 
-    event SignatureValidated(address indexed signer, uint nonce);
     event AssetIntroducerBought(uint indexed tokenId, address indexed buyer, address indexed recipient, uint dmgAmount);
+    event CapitalDeposited(uint indexed tokenId, address indexed token, uint amount);
+    event CapitalWithdrawn(uint indexed tokenId, address indexed token, uint amount);
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
     event InterestPaid(uint indexed tokenId, address indexed token, uint amount);
-    event CapitalWithdrawn(uint indexed tokenId, address indexed token, uint amount);
+    event SignatureValidated(address indexed signer, uint nonce);
 
     // *************************
     // ***** Functions
@@ -141,7 +142,10 @@ library AssetIntroducerV1UserLib {
         introducer.isOnSecondaryMarket = true;
         introducer.dmgLocked = uint96(dmgPurchasePrice);
 
-        ERC721TokenLib._transfer(__erc721State, __voteState, __recipient, __tokenId, false, introducer);
+        // Initialize the DMG voting balance to this contract. The call to _transfer moves it to __recipient then.
+        AssetIntroducerVotingLib.moveDelegates(__voteState, address(0), address(this), uint128(dmgPurchasePrice));
+
+        ERC721TokenLib._transfer(__erc721State, __voteState, __recipient, __tokenId, introducer);
 
         emit AssetIntroducerBought(__tokenId, __buyer, __recipient, dmgPurchasePrice);
     }
@@ -344,7 +348,11 @@ library AssetIntroducerV1UserLib {
 
         IDmmController dmmController = IDmmController(__state.dmmController);
         uint dmmTokenId = dmmController.getTokenIdFromDmmTokenAddress(dmmController.getDmmTokenForUnderlying(__token));
+
+        IERC20(__token).safeApprove(address(dmmController), __amount);
         dmmController.adminDepositFunds(dmmTokenId, __amount);
+
+        emit CapitalDeposited(__tokenId, __token, __amount);
     }
 
     function payInterestByTokenIdAndToken(
@@ -358,6 +366,8 @@ library AssetIntroducerV1UserLib {
 
         IDmmController dmmController = IDmmController(__state.dmmController);
         uint dmmTokenId = dmmController.getTokenIdFromDmmTokenAddress(dmmController.getDmmTokenForUnderlying(__token));
+
+        IERC20(__token).safeApprove(address(dmmController), __amount);
         dmmController.adminDepositFunds(dmmTokenId, __amount);
 
         emit InterestPaid(__tokenId, __token, __amount);

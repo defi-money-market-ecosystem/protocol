@@ -36,6 +36,10 @@ describe('AssetIntroducerV1.Admin', () => {
     (baseURI).should.eq(this.baseURI);
   });
 
+  it('openSeaProxy: should get openSeaProxy', async () => {
+    (await this.assetIntroducer.openSeaProxyRegistry()).should.eq(this.openSeaProxyRegistry.address);
+  });
+
   it('owner: should get owner', async () => {
     (await this.assetIntroducer.owner()).should.be.eq(owner);
   });

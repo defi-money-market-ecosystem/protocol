@@ -17,17 +17,8 @@
 
 pragma solidity ^0.5.0;
 
-interface IAssetIntroducerV1Initializable {
+interface IOpenSeaProxyRegistry {
 
-    function initialize(
-        string calldata baseURI,
-        address openSeaProxyRegistry,
-        address owner,
-        address guardian,
-        address dmgToken,
-        address dmmController,
-        address underlyingTokenValuator,
-        address assetIntroducerDiscount
-    ) external;
+    function proxies(address user) external view returns (address);
 
 }

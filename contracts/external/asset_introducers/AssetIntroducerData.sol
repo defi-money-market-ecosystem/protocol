@@ -92,6 +92,9 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
         /// Total number of NFTs created
         uint64 totalSupply;
 
+        /// The proxy address created by OpenSea, which is used to enable a smoother trading experience
+        address openSeaProxyRegistry;
+
         /// The last token ID in the linked list.
         uint lastTokenId;
 

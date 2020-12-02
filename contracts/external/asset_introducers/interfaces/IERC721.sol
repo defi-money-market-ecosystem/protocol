@@ -29,9 +29,9 @@ interface IERC721 {
      * transfer, the approved address for that NFT (if any) is reset to none.
      */
     event Transfer(
-        address indexed _from,
-        address indexed _to,
-        uint256 indexed _tokenId
+        address indexed from,
+        address indexed to,
+        uint256 indexed tokenId
     );
 
     /**
@@ -40,9 +40,9 @@ interface IERC721 {
      * indicates that the approved address for that NFT (if any) is reset to none.
      */
     event Approval(
-        address indexed _owner,
-        address indexed _approved,
-        uint256 indexed _tokenId
+        address indexed owner,
+        address indexed operator,
+        uint256 indexed tokenId
     );
 
     /**
@@ -50,9 +50,9 @@ interface IERC721 {
      * all NFTs of the owner.
      */
     event ApprovalForAll(
-        address indexed _owner,
-        address indexed _operator,
-        bool _approved
+        address indexed owner,
+        address indexed operator,
+        bool approved
     );
 
     /**

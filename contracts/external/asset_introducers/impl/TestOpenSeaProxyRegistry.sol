@@ -17,17 +17,23 @@
 
 pragma solidity ^0.5.0;
 
-interface IAssetIntroducerV1Initializable {
+import "../interfaces/IOpenSeaProxyRegistry.sol";
 
-    function initialize(
-        string calldata baseURI,
-        address openSeaProxyRegistry,
-        address owner,
-        address guardian,
-        address dmgToken,
-        address dmmController,
-        address underlyingTokenValuator,
-        address assetIntroducerDiscount
-    ) external;
+contract TestOpenSeaProxyRegistry is IOpenSeaProxyRegistry {
+
+    mapping(address => address) internal _proxies;
+
+    function setProxy(
+        address user,
+        address operator
+    ) external {
+        _proxies[user] = operator;
+    }
+
+    function proxies(
+        address user
+    ) external view returns (address) {
+        return _proxies[user];
+    }
 
 }

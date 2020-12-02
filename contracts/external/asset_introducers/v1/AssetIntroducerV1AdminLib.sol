@@ -53,6 +53,7 @@ library AssetIntroducerV1AdminLib {
     function createAssetIntroducersForPrimaryMarket(
         AssetIntroducerData.AssetIntroducerStateV1 storage __state,
         AssetIntroducerData.ERC721StateV1 storage __erc721State,
+        AssetIntroducerData.VoteStateV1 storage __voteState,
         string[] calldata __countryCodes,
         AssetIntroducerData.AssetIntroducerType[] calldata __introducerTypes
     )
@@ -92,9 +93,9 @@ library AssetIntroducerV1AdminLib {
 
             __state.countryCodeToAssetIntroducerTypeToTokenIdsMap[countryCode][uint8(__introducerTypes[i])].push(tokenIds[i]);
 
-            emit AssetIntroducerCreated(tokenIds[i], __countryCodes[i], __introducerTypes[i], serialNumber);
+            __erc721State.mint(__voteState, address(this), tokenIds[i], 0);
 
-            __erc721State.mint(address(this), tokenIds[i]);
+            emit AssetIntroducerCreated(tokenIds[i], __countryCodes[i], __introducerTypes[i], serialNumber);
         }
 
         return tokenIds;

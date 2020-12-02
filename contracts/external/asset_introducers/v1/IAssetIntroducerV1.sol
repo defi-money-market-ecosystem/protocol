@@ -32,6 +32,7 @@ interface IAssetIntroducerV1 {
     event AssetIntroducerDollarAmountToManageChange(uint indexed tokenId, uint oldDollarAmountToManage, uint newDollarAmountToManage);
     event AssetIntroducerPriceChanged(string indexed countryCode, AssetIntroducerData.AssetIntroducerType indexed introducerType, uint oldPriceUsd, uint newPriceUsd);
     event BaseURIChanged(string newBaseURI);
+    event CapitalDeposited(uint indexed tokenId, address indexed token, uint amount);
     event CapitalWithdrawn(uint indexed tokenId, address indexed token, uint amount);
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
     event InterestPaid(uint indexed tokenId, address indexed token, uint amount);
@@ -75,6 +76,8 @@ interface IAssetIntroducerV1 {
      * @return  The timestamp at which this contract was created
      */
     function initTimestamp() external view returns (uint64);
+
+    function openSeaProxyRegistry() external view returns (address);
 
     /**
      * @return  The domain separator used in off-chain signatures. See EIP 712 for more:

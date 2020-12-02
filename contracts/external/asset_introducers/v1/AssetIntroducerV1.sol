@@ -67,6 +67,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
 
     function initialize(
         string calldata __baseURI,
+        address __openSeaProxyRegistry,
         address __owner,
         address __guardian,
         address __dmg,
@@ -76,7 +77,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
     )
     external
     initializer {
-        ERC721Token.initialize(__baseURI);
+        ERC721Token.initialize(__baseURI, __openSeaProxyRegistry);
         IOwnableOrGuardian.initialize(__owner, __guardian);
 
         _assetIntroducerStateV1.dmg = __dmg;
@@ -108,6 +109,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
     returns (uint[] memory) {
         return _assetIntroducerStateV1.createAssetIntroducersForPrimaryMarket(
             _erc721StateV1,
+            _voteStateV1,
             __countryCodes,
             __introducerTypes
         );
@@ -286,6 +288,10 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
 
     function initTimestamp() external view returns (uint64) {
         return _assetIntroducerStateV1.initTimestamp;
+    }
+
+    function openSeaProxyRegistry() external view returns (address) {
+        return _erc721StateV1.openSeaProxyRegistry;
     }
 
     function domainSeparator() external view returns (bytes32) {
