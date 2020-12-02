@@ -14,7 +14,7 @@ const deployTokens = async (loader, environment, deployer) => {
     dai = await deployContract(ERC20Test, ['Dai', 'DAI', 18], deployer, 6e6);
     link = await deployContract(ERC20Test, ['Chainlink Token', 'LINK', 18], deployer, 6e6);
     usdc = await deployContract(ERC20Test, ['USD//C', 'USDC', 6], deployer, 6e6);
-    weth = await deployContract(WETH, ['Wrapped Ether', 'WETH', 18], deployer, 6e6);
+    weth = await deployContract(WETH, [], deployer, 6e6);
 
     const recipient = '0x8D7f03FdE1A626223364E592740a233b72395235';
     await callContract(dai, 'setBalance', [recipient, new BN('100000000000000000000')], deployer, 3e5);

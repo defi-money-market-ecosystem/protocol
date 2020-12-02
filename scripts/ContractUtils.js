@@ -48,7 +48,7 @@ const deployContract = async (artifact, params, deployer, gasLimit, web3, gasPri
           } catch (error) {
             fail(error);
           }
-        }, 2000);
+        }, process.env.ENVIRONMENT === 'LOCAL' ? 500 : 2000);
       })
     });
 };

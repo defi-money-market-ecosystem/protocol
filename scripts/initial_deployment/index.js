@@ -1,5 +1,7 @@
-const provider = process.env.PROVIDER ? process.env.PROVIDER : 'http://localhost:8545';
-const environment = process.env.ENVIRONMENT ? process.env.ENVIRONMENT : new Error('No ENVIRONMENT specified!');
+const {throwError} = require('../GeneralUtils');
+
+const provider = process.env.PROVIDER ? process.env.PROVIDER : throwError('No web3 PROVIDER specified');
+const environment = process.env.ENVIRONMENT ? process.env.ENVIRONMENT : throwError('No ENVIRONMENT specified!');
 const Web3 = require('web3');
 const {setupLoader} = require('@openzeppelin/contract-loader');
 
@@ -27,24 +29,28 @@ const main = async () => {
     throw Error("Invalid deployer, found nothing");
   }
 
-  let multiSigWallet;
+  let guardian;
   if (environment === 'LOCAL') {
-    multiSigWallet = deployer;
+    guardian = deployer;
   } else if (environment === 'TESTNET') {
-    multiSigWallet = "0x0323cE501DD42Ed46a409D86e4EB6a9745FCA9EC";
+    guardian = process.env.GUARDIAN_ADDRESS;
   } else if (environment === 'PRODUCTION') {
-    multiSigWallet = "0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF";
+    guardian = "0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF";
   } else {
     throw new Error("Invalid environment, found: " + environment);
+  }
+
+  if (!web3.utils.isAddress(guardian)) {
+    throw Error(`Invalid guardian, expected an address but found ${guardian}`);
   }
 
   const loader = setupLoader({provider: web3, defaultSender: deployer, defaultGasPrice: 8e9});
 
   await deployTokens(loader, environment, deployer);
   await deployLibraries(loader, environment, deployer);
-  await deployEcosystem(loader, environment, deployer);
+  await deployEcosystem(loader, environment, deployer, guardian);
   await deployTimeDelay(loader, environment, deployer);
-  await deployOwnershipChanges(environment, deployer, multiSigWallet);
+  await deployOwnershipChanges(environment, deployer, guardian);
 };
 
 main()

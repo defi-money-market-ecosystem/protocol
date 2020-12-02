@@ -1,11 +1,12 @@
 // const {dai, link, usdc, weth} = require('./DeployTokens');
 const {BN} = require('ethereumjs-util');
-const {callContract, deployContract, linkContract} = require('../ContractUtils');
+const {callContract, deployContract} = require('../ContractUtils');
+const {constants} = require('@openzeppelin/test-helpers');
 
-global.interestRateImplV1 = null;
-global.offChainAssetValuatorImplV1 = null;
-global.offChainCurrencyValuatorImplV1 = null;
-global.underlyingTokenValuatorImplV3 = null;
+global.interestRateImpl = null;
+global.offChainAssetValuator = null;
+global.offChainCurrencyValuator = null;
+global.underlyingTokenValuator = null;
 global.delayedOwner = null;
 global.dmmEtherFactory = null;
 global.dmmTokenFactory = null;
@@ -17,24 +18,27 @@ const _0_01 = new BN('10000000000000000'); // 0.01
 const _0_5 = new BN('500000000000000000'); // 0.5
 const _1 = new BN('1000000000000000000'); // 1.0
 
-const deployEcosystem = async (loader, environment, deployer) => {
-  const OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
+const deployEcosystem = async (loader, environment, deployer, guardian) => {
   const DmmBlacklistable = loader.truffle.fromArtifact('DmmBlacklistable');
   const DmmController = loader.truffle.fromArtifact('DmmController');
   const DmmEtherFactory = loader.truffle.fromArtifact('DmmEtherFactory');
   const DmmTokenFactory = loader.truffle.fromArtifact('DmmTokenFactory');
   const InterestRateImplV1 = loader.truffle.fromArtifact('InterestRateImplV1');
-  const OffChainCurrencyValuatorImplV1 = loader.truffle.fromArtifact('OffChainCurrencyValuatorImplV1');
-  const UnderlyingTokenValuatorImplV3 = loader.truffle.fromArtifact('UnderlyingTokenValuatorImplV3');
+  const OffChainAssetValuatorImplV2 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV2');
+  const OffChainAssetValuatorProxy = loader.truffle.fromArtifact('OffChainAssetValuatorProxy');
+  const OffChainCurrencyValuatorImplV2 = loader.truffle.fromArtifact('OffChainCurrencyValuatorImplV2');
+  const OffChainCurrencyValuatorProxy = loader.truffle.fromArtifact('OffChainCurrencyValuatorProxy');
+  const UnderlyingTokenValuatorImplV5 = loader.truffle.fromArtifact('UnderlyingTokenValuatorImplV5');
+  const UnderlyingTokenValuatorProxy = loader.truffle.fromArtifact('UnderlyingTokenValuatorProxy');
 
   const DaiUsdAggregatorMock = loader.truffle.fromArtifact('DaiUsdAggregatorMock');
   const EthUsdAggregatorMockV2 = loader.truffle.fromArtifact('EthUsdAggregatorMockV2');
   const UsdcEthAggregatorMock = loader.truffle.fromArtifact('UsdcEthAggregatorMock');
 
-  interestRateImplV1Address = '0x6F2A3b2EFa07D264EA79Ce0b96d3173a8feAcD35';
-  offChainAssetValuatorImplV1Address = '0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4';
-  offChainCurrencyValuatorImplV1Address = '0x35cceb6ED6EB90d0c89a8F8b28E00aE23545312b';
-  underlyingTokenValuatorImplV3Address = '0x7812e0F5Da2F0917BD9054951415EDFF571964dB';
+  interestRateImplAddress = '0x6F2A3b2EFa07D264EA79Ce0b96d3173a8feAcD35';
+  offChainAssetValuatorAddress = '0x4F9c3332D352F1ef22F010ba93A9653261e1634b';
+  offChainCurrencyValuatorAddress = '0x826d758AF2FeD387ac15843327e143b2CAfE9047';
+  underlyingTokenValuatorAddress = '0xaC7e5e3b589D55a43D62b90c6b4C4ef28Ea35573';
   dmmEtherFactoryAddress = '0x1186d7dFf910Aa6c74bb9af71539C668133034aC';
   dmmTokenFactoryAddress = '0x42665308F611b022df2fD48757A457BEC12BA668';
   dmmBlacklistAddress = '0x516d652E2f12876F5f0244aa661b1C262a2d96b1';
@@ -58,52 +62,73 @@ const deployEcosystem = async (loader, environment, deployer) => {
 
   await DmmEtherFactory.detectNetwork();
   await DmmTokenFactory.detectNetwork();
-  await UnderlyingTokenValuatorImplV3.detectNetwork();
+  await UnderlyingTokenValuatorImplV5.detectNetwork();
 
+  console.log('Linking core ecosystem libraries...');
   await DmmEtherFactory.link('DmmTokenLibrary', dmmTokenLibrary.address);
   await DmmTokenFactory.link('DmmTokenLibrary', dmmTokenLibrary.address);
+  await UnderlyingTokenValuatorImplV5.link('StringHelpers', stringHelpers.address);
 
-  linkContract(UnderlyingTokenValuatorImplV3, 'StringHelpers', stringHelpers.address);
+  // linkContract(UnderlyingTokenValuatorImplV5, 'StringHelpers', stringHelpers.address);
 
   if (environment === 'TESTNET' && process.env.REUSE === 'true') {
-    interestRateImplV1 = loader.truffle.fromArtifact('InterestRateImplV1', '0x32Df47aB270a1ec1450fA4b7abdFa94eE6b5F2fA');
-  } else if (environment !== 'PRODUCTION' && interestRateImplV1Address !== null) {
+    interestRateImpl = loader.truffle.fromArtifact('InterestRateImplV1', '0x32Df47aB270a1ec1450fA4b7abdFa94eE6b5F2fA');
+  } else if (environment !== 'PRODUCTION' && interestRateImplAddress !== null) {
     console.log('Deploying InterestRateImplV1...');
-    interestRateImplV1 = await deployContract(InterestRateImplV1, [], deployer, 4e6);
+    interestRateImpl = await deployContract(InterestRateImplV1, [], deployer, 4e6);
   } else {
-    interestRateImplV1 = loader.truffle.fromArtifact('InterestRateImplV1', interestRateImplV1Address);
+    interestRateImpl = loader.truffle.fromArtifact('InterestRateImplV1', interestRateImplAddress);
   }
 
   if (environment === 'TESTNET' && process.env.REUSE === 'true') {
-    offChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1', '0x4F665bE185C3Ce125A7c81B2C6b26Be6fd58C780')
-  } else if (environment !== 'PRODUCTION' || offChainAssetValuatorImplV1Address === null) {
-    console.log('Deploying OffChainAssetValuatorImplV1...');
+    offChainAssetValuator = loader.truffle.fromArtifact('OffChainAssetValuatorProxy', '0x4F665bE185C3Ce125A7c81B2C6b26Be6fd58C780')
+  } else if (environment !== 'PRODUCTION' || offChainAssetValuatorAddress === null) {
+    console.log('Deploying OffChainAssetValuatorImplV2...');
+    const implementation = await deployContract(OffChainAssetValuatorImplV2, [], deployer, 4e6);
+    console.log('Deploying OffChainAssetValuatorProxy...');
     const initialCollateralValue = new BN('8557754000000000000000000');
-    offChainAssetValuatorImplV1 = await deployContract(OffChainAssetValuatorImplV1, [link.address, _0_1, initialCollateralValue, chainlinkJobId], deployer, 4e6);
+    offChainAssetValuator = await deployContract(OffChainAssetValuatorProxy, [implementation.address, deployer, guardian, guardian, link.address, _0_1, initialCollateralValue, chainlinkJobId], deployer, 4e6);
+    offChainAssetValuator = loader.truffle.fromArtifact('OffChainAssetValuatorImplV2', offChainAssetValuator.address);
   } else {
-    offChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1', offChainAssetValuatorImplV1Address)
+    offChainAssetValuator = loader.truffle.fromArtifact('OffChainAssetValuatorProxy', offChainAssetValuatorAddress);
   }
 
   if (environment === 'TESTNET' && process.env.REUSE === 'true') {
-    offChainCurrencyValuatorImplV1 = loader.truffle.fromArtifact('OffChainCurrencyValuatorImplV1', '0x105808e0F32cf9b51567CF2DFCE6403CA962FC0C');
-  } else if (environment !== 'PRODUCTION' || offChainCurrencyValuatorImplV1Address === null) {
-    console.log('Deploying OffChainCurrencyValuatorImplV1...');
-    offChainCurrencyValuatorImplV1 = await deployContract(OffChainCurrencyValuatorImplV1, [], deployer, 4e6);
+    offChainCurrencyValuator = loader.truffle.fromArtifact('OffChainCurrencyValuatorProxy', '0x105808e0F32cf9b51567CF2DFCE6403CA962FC0C');
+  } else if (environment !== 'PRODUCTION' || offChainCurrencyValuatorAddress === null) {
+    console.log('Deploying OffChainCurrencyValuatorImplV2...');
+    const implementation = await deployContract(OffChainCurrencyValuatorImplV2, [], deployer, 4e6);
+    console.log('Deploying OffChainCurrencyValuatorProxy...');
+    offChainCurrencyValuator = await deployContract(OffChainCurrencyValuatorProxy, [implementation.address, deployer, guardian, guardian], deployer, 4e6);
+    offChainCurrencyValuator = loader.truffle.fromArtifact('OffChainCurrencyValuatorImplV2', offChainCurrencyValuator.address);
   } else {
-    offChainCurrencyValuatorImplV1 = loader.truffle.fromArtifact('OffChainCurrencyValuatorImplV1', offChainCurrencyValuatorImplV1Address);
+    offChainCurrencyValuator = loader.truffle.fromArtifact('OffChainCurrencyValuatorProxy', offChainCurrencyValuatorAddress);
   }
 
   if (environment === 'TESTNET' && process.env.REUSE === 'true') {
-    underlyingTokenValuatorImplV3 = loader.truffle.fromArtifact('UnderlyingTokenValuatorImplV3', '0xadeC704f3ce4498cAE4547F20152d58944aCd2D9');
-  } else if (environment !== 'PRODUCTION' || underlyingTokenValuatorImplV3Address === null) {
+    underlyingTokenValuator = loader.truffle.fromArtifact('UnderlyingTokenValuatorProxy', '0xadeC704f3ce4498cAE4547F20152d58944aCd2D9');
+  } else if (environment !== 'PRODUCTION' || underlyingTokenValuatorAddress === null) {
+    console.log('Deploying UnderlyingTokenValuatorImplV5...');
+    const implementation = await deployContract(UnderlyingTokenValuatorImplV5, [], deployer, 4e6);
+
+    console.log('Deploying DAI-USD oracle...');
     const daiUsdAggregator = await deployContract(DaiUsdAggregatorMock, [], deployer, 4e6);
+
+    console.log('Deploying ETH-USD oracle...');
     const ethUsdAggregator = await deployContract(EthUsdAggregatorMockV2, [], deployer, 4e6);
+
+    console.log('Deploying USDC-ETH oracle...');
     const usdcEthAggregator = await deployContract(UsdcEthAggregatorMock, [], deployer, 4e6);
-    console.log('Deploying UnderlyingTokenValuatorImplV3... ');
-    const params = [dai.address, usdc.address, weth.address, daiUsdAggregator.address, ethUsdAggregator.address, usdcEthAggregator.address];
-    underlyingTokenValuatorImplV3 = await deployContract(UnderlyingTokenValuatorImplV3, params, deployer, 4e6);
+
+    console.log('Deploying UnderlyingTokenValuatorProxy... ');
+    const tokens = [dai.address, usdc.address, weth.address];
+    const aggregators = [daiUsdAggregator.address, ethUsdAggregator.address, usdcEthAggregator.address];
+    const quoteSymbols = [constants.ZERO_ADDRESS, constants.ZERO_ADDRESS, weth.address];
+    const params = [implementation.address, deployer, guardian, guardian, weth.address, tokens, aggregators, quoteSymbols];
+    underlyingTokenValuator = await deployContract(UnderlyingTokenValuatorProxy, params, deployer, 4e6);
+    underlyingTokenValuator = loader.truffle.fromArtifact('UnderlyingTokenValuatorImplV5', underlyingTokenValuator.address);
   } else {
-    underlyingTokenValuatorImplV3 = loader.truffle.fromArtifact('UnderlyingTokenValuatorImplV3', underlyingTokenValuatorImplV3Address);
+    underlyingTokenValuator = loader.truffle.fromArtifact('UnderlyingTokenValuatorProxy', underlyingTokenValuatorAddress);
   }
 
   if (environment === 'TESTNET' && process.env.REUSE === 'true') {
@@ -129,6 +154,7 @@ const deployEcosystem = async (loader, environment, deployer) => {
   } else if (environment !== 'PRODUCTION' || dmmBlacklistAddress === null) {
     console.log('Deploying DmmBlacklistable...');
     dmmBlacklist = await deployContract(DmmBlacklistable, [], deployer, 4e6);
+    dmmBlacklist = loader.truffle.fromArtifact('DmmBlacklistable', dmmBlacklist.address);
   } else {
     dmmBlacklist = loader.truffle.fromArtifact('DmmBlacklistable', dmmBlacklistAddress);
   }
@@ -137,13 +163,13 @@ const deployEcosystem = async (loader, environment, deployer) => {
   //   const _9 = _1.mul(new BN('9'));
   //   if((await link.balanceOf(deployer)).gte(_9)) {
   //     console.log('Sending 9 LINK to collateral valuator');
-  //     await callContract(link, 'transfer', [offChainAssetValuatorImplV1.address, _9], deployer, 3e5);
+  //     await callContract(link, 'transfer', [offChainAssetValuator.address, _9], deployer, 3e5);
   //   }
   //
   //   if (oracleAddress !== '0x0000000000000000000000000000000000000000' && chainlinkJobId !== '0x0000000000000000000000000000000000000000000000000000000000000000') {
   //     console.log('Sending chainlinkRequest using oracle ', oracleAddress);
   //     await callContract(
-  //       offChainAssetValuatorImplV1,
+  //       offChainAssetValuator,
   //       'submitGetOffChainAssetsValueRequest',
   //       [oracleAddress],
   //       deployer,
@@ -162,10 +188,11 @@ const deployEcosystem = async (loader, environment, deployer) => {
     dmmController = await deployContract(
       DmmController,
       [
-        interestRateImplV1.address,
-        offChainAssetValuatorImplV1.address,
-        offChainCurrencyValuatorImplV1.address,
-        underlyingTokenValuatorImplV3.address,
+        guardian,
+        interestRateImpl.address,
+        offChainAssetValuator.address,
+        offChainCurrencyValuator.address,
+        underlyingTokenValuator.address,
         dmmEtherFactory.address,
         dmmTokenFactory.address,
         dmmBlacklist.address,
@@ -176,6 +203,8 @@ const deployEcosystem = async (loader, environment, deployer) => {
       deployer,
       5e6,
     );
+    dmmController = loader.truffle.fromArtifact('DmmController', dmmController.address);
+    dmmController.methods = dmmController.contract.methods;
   } else {
     dmmController = loader.truffle.fromArtifact('DmmController', dmmControllerAddress);
     dmmController.methods = dmmController.contract.methods;
@@ -183,10 +212,10 @@ const deployEcosystem = async (loader, environment, deployer) => {
 
   await addMarketsIfLocal(environment, deployer);
 
-  console.log('InterestRateImplV1: ', interestRateImplV1.address);
-  console.log('OffChainAssetValuatorImplV1: ', offChainAssetValuatorImplV1.address);
-  console.log('OffChainCurrencyValuatorImplV1: ', offChainCurrencyValuatorImplV1.address);
-  console.log('UnderlyingTokenValuatorImplV3: ', underlyingTokenValuatorImplV3.address);
+  console.log('InterestRateImplV1: ', interestRateImpl.address);
+  console.log('OffChainAssetValuatorProxy: ', offChainAssetValuator.address);
+  console.log('OffChainCurrencyValuatorProxy: ', offChainCurrencyValuator.address);
+  console.log('UnderlyingTokenValuatorProxy: ', underlyingTokenValuator.address);
   console.log('DmmEtherFactory: ', dmmEtherFactory.address);
   console.log('DmmTokenFactory: ', dmmTokenFactory.address);
   console.log('DmmBlacklistable: ', dmmBlacklist.address);
@@ -252,10 +281,10 @@ const addMarketsIfLocal = async (environment, deployer) => {
 };
 
 module.exports = {
-  interestRateImplV1,
-  offChainAssetValuatorImplV1,
-  offChainCurrencyValuatorImplV1,
-  underlyingTokenValuatorImplV3,
+  interestRateImpl,
+  offChainAssetValuator,
+  offChainCurrencyValuator,
+  underlyingTokenValuator,
   dmmTokenFactory,
   dmmBlacklist,
   dmmController,

@@ -6,7 +6,7 @@
   "scripts": {
     "compile": "echo truffle compile",
     "compile-with-typechain": "npm run compile && typechain --target truffle-v5 --outDir build/types/truffle-contracts './build/**/*.json'",
-    "deploy": "npm run compile && ENVIRONMENT=LOCAL node scripts/initial_deployment/index.js",
+    "deploy-local": "npm run compile && ENVIRONMENT=LOCAL PROVIDER=http://localhost:8545 node scripts/initial_deployment/index.js",
     "deploy-mainnet": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/initial_deployment/index.js",
     "deploy-mainnet-burner-impl-v1": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_burner/DeployDMGBurnerImplV1.js",
     "deploy-mainnet-burner-proxy": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_burner/DeployDMGBurnerProxy.js",

@@ -1,11 +1,11 @@
 const {callContract} = require('../ContractUtils');
 
-const deployOwnershipChanges = async (environment, deployer, multiSigWallet) => {
-  if (await offChainAssetValuatorImplV1.owner() !== delayedOwner.address) {
-    await transferOwnership('OffChainAssetValuatorImplV1', offChainAssetValuatorImplV1, delayedOwner.address, deployer);
+const deployOwnershipChanges = async (environment, deployer, guardian) => {
+  if (await offChainAssetValuator.owner() !== delayedOwner.address) {
+    await transferOwnership('offChainAssetValuator', offChainAssetValuator, delayedOwner.address, deployer);
   }
-  if (await offChainCurrencyValuatorImplV1.owner() !== delayedOwner.address) {
-    await transferOwnership('OffChainCurrencyValuatorImplV1', offChainCurrencyValuatorImplV1, delayedOwner.address, deployer);
+  if (await offChainCurrencyValuator.owner() !== delayedOwner.address) {
+    await transferOwnership('offChainCurrencyValuator', offChainCurrencyValuator, delayedOwner.address, deployer);
   }
   if (environment !== 'LOCAL' && (await dmmEtherFactory.owner() !== dmmController.address)) {
     await transferOwnership('DmmEtherFactory', dmmEtherFactory, dmmController.address, deployer);
@@ -24,8 +24,8 @@ const deployOwnershipChanges = async (environment, deployer, multiSigWallet) => 
     await transferOwnership('DmmController', dmmController, delayedOwner.address, deployer);
   }
 
-  if (environment !== 'LOCAL' && (await delayedOwner.owner()) !== multiSigWallet) {
-    await transferOwnership('DelayedOwner', delayedOwner, multiSigWallet, deployer);
+  if (environment !== 'LOCAL' && (await delayedOwner.owner()) !== guardian) {
+    await transferOwnership('DelayedOwner', delayedOwner, guardian, deployer);
   }
 };
 
