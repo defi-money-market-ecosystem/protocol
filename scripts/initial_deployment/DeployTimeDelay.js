@@ -25,7 +25,6 @@ const deployTimeDelay = async (loader, environment, deployer) => {
 
   if(environment === 'TESTNET') {
     delayedOwner = loader.truffle.fromArtifact('DelayedOwner', '0x6C8C010354A010bee5E8b563eC457614B9Db8eFf');
-    delayedOwner.methods = delayedOwner.contract.methods;
   } else if (environment !== 'PRODUCTION') {
     console.log("Deploying delayed owner...");
     delayedOwner = await deployContract(
@@ -36,7 +35,6 @@ const deployTimeDelay = async (loader, environment, deployer) => {
     );
   } else {
     delayedOwner = loader.truffle.fromArtifact('DelayedOwner', '0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD');
-    delayedOwner.methods = delayedOwner.contract.methods;
   }
 
   console.log("Delayed owner: ", delayedOwner.address);
