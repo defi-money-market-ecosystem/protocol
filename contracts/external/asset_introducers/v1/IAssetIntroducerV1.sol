@@ -252,7 +252,7 @@ interface IAssetIntroducerV1 {
         uint tokenId
     ) external view returns (uint);
 
-    function getTotalWithdrawnUnderlyingByTokenId(
+    function getWithdrawnAmountByTokenIdAndUnderlyingToken(
         uint tokenId,
         address underlyingToken
     ) external view returns (uint);

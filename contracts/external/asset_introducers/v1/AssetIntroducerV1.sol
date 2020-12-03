@@ -435,7 +435,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         return _assetIntroducerStateV1.getDeployedCapitalUsdByTokenId(__tokenId);
     }
 
-    function getTotalWithdrawnUnderlyingByTokenId(
+    function getWithdrawnAmountByTokenIdAndUnderlyingToken(
         uint __tokenId,
         address __underlyingToken
     ) external view returns (uint) {

@@ -24,6 +24,12 @@ contract DMGIncentivePool is Ownable {
 
     using SafeERC20 for IERC20;
 
+    constructor(
+        address __owner
+    ) public {
+        _transferOwnership(__owner);
+    }
+
     function withdrawTo(
         address __token,
         address __to,

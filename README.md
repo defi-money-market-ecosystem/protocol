@@ -60,17 +60,21 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 
  **Contract Name**  	                            | **Contract Address**   	                    | Link   	                                                             
 ----------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------
-| Delayed Owner  	                                | 0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD    | [Etherscan](https://etherscan.io/address/0x9e97ee8631da9e96bc36a6bf39d332c38d9834dd)
+| Asset Introducer Discount V1  	                | 0x3F67e47882636Ac06686933540F52E17A85cBd45    | [Etherscan](https://etherscan.io/address/0x3F67e47882636Ac06686933540F52E17A85cBd45)
+| Asset Introducer NFT V1 (*DO NOT INTERACT*)  	    | 0x44CbEA325186Cf0f83631015feD427D8541bEAb0    | [Etherscan](https://etherscan.io/address/0x44CbEA325186Cf0f83631015feD427D8541bEAb0)
+| Asset Introducer NFT Proxy  	                    | 0x22DA19b404F432D64e280c3c5712E52612b689Fd    | [Etherscan](https://etherscan.io/address/0x22DA19b404F432D64e280c3c5712E52612b689Fd)
+| ~~Delayed Owner~~ UNUSED  	                    | 0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD    | [Etherscan](https://etherscan.io/address/0x9e97ee8631da9e96bc36a6bf39d332c38d9834dd)
 | DMG (Governance Token)  	                        | 0xEd91879919B71bB6905f23af0A68d231EcF87b14    | [Etherscan](https://etherscan.io/address/0xed91879919b71bb6905f23af0a68d231ecf87b14)
 | DMG (Foundation Lockbox)  	                    | 0x3ED70f95C5A979572673558b2f1deEFdd46F1230    | [Etherscan](https://etherscan.io/address/0x3ed70f95c5a979572673558b2f1deefdd46f1230)
 | DMG (Sales Lockbox #1 2020-11-15)  	            | 0x31254668ffa05e93fac6d06ade6706f644e14e8b    | [Etherscan](https://etherscan.io/address/0x31254668ffa05e93fac6d06ade6706f644e14e8b)
 | ~~DMG (Sales Lockbox #2)~~ DEPRECATED  	        | 0xcd78950b160f80A6cC0f29CCc77044aD53366c21    | [Etherscan](https://etherscan.io/address/0xcd78950b160f80A6cC0f29CCc77044aD53366c21)
 | DMG (Sales Lockbox/Forwarder #2)  	            | 0x39B7e9d93EF1C784adc3B94B9977d8a06d735783    | [Etherscan](https://etherscan.io/address/0x39B7e9d93EF1C784adc3B94B9977d8a06d735783)
 | DMG (Incentives Lockbox #1 2020-11-15)  	        | 0xaA96a7890097a63EfcdFaceAC9225E51c79AfF96    | [Etherscan](https://etherscan.io/address/0xaA96a7890097a63EfcdFaceAC9225E51c79AfF96)
-| DMG (Incentives Lockbox #2)  	                    | 0x382c4fd48Fbac7b5E973504cca1458A66A84a94f    | [Etherscan](https://etherscan.io/address/0x382c4fd48Fbac7b5E973504cca1458A66A84a94f)
+| ~~DMG (Incentives Lockbox #2)~~ UNUSED  	        | 0x382c4fd48Fbac7b5E973504cca1458A66A84a94f    | [Etherscan](https://etherscan.io/address/0x382c4fd48Fbac7b5E973504cca1458A66A84a94f)
 | DMG (Incentives Forwarder #3)  	                | 0x704828d766181C906182C89CF1bC5A79bFf3a402    | [Etherscan](https://etherscan.io/address/0x704828d766181C906182C89CF1bC5A79bFf3a402)
 | DMG Burner Impl V1 (*DO NOT INTERACT*)  	        | 0xE8d36D84C58Ba104C346726641D0DeCa05ad237C    | [Etherscan](https://etherscan.io/address/0xE8d36D84C58Ba104C346726641D0DeCa05ad237C)
 | DMG Burner  	                                    | 0x51c9a18c87c89A34e1f3fE020b8f406F1300E909    | [Etherscan](https://etherscan.io/address/0x51c9a18c87c89A34e1f3fE020b8f406F1300E909)
+| DMG NFT Incentive Pool  	                        | 0xd3700Eb4ad6650F9057ebfe61B2AB39a5111a33f    | [Etherscan](https://etherscan.io/address/0xd3700Eb4ad6650F9057ebfe61B2AB39a5111a33f)
 | DMM Blacklist  	                                | 0x516d652E2f12876F5f0244aa661b1C262a2d96b1    | [Etherscan](https://etherscan.io/address/0x516d652e2f12876f5f0244aa661b1c262a2d96b1)
 | ~~DMM Controller V1~~ DEPRECATED 	                | 0x4CB120Dd1D33C9A3De8Bc15620C7Cd43418d77E2    | [Etherscan](https://etherscan.io/address/0x4cb120dd1d33c9a3de8bc15620c7cd43418d77e2)
 | DMM Controller V2 	                            | 0xB07EB3426d742cda9120931e7028d54F9dF34A3e    | [Etherscan](https://etherscan.io/address/0xB07EB3426d742cda9120931e7028d54F9dF34A3e)

@@ -131,7 +131,13 @@ contract AssetIntroducerV1BuyerRouter is IERC721TokenReceiver, Ownable {
         uint userPriceDmg = fullPriceDmg / 2;
         address _dmg = dmg;
         IERC20(_dmg).safeTransferFrom(msg.sender, address(this), userPriceDmg);
+
+        require(
+            IERC20(_dmg).balanceOf(dmgIncentivesPool) >= fullPriceDmg.sub(userPriceDmg),
+            "AssetIntroducerBuyerRouter::buyAssetIntroducerSlot: INSUFFICIENT_INCENTIVES"
+        );
         IERC20(_dmg).safeTransferFrom(dmgIncentivesPool, address(this), fullPriceDmg.sub(userPriceDmg));
+
         IERC20(_dmg).safeApprove(address(assetIntroducerProxy), fullPriceDmg);
 
         assetIntroducerProxy.buyAssetIntroducerSlot(__tokenId);

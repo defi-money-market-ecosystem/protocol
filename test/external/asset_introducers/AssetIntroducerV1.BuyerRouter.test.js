@@ -99,9 +99,9 @@ describe('AssetIntroducerV1.BuyerRouter', () => {
     const poolBalanceBefore = await this.dmgToken.balanceOf(this.incentivePool.address);
 
     const tokenId = this.tokenIds[6];
+    const result = await this.buyerRouter.buyAssetIntroducerSlot(tokenId, {from: user});
     const fullPriceDmg = await this.assetIntroducer.getAssetIntroducerPriceDmgByTokenId(tokenId);
     const userPriceDmg = await this.buyerRouter.getAssetIntroducerPriceDmgByTokenId(tokenId);
-    const result = await this.buyerRouter.buyAssetIntroducerSlot(tokenId, {from: user});
     expectEvent(
       result,
       'IncentiveDmgUsed',
@@ -111,6 +111,16 @@ describe('AssetIntroducerV1.BuyerRouter', () => {
     (await this.assetIntroducer.ownerOf(tokenId)).should.be.eq(user);
     (await this.dmgToken.balanceOf(user)).should.be.bignumber.eq(userBalanceBefore.sub(userPriceDmg));
     (await this.dmgToken.balanceOf(this.incentivePool.address)).should.be.bignumber.eq(poolBalanceBefore.sub(fullPriceDmg.sub(userPriceDmg)));
+  });
+
+  it('buyAssetIntroducerSlot: should work fail if incentives run out', async () => {
+    await this.dmgToken.approve(this.buyerRouter.address, constants.MAX_UINT256, {from: user});
+
+    (await this.incentivePool.withdrawAllTo(this.dmgToken.address, guardian, {from: owner}))
+
+    const tokenId = this.tokenIds[6];
+    const result = this.buyerRouter.buyAssetIntroducerSlot(tokenId, {from: user});
+    await expectRevert(result, 'AssetIntroducerBuyerRouter::buyAssetIntroducerSlot: INSUFFICIENT_INCENTIVES');
   });
 
 });

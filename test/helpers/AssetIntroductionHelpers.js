@@ -182,7 +182,7 @@ const doDmgIncentivePoolBeforeEach = async (thisInstance, contracts, web3, provi
   const DMGIncentivePool = contracts.fromArtifact('DMGIncentivePool');
   const DMGTokenMock = contracts.fromArtifact('DMGTestToken');
 
-  thisInstance.incentivePool = await DMGIncentivePool.new({from: thisInstance.owner});
+  thisInstance.incentivePool = await DMGIncentivePool.new(thisInstance.owner);
   if (!thisInstance.dmgToken) {
     thisInstance.dmgToken = await DMGTokenMock.new();
   }

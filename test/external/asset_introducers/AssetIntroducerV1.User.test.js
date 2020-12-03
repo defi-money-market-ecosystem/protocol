@@ -441,7 +441,7 @@ describe('AssetIntroducerV1.User', () => {
       {tokenId: tokenId, token: underlyingToken, amount: withdrawnAmount},
     );
 
-    (await this.assetIntroducer.getTotalWithdrawnUnderlyingByTokenId(tokenId, underlyingToken)).should.be.bignumber.eq(withdrawnAmount);
+    (await this.assetIntroducer.getWithdrawnAmountByTokenIdAndUnderlyingToken(tokenId, underlyingToken)).should.be.bignumber.eq(withdrawnAmount);
     (await this.assetIntroducer.isDmmFoundationSetup()).should.be.eq(true);
 
     tokenId = this.tokenIds[this.tokenIds.length - 1];
