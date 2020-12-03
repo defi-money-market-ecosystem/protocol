@@ -4,7 +4,7 @@ require('chai').should();
 const {expectRevert, expectEvent, BN, time} = require('@openzeppelin/test-helpers');
 
 const {snapshotChain, resetChain, _1} = require('../../helpers/DmmTokenTestHelpers');
-const {doAssetIntroductionV1BeforeEach, createNFTs} = require('../../helpers/AssetIntroductionHelpers');
+const {doAssetIntroducerV1BeforeEach, createNFTs} = require('../../helpers/AssetIntroductionHelpers');
 
 // Use the different accounts, which are unlocked and funded with Ether
 const [admin, guardian, user, user2, owner, other] = accounts;
@@ -23,7 +23,7 @@ describe('AssetIntroducerV1.Voting', () => {
     await web3.eth.personal.importRawKey(this.wallet.privateKey, password);
     await web3.eth.personal.unlockAccount(this.wallet.address, password, 600);
 
-    await doAssetIntroductionV1BeforeEach(this, contract, web3);
+    await doAssetIntroducerV1BeforeEach(this, contract, web3);
     await createNFTs(this);
 
     snapshotId = await snapshotChain(provider);

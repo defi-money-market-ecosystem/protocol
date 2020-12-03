@@ -20,7 +20,7 @@ const ethereumJsUtil = require('ethereumjs-util');
 
 const {_001, _1, _100, _10000} = require('./DmmTokenTestHelpers');
 
-const doAssetIntroductionV1BeforeEach = async (thisInstance, contracts, web3, provider) => {
+const doAssetIntroducerV1BeforeEach = async (thisInstance, contracts, web3) => {
   const AssetIntroducerDiscountV1 = contracts.fromArtifact('AssetIntroducerDiscountV1');
   const AssetIntroducerProxy = contracts.fromArtifact('AssetIntroducerProxy');
   const AssetIntroducerVotingLib = contracts.fromArtifact('AssetIntroducerVotingLib');
@@ -183,14 +183,31 @@ const doDmgIncentivePoolBeforeEach = async (thisInstance, contracts, web3, provi
   const DMGTokenMock = contracts.fromArtifact('DMGTestToken');
 
   thisInstance.incentivePool = await DMGIncentivePool.new({from: thisInstance.owner});
-  thisInstance.dmgToken = await DMGTokenMock.new();
+  if (!thisInstance.dmgToken) {
+    thisInstance.dmgToken = await DMGTokenMock.new();
+  }
 
-  const amount = new BN('500000000000000000000'); // 500
+  console.log('');
+  console.log('    DMGIncentivePool gas used to deploy: ', (await web3.eth.getTransactionReceipt(thisInstance.incentivePool.transactionHash)).gasUsed.toString());
+
+  const amount = new BN('500000000000000000000000'); // 500,000
   await thisInstance.dmgToken.setBalance(thisInstance.incentivePool.address, amount);
 };
 
+const doAssetIntroducerV1BuyerRouterBeforeEach = async (thisInstance, contracts, web3) => {
+  const AssetIntroducerV1BuyerRouter = contracts.fromArtifact('AssetIntroducerV1BuyerRouter');
+
+  thisInstance.buyerRouter = await AssetIntroducerV1BuyerRouter.new(thisInstance.owner, thisInstance.proxy.address, thisInstance.dmgToken.address, thisInstance.incentivePool.address);
+
+  console.log('');
+  console.log('    AssetIntroducerV1BuyerRouter gas used to deploy: ', (await web3.eth.getTransactionReceipt(thisInstance.buyerRouter.transactionHash)).gasUsed.toString());
+
+  await thisInstance.incentivePool.enableSpender(thisInstance.dmgToken.address, thisInstance.buyerRouter.address, {from: thisInstance.owner});
+}
+
 module.exports = {
-  doAssetIntroductionV1BeforeEach,
+  doAssetIntroducerV1BeforeEach,
+  doAssetIntroducerV1BuyerRouterBeforeEach,
   doDmgIncentivePoolBeforeEach,
   createNFTs,
   PRICE_USA_PRINCIPAL,

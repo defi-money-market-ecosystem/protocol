@@ -185,10 +185,10 @@ contract ERC721Token is IERC721, IERC721Metadata, IERC721Enumerable, IERC721Toke
     }
 
     function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes memory data
+        address,
+        address,
+        uint256,
+        bytes memory
     )
     public
     nonReentrant

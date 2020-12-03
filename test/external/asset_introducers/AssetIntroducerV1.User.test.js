@@ -5,7 +5,7 @@ const {expectRevert, expectEvent, BN, constants, time} = require('@openzeppelin/
 
 const {snapshotChain, resetChain, _1, signMessage} = require('../../helpers/DmmTokenTestHelpers');
 const {
-  doAssetIntroductionV1BeforeEach,
+  doAssetIntroducerV1BeforeEach,
   createNFTs,
   PRICE_USA_PRINCIPAL,
   PRICE_USA_AFFILIATE,
@@ -34,7 +34,7 @@ describe('AssetIntroducerV1.User', () => {
     await web3.eth.personal.importRawKey(this.wallet.privateKey, password);
     await web3.eth.personal.unlockAccount(this.wallet.address, password, 600);
 
-    await doAssetIntroductionV1BeforeEach(this, contract, web3);
+    await doAssetIntroducerV1BeforeEach(this, contract, web3);
     await createNFTs(this);
 
     snapshotId = await snapshotChain(provider);

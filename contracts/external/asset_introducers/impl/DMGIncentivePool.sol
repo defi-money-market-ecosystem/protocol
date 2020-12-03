@@ -20,7 +20,6 @@ pragma solidity ^0.5.0;
 import "../../../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 import "../../../../node_modules/@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-
 contract DMGIncentivePool is Ownable {
 
     using SafeERC20 for IERC20;
