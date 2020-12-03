@@ -178,8 +178,20 @@ const createNFTs = async (
 
 };
 
+const doDmgIncentivePoolBeforeEach = async (thisInstance, contracts, web3, provider) => {
+  const DMGIncentivePool = contracts.fromArtifact('DMGIncentivePool');
+  const DMGTokenMock = contracts.fromArtifact('DMGTestToken');
+
+  thisInstance.incentivePool = await DMGIncentivePool.new({from: thisInstance.owner});
+  thisInstance.dmgToken = await DMGTokenMock.new();
+
+  const amount = new BN('500000000000000000000'); // 500
+  await thisInstance.dmgToken.setBalance(thisInstance.incentivePool.address, amount);
+};
+
 module.exports = {
   doAssetIntroductionV1BeforeEach,
+  doDmgIncentivePoolBeforeEach,
   createNFTs,
   PRICE_USA_PRINCIPAL,
   PRICE_USA_AFFILIATE,
