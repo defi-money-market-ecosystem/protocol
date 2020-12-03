@@ -62,6 +62,7 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 ----------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------
 | Asset Introducer Discount V1  	                | 0x3F67e47882636Ac06686933540F52E17A85cBd45    | [Etherscan](https://etherscan.io/address/0x3F67e47882636Ac06686933540F52E17A85cBd45)
 | Asset Introducer NFT V1 (*DO NOT INTERACT*)  	    | 0x44CbEA325186Cf0f83631015feD427D8541bEAb0    | [Etherscan](https://etherscan.io/address/0x44CbEA325186Cf0f83631015feD427D8541bEAb0)
+| Asset Introducer NFT Buyer Router  	            | 0xc8AC9D420e960DA89Eb8f1ed736eB9ff2F0054aF    | [Etherscan](https://etherscan.io/address/0xc8AC9D420e960DA89Eb8f1ed736eB9ff2F0054aF)
 | Asset Introducer NFT Proxy  	                    | 0x22DA19b404F432D64e280c3c5712E52612b689Fd    | [Etherscan](https://etherscan.io/address/0x22DA19b404F432D64e280c3c5712E52612b689Fd)
 | ~~Delayed Owner~~ UNUSED  	                    | 0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD    | [Etherscan](https://etherscan.io/address/0x9e97ee8631da9e96bc36a6bf39d332c38d9834dd)
 | DMG (Governance Token)  	                        | 0xEd91879919B71bB6905f23af0A68d231EcF87b14    | [Etherscan](https://etherscan.io/address/0xed91879919b71bb6905f23af0a68d231ecf87b14)
