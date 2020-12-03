@@ -53,6 +53,9 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
         /// The timestamp at which this contract was initialized
         uint64 initTimestamp;
 
+        /// True if the DMM Foundation purchased its token for the bootstrapped pool, false otherwise.
+        bool isDmmFoundationSetup;
+
         /// Total amount of DMG locked in this contract
         uint128 totalDmgLocked;
 
@@ -70,6 +73,10 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
 
         /// Address of the implementation for the discount
         address assetIntroducerDiscount;
+
+        /// Address of the implementation for the staking purchaser contract. Used to buy NFTs at a steep discount by
+        /// staking mTokens.
+        address stakingPurchaser;
 
         /// Mapping from NFT ID to the asset introducer struct.
         mapping(uint => AssetIntroducer) idToAssetIntroducer;
@@ -228,9 +235,22 @@ contract AssetIntroducerData is Initializable, IOwnableOrGuardian {
     modifier requireCanWithdrawFunds(uint __tokenId) {
         require(
             _assetIntroducerStateV1.idToAssetIntroducer[__tokenId].isAllowedToWithdrawFunds,
-            "AssetIntroducerData: CANNOT_WITHDRAW_FUNDS"
+            "AssetIntroducerData: NFT_NOT_ACTIVATED"
         );
 
+        _;
+    }
+
+    modifier requireIsStakingPurchaser() {
+        require(
+            _assetIntroducerStateV1.stakingPurchaser != address(0),
+            "AssetIntroducerData: STAKING_PURCHASER_NOT_SETUP"
+        );
+
+        require(
+            _assetIntroducerStateV1.stakingPurchaser == msg.sender,
+            "AssetIntroducerData: INVALID_SENDER_FOR_STAKING"
+        );
         _;
     }
 

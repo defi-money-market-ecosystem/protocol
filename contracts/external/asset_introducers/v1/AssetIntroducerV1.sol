@@ -62,6 +62,58 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
     string internal constant NAME = "DMM: Asset Introducer";
 
     // *************************
+    // ***** Misc Functions
+    // *************************
+
+    function name() external view returns (string memory) {
+        return NAME;
+    }
+
+    function symbol() external view returns (string memory) {
+        return "aDMM";
+    }
+
+    function dmg() external view returns (address) {
+        return _assetIntroducerStateV1.dmg;
+    }
+
+    function dmmController() external view returns (address) {
+        return _assetIntroducerStateV1.dmmController;
+    }
+
+    function initTimestamp() external view returns (uint64) {
+        return _assetIntroducerStateV1.initTimestamp;
+    }
+
+    function stakingPurchaser() external view returns (address) {
+        return _assetIntroducerStateV1.stakingPurchaser;
+    }
+
+    function openSeaProxyRegistry() external view returns (address) {
+        return _erc721StateV1.openSeaProxyRegistry;
+    }
+
+    function domainSeparator() external view returns (bytes32) {
+        return _assetIntroducerStateV1.domainSeparator;
+    }
+
+    function underlyingTokenValuator() external view returns (address) {
+        return _assetIntroducerStateV1.underlyingTokenValuator;
+    }
+
+    function assetIntroducerDiscount() external view returns (address) {
+        return _assetIntroducerStateV1.assetIntroducerDiscount;
+    }
+
+    function getTotalDmgLocked() external view returns (uint) {
+        return _assetIntroducerStateV1.totalDmgLocked;
+    }
+
+    function getAssetIntroducerDiscount() public view returns (uint) {
+        return _assetIntroducerStateV1.getAssetIntroducerDiscount();
+    }
+
+    // *************************
     // ***** Admin Functions
     // *************************
 
@@ -91,14 +143,6 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         );
     }
 
-    function name() external view returns (string memory) {
-        return NAME;
-    }
-
-    function symbol() external view returns (string memory) {
-        return "aDMM";
-    }
-
     function createAssetIntroducersForPrimaryMarket(
         string[] calldata __countryCodes,
         AssetIntroducerType[] calldata __introducerTypes
@@ -119,7 +163,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         uint __tokenId,
         uint __dollarAmountToManage
     )
-    external
+    public
     requireIsValidNft(__tokenId)
     onlyOwnerOrGuardian {
         _assetIntroducerStateV1.setDollarAmountToManageByTokenId(__tokenId, __dollarAmountToManage);
@@ -157,18 +201,45 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         _assetIntroducerStateV1.setAssetIntroducerPrice(__countryCode, __introducerType, __priceUsd);
     }
 
+    function activateAssetIntroducerByTokenId(
+        uint __tokenId
+    )
+    public
+    requireIsValidNft(__tokenId)
+    onlyOwnerOrGuardian {
+        _assetIntroducerStateV1.activateAssetIntroducerByTokenId(__tokenId);
+    }
+
+    function setStakingPurchaser(
+        address __stakingPurchaser
+    )
+    public
+    onlyOwnerOrGuardian {
+        _assetIntroducerStateV1.setStakingPurchaser(__stakingPurchaser);
+    }
+
+    // *************************
+    // ***** User Voting Functions
+    // *************************
+
+    function getCurrentVotes(
+        address __owner
+    ) external view returns (uint) {
+        return _voteStateV1.getCurrentVotes(__owner);
+    }
+
+    function getPriorVotes(
+        address __owner,
+        uint __blockNumber
+    )
+    external
+    view returns (uint128) {
+        return _voteStateV1.getPriorVotes(__owner, __blockNumber);
+    }
+
     // *************************
     // ***** User Functions
     // *************************
-
-    function getNextAssetIntroducerTokenId(
-        string calldata __countryCode,
-        AssetIntroducerType __introducerType
-    ) external view returns (uint) {
-        bytes3 countryCode = AssetIntroducerV1UserLib._verifyAndConvertCountryCodeToBytes(__countryCode);
-        uint8 introducerType = uint8(__introducerType);
-        return _assetIntroducerStateV1._getAssetIntroducerTokenId(countryCode, introducerType);
-    }
 
     function buyAssetIntroducerSlot(
         uint __tokenId
@@ -178,14 +249,22 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
     requireIsValidNft(__tokenId)
     requireIsPrimaryMarketNft(__tokenId)
     returns (bool) {
-        _assetIntroducerStateV1.buyAssetIntroducer(__tokenId, msg.sender, msg.sender, _erc721StateV1, _voteStateV1);
+        _assetIntroducerStateV1.buyAssetIntroducer(__tokenId, msg.sender, msg.sender, _erc721StateV1, _voteStateV1, 0);
         return true;
     }
 
-    function nonceOf(
-        address user
-    ) external view returns (uint) {
-        return _assetIntroducerStateV1.ownerToNonceMap[user];
+    function buyAssetIntroducerSlotViaStaking(
+        uint __tokenId,
+        uint __additionalDiscount
+    )
+    external
+    nonReentrant
+    requireIsValidNft(__tokenId)
+    requireIsPrimaryMarketNft(__tokenId)
+    requireIsStakingPurchaser
+    returns (bool) {
+        _assetIntroducerStateV1.buyAssetIntroducer(__tokenId, msg.sender, msg.sender, _erc721StateV1, _voteStateV1, __additionalDiscount);
+        return true;
     }
 
     function buyAssetIntroducerSlotBySig(
@@ -207,7 +286,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
             bytes32 structHash = keccak256(abi.encode(BUY_ASSET_INTRODUCER_TYPE_HASH, __tokenId, __nonce, __expiry));
             signer = _assetIntroducerStateV1.validateOfflineSignature(structHash, __nonce, __expiry, __v, __r, __s);
         }
-        _assetIntroducerStateV1.buyAssetIntroducer(__tokenId, __recipient, signer, _erc721StateV1, _voteStateV1);
+        _assetIntroducerStateV1.buyAssetIntroducer(__tokenId, __recipient, signer, _erc721StateV1, _voteStateV1, 0);
         return true;
     }
 
@@ -226,21 +305,6 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
     requireIsValidNft(__tokenId)
     requireIsPrimaryMarketNft(__tokenId)
     returns (bool) {
-        _assetIntroducerStateV1.performDmgApproval(dmgApprovalStruct);
-
-        address signer;
-        {
-            bytes32 structHash = keccak256(abi.encode(BUY_ASSET_INTRODUCER_TYPE_HASH, __tokenId, __nonce, __expiry));
-            signer = _assetIntroducerStateV1.validateOfflineSignature(structHash, __nonce, __expiry, __v, __r, __s);
-        }
-
-        _assetIntroducerStateV1.buyAssetIntroducer(__tokenId, __recipient, signer, _erc721StateV1, _voteStateV1);
-        return true;
-    }
-
-    function performDmgApproval(
-        DmgApprovalStruct memory dmgApprovalStruct
-    ) internal {
         IDMGToken(_assetIntroducerStateV1.dmg).approveBySig(
             dmgApprovalStruct.spender,
             dmgApprovalStruct.rawAmount,
@@ -250,64 +314,27 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
             dmgApprovalStruct.r,
             dmgApprovalStruct.s
         );
+
+        address signer;
+        {
+            bytes32 structHash = keccak256(abi.encode(BUY_ASSET_INTRODUCER_TYPE_HASH, __tokenId, __nonce, __expiry));
+            signer = _assetIntroducerStateV1.validateOfflineSignature(structHash, __nonce, __expiry, __v, __r, __s);
+        }
+
+        _assetIntroducerStateV1.buyAssetIntroducer(__tokenId, __recipient, signer, _erc721StateV1, _voteStateV1, 0);
+        return true;
     }
 
-    function getCurrentVotes(
-        address __owner
+    function nonceOf(
+        address user
     ) external view returns (uint) {
-        return _voteStateV1.getCurrentVotes(__owner);
+        return _assetIntroducerStateV1.ownerToNonceMap[user];
     }
-
-    function getPriorVotes(
-        address __owner,
-        uint __blockNumber
-    )
-    external
-    view returns (uint128) {
-        return _voteStateV1.getPriorVotes(__owner, __blockNumber);
-    }
-
 
     function getDmgLockedByUser(
         address __user
     ) external view returns (uint) {
         return _assetIntroducerStateV1.getDmgLockedByUser(_erc721StateV1, __user);
-    }
-
-    // *************************
-    // ***** Misc Functions
-    // *************************
-
-    function dmg() external view returns (address) {
-        return _assetIntroducerStateV1.dmg;
-    }
-
-    function dmmController() external view returns (address) {
-        return _assetIntroducerStateV1.dmmController;
-    }
-
-    function initTimestamp() external view returns (uint64) {
-        return _assetIntroducerStateV1.initTimestamp;
-    }
-
-    function openSeaProxyRegistry() external view returns (address) {
-        return _erc721StateV1.openSeaProxyRegistry;
-    }
-
-    function domainSeparator() external view returns (bytes32) {
-        return _assetIntroducerStateV1.domainSeparator;
-    }
-
-    function underlyingTokenValuator() external view returns (address) {
-        return _assetIntroducerStateV1.underlyingTokenValuator;
-    }
-
-    function assetIntroducerDiscount() external view returns (address) {
-        return _assetIntroducerStateV1.assetIntroducerDiscount;
-    }
-
-    function getTotalDmgLocked() external view returns (uint) {
-        return _assetIntroducerStateV1.totalDmgLocked;
     }
 
     function getDollarAmountToManageByTokenId(
@@ -336,16 +363,12 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         return _assetIntroducerStateV1.idToAssetIntroducer[__tokenId];
     }
 
-    function getAssetIntroducerDiscount() public view returns (uint) {
-        return _assetIntroducerStateV1.getAssetIntroducerDiscount();
-    }
-
     function getAssetIntroducerPriceUsdByTokenId(
         uint __tokenId
     )
     requireIsValidNft(__tokenId)
     public view returns (uint) {
-        return _assetIntroducerStateV1.getAssetIntroducerPriceUsdByTokenId(__tokenId);
+        return _assetIntroducerStateV1.getAssetIntroducerPriceUsdByTokenId(__tokenId, 0);
     }
 
     function getAssetIntroducerPriceDmgByTokenId(
@@ -353,7 +376,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
     )
     requireIsValidNft(__tokenId)
     public view returns (uint) {
-        return _assetIntroducerStateV1.getAssetIntroducerPriceDmgByTokenId(__tokenId);
+        return _assetIntroducerStateV1.getAssetIntroducerPriceDmgByTokenId(__tokenId, 0);
     }
 
     function getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(
@@ -361,7 +384,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         AssetIntroducerType __introducerType
     )
     external view returns (uint) {
-        return _assetIntroducerStateV1.getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(__countryCode, __introducerType);
+        return _assetIntroducerStateV1.getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(__countryCode, __introducerType, 0);
     }
 
     function getAssetIntroducerPriceDmgByCountryCodeAndIntroducerType(
@@ -369,7 +392,7 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         AssetIntroducerType __introducerType
     )
     external view returns (uint) {
-        return _assetIntroducerStateV1.getAssetIntroducerPriceDmgByCountryCodeAndIntroducerType(__countryCode, __introducerType);
+        return _assetIntroducerStateV1.getAssetIntroducerPriceDmgByCountryCodeAndIntroducerType(__countryCode, __introducerType, 0);
     }
 
     function getAssetIntroducersByCountryCode(
@@ -377,6 +400,16 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
     ) external view returns (AssetIntroducer[] memory) {
         return _assetIntroducerStateV1.getAssetIntroducersByCountryCode(__countryCode);
     }
+
+    function getNextAssetIntroducerTokenId(
+        string calldata __countryCode,
+        AssetIntroducerType __introducerType
+    ) external view returns (uint) {
+        bytes3 countryCode = AssetIntroducerV1UserLib._verifyAndConvertCountryCodeToBytes(__countryCode);
+        uint8 introducerType = uint8(__introducerType);
+        return _assetIntroducerStateV1._getAssetIntroducerTokenId(countryCode, introducerType);
+    }
+
 
     function getAllAssetIntroducers() public view returns (AssetIntroducer[] memory) {
         return _assetIntroducerStateV1.getAllAssetIntroducers(_erc721StateV1);
@@ -390,7 +423,9 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
         return _assetIntroducerStateV1.getSecondaryMarketAssetIntroducers(_erc721StateV1);
     }
 
-    function getNonceByUser(address __user) external view returns (uint) {
+    function getNonceByUser(
+        address __user
+    ) external view returns (uint) {
         return _assetIntroducerStateV1.ownerToNonceMap[__user];
     }
 
@@ -461,21 +496,41 @@ contract AssetIntroducerV1 is ERC721Token, IAssetIntroducerV1, IAssetIntroducerV
     }
 
     // *************************
-    // ***** Internal Functions
+    // ***** Other Functions
     // *************************
 
-    function _verifyAndConvertCountryCodeToBytes(
-        string memory __countryCode
-    ) internal pure returns (bytes3) {
+    function buyDmmFoundationToken(
+        uint __tokenId,
+        address __usdcToken
+    )
+    external
+    nonReentrant
+    onlyOwnerOrGuardian
+    requireIsPrimaryMarketNft(__tokenId)
+    returns (bool) {
         require(
-            bytes(__countryCode).length == 3,
-            "AssetIntroducerV1::_verifyAndConvertCountryCodeToBytes: INVALID_COUNTRY_CODE"
+            !_assetIntroducerStateV1.isDmmFoundationSetup,
+            "AssetIntroducerV1::buyDmmFoundationToken: ALREADY_SETUP"
         );
-        bytes3 result;
-        assembly {
-            result := mload(add(__countryCode, 3))
-        }
-        return result;
+
+        _assetIntroducerStateV1.buyAssetIntroducer(__tokenId, msg.sender, msg.sender, _erc721StateV1, _voteStateV1, 0);
+
+        // $315,000; apply a 5% buffer to make sure we don't exceed the maximum
+        _assetIntroducerStateV1.setDollarAmountToManageByTokenId(__tokenId, 315000e18);
+        _assetIntroducerStateV1.activateAssetIntroducerByTokenId(__tokenId);
+
+        // $300,000
+        uint withdrawnAmount = 300000e18;
+        _assetIntroducerStateV1.tokenIdToUnderlyingTokenToWithdrawnAmount[__tokenId][__usdcToken] = withdrawnAmount;
+        emit CapitalWithdrawn(__tokenId, __usdcToken, withdrawnAmount);
+
+        _assetIntroducerStateV1.isDmmFoundationSetup = true;
+
+        return true;
+    }
+
+    function isDmmFoundationSetup() external view returns (bool) {
+        return _assetIntroducerStateV1.isDmmFoundationSetup;
     }
 
 }

@@ -41,10 +41,12 @@ library AssetIntroducerV1AdminLib {
     // ***** Events
     // *************************
 
+    event AssetIntroducerActivationChanged(uint indexed tokenId, bool isActivated);
     event AssetIntroducerCreated(uint indexed tokenId, string countryCode, AssetIntroducerData.AssetIntroducerType introducerType, uint serialNumber);
     event AssetIntroducerDiscountChanged(address indexed oldAssetIntroducerDiscount, address indexed newAssetIntroducerDiscount);
     event AssetIntroducerDollarAmountToManageChange(uint indexed tokenId, uint oldDollarAmountToManage, uint newDollarAmountToManage);
     event AssetIntroducerPriceChanged(string indexed countryCode, AssetIntroducerData.AssetIntroducerType indexed introducerType, uint oldPriceUsd, uint newPriceUsd);
+    event StakingPurchaserChanged(address indexed oldStakingPurchaser, address indexed newStakingPurchaser);
 
     // *************************
     // ***** Functions
@@ -171,6 +173,34 @@ library AssetIntroducerV1AdminLib {
         uint oldPriceUsd = __state.countryCodeToAssetIntroducerTypeToPriceUsd[countryCode][uint8(__introducerType)];
         __state.countryCodeToAssetIntroducerTypeToPriceUsd[countryCode][uint8(__introducerType)] = uint96(__priceUsd);
         emit AssetIntroducerPriceChanged(__countryCode, __introducerType, oldPriceUsd, __priceUsd);
+    }
+
+    function activateAssetIntroducerByTokenId(
+        AssetIntroducerData.AssetIntroducerStateV1 storage __state,
+        uint __tokenId
+    )
+    public {
+        require(
+            !__state.idToAssetIntroducer[__tokenId].isAllowedToWithdrawFunds,
+            "AssetIntroducerV1AdminLib::activateAssetIntroducerByTokenId ALREADY_ACTIVATED"
+        );
+
+        __state.idToAssetIntroducer[__tokenId].isAllowedToWithdrawFunds = true;
+        emit AssetIntroducerActivationChanged(__tokenId, true);
+    }
+
+    function setStakingPurchaser(
+        AssetIntroducerData.AssetIntroducerStateV1 storage __state,
+        address __stakingPurchaser
+    )
+    public {
+        require(
+            __stakingPurchaser != address(0),
+            "AssetIntroducerV1AdminLib::setStakingPurchaser INVALID_STAKING_PURCHASER"
+        );
+        address oldStakingPurchaser = __state.stakingPurchaser;
+        __state.stakingPurchaser = __stakingPurchaser;
+        emit StakingPurchaserChanged(oldStakingPurchaser, __stakingPurchaser);
     }
 
 }

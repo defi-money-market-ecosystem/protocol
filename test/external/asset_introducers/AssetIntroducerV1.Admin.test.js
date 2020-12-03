@@ -1,13 +1,13 @@
 const {accounts, contract, web3, provider} = require('@openzeppelin/test-environment');
 require('@openzeppelin/test-helpers/src/config/web3').getWeb3 = () => web3;
 require('chai').should();
-const {expectRevert, expectEvent, BN} = require('@openzeppelin/test-helpers');
+const {expectRevert, expectEvent, BN, constants} = require('@openzeppelin/test-helpers');
 
 const {snapshotChain, resetChain, _1} = require('../../helpers/DmmTokenTestHelpers');
-const {doAssetIntroductionV1BeforeEach} = require('../../helpers/AssetIntroductionHelpers');
+const {doAssetIntroductionV1BeforeEach, createNFTs} = require('../../helpers/AssetIntroductionHelpers');
 
 // Use the different accounts, which are unlocked and funded with Ether
-const [admin, guardian, user, owner] = accounts;
+const [admin, guardian, user, user2, owner] = accounts;
 
 describe('AssetIntroducerV1.Admin', () => {
   const ownerError = 'OwnableOrGuardian: UNAUTHORIZED_OWNER_OR_GUARDIAN';
@@ -17,6 +17,7 @@ describe('AssetIntroducerV1.Admin', () => {
     this.guardian = guardian;
     this.owner = owner;
     this.user = user;
+    this.user2 = user2;
 
     this.wallet = web3.eth.accounts.create();
     const password = 'password';
@@ -277,6 +278,64 @@ describe('AssetIntroducerV1.Admin', () => {
 
   it('setAssetIntroducerDiscount: should revert for non-owner or guardian', async () => {
     const result = this.assetIntroducer.setAssetIntroducerDiscount(this.dmmController.address, {from: user});
+    await expectRevert(result, ownerError);
+  });
+
+  it('activateAssetIntroducerByTokenId: should work for owner or guardian', async () => {
+    await createNFTs(this);
+    const tokenId = this.tokenIds[0];
+
+    const result = await this.assetIntroducer.activateAssetIntroducerByTokenId(tokenId, {from: owner});
+    expectEvent(
+      result,
+      'AssetIntroducerActivationChanged',
+      {
+        tokenId: tokenId,
+        isActivated: true,
+      }
+    );
+
+    (await this.assetIntroducer.getAssetIntroducerByTokenId(tokenId)).isAllowedToWithdrawFunds.should.be.eq(true);
+  });
+
+  it('activateAssetIntroducerByTokenId: should revert for non-owner or guardian', async () => {
+    await createNFTs(this);
+    const tokenId = this.tokenIds[0];
+
+    const result = this.assetIntroducer.activateAssetIntroducerByTokenId(tokenId, {from: user});
+    await expectRevert(result, ownerError);
+  });
+
+  it('activateAssetIntroducerByTokenId: should revert if token is already activated or is invalid', async () => {
+    await createNFTs(this);
+    const tokenId = this.tokenIds[0];
+
+    await this.assetIntroducer.activateAssetIntroducerByTokenId(tokenId, {from: owner});
+
+    let result = this.assetIntroducer.activateAssetIntroducerByTokenId(tokenId, {from: owner});
+    await expectRevert(result, 'AssetIntroducerV1AdminLib::activateAssetIntroducerByTokenId ALREADY_ACTIVATED');
+
+    const invalidTokenId = new BN('1231');
+    result = this.assetIntroducer.activateAssetIntroducerByTokenId(invalidTokenId, {from: owner});
+    await expectRevert(result, 'AssetIntroducerData: INVALID_NFT');
+  });
+
+  it('setStakingPurchaser: should work for owner or guardian', async () => {
+    const result = await this.assetIntroducer.setStakingPurchaser(this.dmmController.address, {from: owner});
+    expectEvent(
+      result,
+      'StakingPurchaserChanged',
+      {
+        oldStakingPurchaser: constants.ZERO_ADDRESS,
+        newStakingPurchaser: this.dmmController.address,
+      }
+    );
+
+    (await this.assetIntroducer.stakingPurchaser()).should.be.eq(this.dmmController.address);
+  });
+
+  it('setStakingPurchaser: should revert for non-owner or guardian', async () => {
+    const result = this.assetIntroducer.setStakingPurchaser(this.dmmController.address, {from: user});
     await expectRevert(result, ownerError);
   });
 

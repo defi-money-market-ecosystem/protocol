@@ -10,8 +10,10 @@ const {setupLoader} = require('@openzeppelin/contract-loader');
 const {
   BN,
   constants,
+  ether,
   expectEvent,
   expectRevert,
+  send,
 } = require('@openzeppelin/test-helpers');
 
 const ethereumJsUtil = require('ethereumjs-util');
@@ -19,14 +21,15 @@ const ethereumJsUtil = require('ethereumjs-util');
 const {_001, _1, _100, _10000} = require('./DmmTokenTestHelpers');
 
 const doAssetIntroductionV1BeforeEach = async (thisInstance, contracts, web3, provider) => {
-  const ERC20Mock = contracts.fromArtifact('ERC20Mock');
   const AssetIntroducerDiscountV1 = contracts.fromArtifact('AssetIntroducerDiscountV1');
   const AssetIntroducerProxy = contracts.fromArtifact('AssetIntroducerProxy');
   const AssetIntroducerVotingLib = contracts.fromArtifact('AssetIntroducerVotingLib');
   const AssetIntroducerV1UserLib = contracts.fromArtifact('AssetIntroducerV1UserLib');
   const AssetIntroducerV1AdminLib = contracts.fromArtifact('AssetIntroducerV1AdminLib');
   const AssetIntroducerV1 = contracts.fromArtifact('AssetIntroducerV1');
+  const DMGTestToken = contracts.fromArtifact('DMGTestToken');
   const DmmControllerMock = contracts.fromArtifact('DmmControllerMock');
+  const ERC20Mock = contracts.fromArtifact('ERC20Mock');
   const ERC721TokenLib = contracts.fromArtifact('ERC721TokenLib');
   const TestOpenSeaProxyRegistry = contracts.fromArtifact('TestOpenSeaProxyRegistry');
   const UnderlyingTokenValuatorMock = contracts.fromArtifact('UnderlyingTokenValuatorMock');
@@ -61,21 +64,26 @@ const doAssetIntroductionV1BeforeEach = async (thisInstance, contracts, web3, pr
   thisInstance.implementation = await AssetIntroducerV1.new();
   console.log('    AssetIntroducerV1 gas used to deploy: ', (await web3.eth.getTransactionReceipt(thisInstance.implementation.transactionHash)).gasUsed.toString());
 
-  thisInstance.dmgToken = await ERC20Mock.new(thisInstance.admin, {from: thisInstance.admin});
+  thisInstance.dmgToken = await DMGTestToken.new(thisInstance.admin, {from: thisInstance.admin});
   await thisInstance.dmgToken.setBalance(thisInstance.owner, _10000());
 
+  thisInstance.underlyingToken = await ERC20Mock.new();
+
+  thisInstance.dmgUsdPrice = '50000000';
+  thisInstance.underlyingTokenPrice = '100000000';
+
   thisInstance.underlyingTokenValuator = await UnderlyingTokenValuatorMock.new(
-    [thisInstance.dmgToken.address],
-    ['50000000'],
-    ['8'],
+    [thisInstance.dmgToken.address, thisInstance.underlyingToken.address],
+    [thisInstance.dmgUsdPrice, thisInstance.underlyingTokenPrice], // $0.50, $1.00
+    ['8', '8'],
     {from: thisInstance.admin}
   );
 
   thisInstance.dmmController = await DmmControllerMock.new(
     constants.ZERO_ADDRESS,
     thisInstance.underlyingTokenValuator.address,
-    [],
-    [],
+    [thisInstance.underlyingToken.address],
+    [thisInstance.underlyingToken.address],
     '62500000000000000',
     {from: thisInstance.admin},
   );
@@ -110,20 +118,20 @@ const doAssetIntroductionV1BeforeEach = async (thisInstance, contracts, web3, pr
 const PRINCIPAL = 0;
 const AFFILIATE = 1;
 
-const PRICE_USA_PRINCIPAL = '250000000000000000000000'; // $250,000
 const PRICE_USA_AFFILIATE = '150000000000000000000000'; // $150,000
+const PRICE_USA_PRINCIPAL = '250000000000000000000000'; // $250,000
 
-const PRICE_CHN_PRINCIPAL = '208000000000000000000000'; // $208,000
 const PRICE_CHN_AFFILIATE = '125000000000000000000000'; // $125,000
+const PRICE_CHN_PRINCIPAL = '208000000000000000000000'; // $208,000
 
-const PRICE_IND_PRINCIPAL = '166000000000000000000000'; // $166,000
 const PRICE_IND_AFFILIATE = '100000000000000000000000'; // $100,000
+const PRICE_IND_PRINCIPAL = '166000000000000000000000'; // $166,000
 
 const createNFTs = async (
   thisInstance,
-  countryCodes = ['USA', 'USA', 'CHN', 'CHN', 'IND'],
-  introducerTypes = [AFFILIATE, PRINCIPAL, AFFILIATE, PRINCIPAL, AFFILIATE],
-  pricesUsd = [PRICE_USA_AFFILIATE, PRICE_USA_PRINCIPAL, PRICE_CHN_AFFILIATE, PRICE_CHN_PRINCIPAL, PRICE_IND_AFFILIATE]
+  countryCodes = ['USA', 'USA', 'CHN', 'CHN', 'IND', 'IND', 'IND'],
+  introducerTypes = [AFFILIATE, PRINCIPAL, AFFILIATE, PRINCIPAL, AFFILIATE, AFFILIATE, PRINCIPAL],
+  pricesUsd = [PRICE_USA_AFFILIATE, PRICE_USA_PRINCIPAL, PRICE_CHN_AFFILIATE, PRICE_CHN_PRINCIPAL, PRICE_IND_AFFILIATE, PRICE_IND_AFFILIATE, PRICE_IND_PRINCIPAL]
 ) => {
   if (countryCodes.length === 0 || introducerTypes.length === 0) {
     throw 'lengths must be non-zero';
@@ -143,17 +151,21 @@ const createNFTs = async (
     thisInstance.tokenIds.push((await thisInstance.assetIntroducer.tokenByIndex(i)).toString(10));
   }
 
-  const balance = new BN('100000000000000000000000000');
-  await thisInstance.dmgToken.setBalance(thisInstance.user, balance);
-  await thisInstance.dmgToken.setBalance(thisInstance.user2, balance);
+  thisInstance.defaultBalance = new BN('100000000000000000000000000');
+  await thisInstance.dmgToken.setBalance(thisInstance.user, thisInstance.defaultBalance);
+  await thisInstance.dmgToken.setBalance(thisInstance.user2, thisInstance.defaultBalance);
+  await thisInstance.dmgToken.setBalance(thisInstance.wallet.address, thisInstance.defaultBalance);
 
   await thisInstance.dmgToken.approve(thisInstance.assetIntroducer.address, constants.MAX_UINT256, {from: thisInstance.user});
   await thisInstance.dmgToken.approve(thisInstance.assetIntroducer.address, constants.MAX_UINT256, {from: thisInstance.user2});
+  await send.ether(thisInstance.user, thisInstance.wallet.address, ether('1'));
+  await thisInstance.dmgToken.approve(thisInstance.assetIntroducer.address, constants.MAX_UINT256, {from: thisInstance.wallet.address});
 
   thisInstance.purchaseResults = {};
-  for (let i = 0; i < countryCodes.length; i++) {
+  // Last one doesn't get purchased
+  for (let i = 0; i < countryCodes.length - 2; i++) {
     let user;
-    if (i < countryCodes.length / 2) {
+    if (i < (countryCodes.length - 2) / 2) {
       user = thisInstance.user;
     } else {
       user = thisInstance.user2;
@@ -169,4 +181,12 @@ const createNFTs = async (
 module.exports = {
   doAssetIntroductionV1BeforeEach,
   createNFTs,
+  PRICE_USA_PRINCIPAL,
+  PRICE_USA_AFFILIATE,
+  PRICE_CHN_PRINCIPAL,
+  PRICE_CHN_AFFILIATE,
+  PRICE_IND_PRINCIPAL,
+  PRICE_IND_AFFILIATE,
+  AFFILIATE,
+  PRINCIPAL,
 }

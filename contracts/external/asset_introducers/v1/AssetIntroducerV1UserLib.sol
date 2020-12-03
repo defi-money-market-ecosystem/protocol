@@ -47,6 +47,7 @@ library AssetIntroducerV1UserLib {
     // ***** Events
     // *************************
 
+    event AssetIntroducerActivationChanged(uint indexed tokenId, bool isActivated);
     event AssetIntroducerBought(uint indexed tokenId, address indexed buyer, address indexed recipient, uint dmgAmount);
     event CapitalDeposited(uint indexed tokenId, address indexed token, uint amount);
     event CapitalWithdrawn(uint indexed tokenId, address indexed token, uint amount);
@@ -58,27 +59,29 @@ library AssetIntroducerV1UserLib {
     // ***** Functions
     // *************************
 
-    function getDeployedCapitalUsdByTokenId(
+    function buyAssetIntroducer(
         AssetIntroducerData.AssetIntroducerStateV1 storage __state,
-        uint __tokenId
-    ) public view returns (uint) {
-        IDmmController dmmController = IDmmController(__state.dmmController);
-        IUnderlyingTokenValuator underlyingTokenValuator = IUnderlyingTokenValuator(__state.underlyingTokenValuator);
-        uint[] memory tokenIds = dmmController.getDmmTokenIds();
+        uint __tokenId,
+        address __recipient,
+        address __buyer,
+        AssetIntroducerData.ERC721StateV1 storage __erc721State,
+        AssetIntroducerData.VoteStateV1 storage __voteState,
+        uint __additionalDiscount
+    ) public {
+        uint dmgPurchasePrice = getAssetIntroducerPriceDmgByTokenId(__state, __tokenId, __additionalDiscount);
+        IERC20(__state.dmg).safeTransferFrom(__buyer, address(this), dmgPurchasePrice);
+        __state.totalDmgLocked = uint128(uint(__state.totalDmgLocked).add(dmgPurchasePrice));
 
-        uint totalDeployedCapital = 0;
-        for (uint i = 0; i < tokenIds.length; i++) {
-            address token = dmmController.getUnderlyingTokenForDmm(dmmController.getDmmTokenAddressByDmmTokenId(tokenIds[i]));
-            uint rawDeployedAmount = __state.tokenIdToUnderlyingTokenToWithdrawnAmount[__tokenId][token];
-            rawDeployedAmount = _standardizeTokenAmountForUsdDecimals(
-                rawDeployedAmount,
-                IERC20WithDecimals(token).decimals()
-            );
+        AssetIntroducerData.AssetIntroducer storage introducer = __state.idToAssetIntroducer[__tokenId];
+        introducer.isOnSecondaryMarket = true;
+        introducer.dmgLocked = uint96(dmgPurchasePrice);
 
-            totalDeployedCapital = totalDeployedCapital.add(underlyingTokenValuator.getTokenValue(token, rawDeployedAmount));
-        }
+        // Initialize the DMG voting balance to this contract. The call to _transfer moves it to __recipient then.
+        AssetIntroducerVotingLib.moveDelegates(__voteState, address(0), address(this), uint128(dmgPurchasePrice));
 
-        return totalDeployedCapital;
+        ERC721TokenLib._transfer(__erc721State, __voteState, __recipient, __tokenId, introducer);
+
+        emit AssetIntroducerBought(__tokenId, __buyer, __recipient, dmgPurchasePrice);
     }
 
     function validateOfflineSignature(
@@ -111,43 +114,27 @@ library AssetIntroducerV1UserLib {
         emit SignatureValidated(signer, __nonce);
     }
 
-    function performDmgApproval(
+    function getDeployedCapitalUsdByTokenId(
         AssetIntroducerData.AssetIntroducerStateV1 storage __state,
-        AssetIntroducerData.DmgApprovalStruct memory __dmgApprovalStruct
-    ) public {
-        IDMGToken(__state.dmg).approveBySig(
-            __dmgApprovalStruct.spender,
-            __dmgApprovalStruct.rawAmount,
-            __dmgApprovalStruct.nonce,
-            __dmgApprovalStruct.expiry,
-            __dmgApprovalStruct.v,
-            __dmgApprovalStruct.r,
-            __dmgApprovalStruct.s
-        );
-    }
+        uint __tokenId
+    ) public view returns (uint) {
+        IDmmController dmmController = IDmmController(__state.dmmController);
+        IUnderlyingTokenValuator underlyingTokenValuator = IUnderlyingTokenValuator(__state.underlyingTokenValuator);
+        uint[] memory tokenIds = dmmController.getDmmTokenIds();
 
-    function buyAssetIntroducer(
-        AssetIntroducerData.AssetIntroducerStateV1 storage __state,
-        uint __tokenId,
-        address __recipient,
-        address __buyer,
-        AssetIntroducerData.ERC721StateV1 storage __erc721State,
-        AssetIntroducerData.VoteStateV1 storage __voteState
-    ) public {
-        uint dmgPurchasePrice = getAssetIntroducerPriceDmgByTokenId(__state, __tokenId);
-        IERC20(__state.dmg).safeTransferFrom(__buyer, address(this), dmgPurchasePrice);
-        __state.totalDmgLocked = uint128(uint(__state.totalDmgLocked).add(dmgPurchasePrice));
+        uint totalDeployedCapital = 0;
+        for (uint i = 0; i < tokenIds.length; i++) {
+            address token = dmmController.getUnderlyingTokenForDmm(dmmController.getDmmTokenAddressByDmmTokenId(tokenIds[i]));
+            uint rawDeployedAmount = __state.tokenIdToUnderlyingTokenToWithdrawnAmount[__tokenId][token];
+            rawDeployedAmount = _standardizeTokenAmountForUsdDecimals(
+                rawDeployedAmount,
+                IERC20WithDecimals(token).decimals()
+            );
 
-        AssetIntroducerData.AssetIntroducer storage introducer = __state.idToAssetIntroducer[__tokenId];
-        introducer.isOnSecondaryMarket = true;
-        introducer.dmgLocked = uint96(dmgPurchasePrice);
+            totalDeployedCapital = totalDeployedCapital.add(underlyingTokenValuator.getTokenValue(token, rawDeployedAmount));
+        }
 
-        // Initialize the DMG voting balance to this contract. The call to _transfer moves it to __recipient then.
-        AssetIntroducerVotingLib.moveDelegates(__voteState, address(0), address(this), uint128(dmgPurchasePrice));
-
-        ERC721TokenLib._transfer(__erc721State, __voteState, __recipient, __tokenId, introducer);
-
-        emit AssetIntroducerBought(__tokenId, __buyer, __recipient, dmgPurchasePrice);
+        return totalDeployedCapital;
     }
 
     function getDmgLockedByUser(
@@ -174,45 +161,55 @@ library AssetIntroducerV1UserLib {
 
     function getAssetIntroducerPriceUsdByTokenId(
         AssetIntroducerData.AssetIntroducerStateV1 storage __state,
-        uint __tokenId
+        uint __tokenId,
+        uint __additionalDiscount
     )
     public view returns (uint) {
         AssetIntroducerData.AssetIntroducer memory assetIntroducer = __state.idToAssetIntroducer[__tokenId];
         return getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(
             __state,
             string(abi.encodePacked(assetIntroducer.countryCode)),
-            assetIntroducer.introducerType
+            assetIntroducer.introducerType,
+            __additionalDiscount
         );
     }
 
     function getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(
         AssetIntroducerData.AssetIntroducerStateV1 storage __state,
         string memory __countryCode,
-        AssetIntroducerData.AssetIntroducerType __introducerType
+        AssetIntroducerData.AssetIntroducerType __introducerType,
+        uint __additionalDiscount
     )
     public view returns (uint) {
         bytes3 countryCode = _verifyAndConvertCountryCodeToBytes(__countryCode);
         uint priceUsd = __state.countryCodeToAssetIntroducerTypeToPriceUsd[countryCode][uint8(__introducerType)];
-        return priceUsd.mul(ONE_ETH.sub(getAssetIntroducerDiscount(__state))).div(ONE_ETH);
+        uint discount = getAssetIntroducerDiscount(__state).add(__additionalDiscount);
+        require(
+            discount < ONE_ETH,
+            "AssetIntroducerV1UserLib::getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType: INVALID_DISCOUNT"
+        );
+        return priceUsd.mul(ONE_ETH.sub(discount)).div(ONE_ETH);
     }
 
     function getAssetIntroducerPriceDmgByTokenId(
         AssetIntroducerData.AssetIntroducerStateV1 storage __state,
-        uint __tokenId
+        uint __tokenId,
+        uint __additionalDiscount
     )
     public view returns (uint) {
         uint dmgPriceUsd = IUnderlyingTokenValuator(__state.underlyingTokenValuator).getTokenValue(__state.dmg, 1e18);
-        return getAssetIntroducerPriceUsdByTokenId(__state, __tokenId).mul(1e18).div(dmgPriceUsd);
+        return getAssetIntroducerPriceUsdByTokenId(__state, __tokenId, __additionalDiscount).mul(1e18).div(dmgPriceUsd);
     }
 
     function getAssetIntroducerPriceDmgByCountryCodeAndIntroducerType(
         AssetIntroducerData.AssetIntroducerStateV1 storage __state,
         string memory __countryCode,
-        AssetIntroducerData.AssetIntroducerType __introducerType
+        AssetIntroducerData.AssetIntroducerType __introducerType,
+        uint __additionalDiscount
     )
     public view returns (uint) {
         uint dmgPriceUsd = IUnderlyingTokenValuator(__state.underlyingTokenValuator).getTokenValue(__state.dmg, 1e18);
-        return getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(__state, __countryCode, __introducerType).mul(1e18).div(dmgPriceUsd);
+        return getAssetIntroducerPriceUsdByCountryCodeAndIntroducerType(__state, __countryCode, __introducerType, __additionalDiscount).mul(1e18).div(dmgPriceUsd);
     }
 
     function getAssetIntroducersByCountryCode(
@@ -298,9 +295,14 @@ library AssetIntroducerV1UserLib {
     public {
         require(
             getDeployedCapitalUsdByTokenId(__state, __tokenId) == 0,
-            "AssetIntroducerV1UserLib::deactivateAssetIntroducerByTokenId: MUST_RETURN_CAPITAL"
+            "AssetIntroducerV1UserLib::deactivateAssetIntroducerByTokenId: MUST_DEPOSIT_REMAINING_CAPITAL"
+        );
+        require(
+            __state.idToAssetIntroducer[__tokenId].isAllowedToWithdrawFunds,
+            "AssetIntroducerV1UserLib::deactivateAssetIntroducerByTokenId: ALREADY_DEACTIVATED"
         );
         __state.idToAssetIntroducer[__tokenId].isAllowedToWithdrawFunds = false;
+        emit AssetIntroducerActivationChanged(__tokenId, false);
     }
 
     function withdrawCapitalByTokenIdAndToken(

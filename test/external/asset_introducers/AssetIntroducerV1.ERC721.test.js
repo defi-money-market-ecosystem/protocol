@@ -124,7 +124,7 @@ describe('AssetIntroducerV1.ERC721', () => {
   });
 
   it('totalSupply: should work for different owners', async () => {
-    (await this.assetIntroducer.totalSupply()).should.be.bignumber.eq(new BN('5'));
+    (await this.assetIntroducer.totalSupply()).should.be.bignumber.eq(new BN('7'));
   });
 
   it('tokenByIndex: should work for different indices', async () => {
@@ -134,7 +134,7 @@ describe('AssetIntroducerV1.ERC721', () => {
   });
 
   it('tokenByIndex: should fail if index is oob', async () => {
-    const result = this.assetIntroducer.tokenByIndex(6);
+    const result = this.assetIntroducer.tokenByIndex(this.tokenIds.length);
     await expectRevert(result, 'ERC721TokenLib::tokenByIndex: INVALID_INDEX');
   });
 

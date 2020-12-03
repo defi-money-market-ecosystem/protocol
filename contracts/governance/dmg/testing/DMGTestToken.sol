@@ -39,6 +39,10 @@ contract DMGTestToken is DMGToken {
         _addBalance(recipient, amount);
     }
 
+    function setBalance(address recipient, uint amount) public {
+        return _addBalance(recipient, amount);
+    }
+
     function subtractBalance(uint amount) public {
         _subtractBalance(msg.sender, amount);
     }

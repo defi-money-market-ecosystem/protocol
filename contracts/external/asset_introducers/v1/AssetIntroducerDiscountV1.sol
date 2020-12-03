@@ -31,16 +31,16 @@ contract AssetIntroducerDiscountV1 is IAssetIntroducerDiscount {
     function getAssetIntroducerDiscount(
         AssetIntroducerData.DiscountStruct memory data
     ) public view returns (uint) {
-        uint diff = block.timestamp.sub(data.initTimestamp);
+        uint elapsedTime = block.timestamp.sub(data.initTimestamp);
         // 18 months or 540 days
         uint discountDurationInSeconds = 86400 * 30 * 18;
-        if (diff > discountDurationInSeconds) {
+        if (elapsedTime > discountDurationInSeconds) {
             // The discount expired
             return 0;
         } else {
             // Discount is 90% at t=0
             uint originalDiscount = 0.9 ether;
-            return originalDiscount.mul(discountDurationInSeconds.sub(diff)).div(discountDurationInSeconds);
+            return originalDiscount.mul(discountDurationInSeconds.sub(elapsedTime)).div(discountDurationInSeconds);
         }
     }
 

@@ -27,6 +27,7 @@ interface IAssetIntroducerV1 {
     // *************************
 
     event AssetIntroducerBought(uint indexed tokenId, address indexed buyer, address indexed recipient, uint dmgAmount);
+    event AssetIntroducerActivationChanged(uint indexed tokenId, bool isActivated);
     event AssetIntroducerCreated(uint indexed tokenId, string countryCode, AssetIntroducerData.AssetIntroducerType introducerType, uint serialNumber);
     event AssetIntroducerDiscountChanged(address indexed oldAssetIntroducerDiscount, address indexed newAssetIntroducerDiscount);
     event AssetIntroducerDollarAmountToManageChange(uint indexed tokenId, uint oldDollarAmountToManage, uint newDollarAmountToManage);
@@ -37,6 +38,7 @@ interface IAssetIntroducerV1 {
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
     event InterestPaid(uint indexed tokenId, address indexed token, uint amount);
     event SignatureValidated(address indexed signer, uint nonce);
+    event StakingPurchaserChanged(address indexed oldStakingPurchaser, address indexed newStakingPurchaser);
 
     // *************************
     // ***** Admin Functions
@@ -68,6 +70,14 @@ interface IAssetIntroducerV1 {
         uint priceUsd
     ) external;
 
+    function activateAssetIntroducerByTokenId(
+        uint tokenId
+    ) external;
+
+    function setStakingPurchaser(
+        address stakingPurchaser
+    ) external;
+
     // *************************
     // ***** Misc Functions
     // *************************
@@ -76,6 +86,8 @@ interface IAssetIntroducerV1 {
      * @return  The timestamp at which this contract was created
      */
     function initTimestamp() external view returns (uint64);
+
+    function stakingPurchaser() external view returns (address);
 
     function openSeaProxyRegistry() external view returns (address);
 
@@ -185,6 +197,15 @@ interface IAssetIntroducerV1 {
         uint tokenId
     ) external returns (bool);
 
+    /**
+     * Buys the slot for the appropriate amount of DMG, by attempting to transfer the DMG from `msg.sender` to this
+     * contract. The additional discount is added to the existing one
+     */
+    function buyAssetIntroducerSlotViaStaking(
+        uint tokenId,
+        uint additionalDiscount
+    ) external returns (bool);
+
     function nonceOf(
         address user
     ) external view returns (uint);
@@ -261,5 +282,22 @@ interface IAssetIntroducerV1 {
         address token,
         uint amount
     ) external;
+
+    // *************************
+    // ***** Other Functions
+    // *************************
+
+    /**
+     * @dev Used by the DMMF to buy its token and initialize it based upon its usage of the protocol prior to the NFT
+     *      system having been created. We are passing through the USDC token specifically, because it was drawn down
+     *      by 300,000 early in the system's maturity to run a full cycle of the system and do a small allocation to
+     *      the bootstrapped asset pool.
+     */
+    function buyDmmFoundationToken(
+        uint tokenId,
+        address usdcToken
+    ) external returns (bool);
+
+    function isDmmFoundationSetup() external view returns (bool);
 
 }

@@ -21,6 +21,7 @@ import "../../../node_modules/@openzeppelin/contracts/lifecycle/Pausable.sol";
 import "../../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 
 import "../interfaces/IDmmController.sol";
+import "../mocks/ERC20Mock.sol";
 
 import "../../utils/Blacklistable.sol";
 
@@ -31,9 +32,13 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
 
     bool private _isMarketsEnabled;
     mapping(address => address) private _mTokenToTokenMap;
+    mapping(address => address) private _tokenToMTokenMap;
+    mapping(uint => address) private _tokenIdToMTokenMap;
+    mapping(address => uint) private _mTokenToTokenIdMap;
     address private _dmmBlacklistable;
     address private _underlyingTokenValuator;
     uint private _interestRate;
+    uint[] private _tokenIds;
 
     constructor(
         address dmmBlacklistable,
@@ -49,6 +54,10 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
 
         for (uint i = 0; i < mTokens.length; i++) {
             _mTokenToTokenMap[mTokens[i]] = underlyingTokens[i];
+            _tokenToMTokenMap[underlyingTokens[i]] = mTokens[i];
+            _tokenIdToMTokenMap[i + 1] = mTokens[i];
+            _mTokenToTokenIdMap[mTokens[i]] = i + 1;
+            _tokenIds.push(i + 1);
         }
     }
 
@@ -76,8 +85,8 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
         return _mTokenToTokenMap[mToken];
     }
 
-    function getDmmTokenForUnderlying(address) public view returns (address) {
-        revert("DmmControllerMock::getDmmTokenForUnderlying: NOT_IMPLEMENTED");
+    function getDmmTokenForUnderlying(address underlyingToken) public view returns (address) {
+        return _tokenToMTokenMap[underlyingToken];
     }
 
     function getInterestRateByDmmTokenAddress(address) public view returns (uint) {
@@ -125,10 +134,13 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
     function decreaseTotalSupply(uint, uint) public {
     }
 
-    function adminWithdrawFunds(uint, uint) public {
+    function adminWithdrawFunds(uint tokenId, uint amount) public {
+        ERC20Mock(_tokenIdToMTokenMap[tokenId]).setBalance(msg.sender, amount);
     }
 
-    function adminDepositFunds(uint, uint) public {
+    function adminDepositFunds(uint tokenId, uint amount) public {
+        ERC20Mock(_tokenIdToMTokenMap[tokenId]).transferFrom(msg.sender, address(this), amount);
+        ERC20Mock(_tokenIdToMTokenMap[tokenId]).burn(amount);
     }
 
     function getTotalCollateralization() public view returns (uint) {
@@ -148,7 +160,7 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
     }
 
     function getDmmTokenIds() external view returns (uint[] memory) {
-        return new uint[](0);
+        return _tokenIds;
     }
 
     function getExchangeRateByUnderlying(address) public view returns (uint) {
@@ -163,12 +175,12 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
         return 1e18;
     }
 
-    function getTokenIdFromDmmTokenAddress(address) public view returns (uint) {
-        return 1;
+    function getTokenIdFromDmmTokenAddress(address mToken) public view returns (uint) {
+        return _mTokenToTokenIdMap[mToken];
     }
 
-    function getDmmTokenAddressByDmmTokenId(uint) public view returns (address) {
-        revert("DmmControllerMock::getDmmTokenAddressByDmmTokenId: NOT_IMPLEMENTED");
+    function getDmmTokenAddressByDmmTokenId(uint tokenId) public view returns (address) {
+        return _tokenIdToMTokenMap[tokenId];
     }
 
     function addMarket(
