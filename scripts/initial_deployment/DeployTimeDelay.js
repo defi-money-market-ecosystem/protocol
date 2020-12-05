@@ -23,9 +23,7 @@ const deployTimeDelay = async (loader, environment, deployer) => {
 
   console.log(`Using time delay of ${delay.div(new BN('60')).toString()} minutes`);
 
-  if(environment === 'TESTNET') {
-    delayedOwner = loader.truffle.fromArtifact('DelayedOwner', '0x6C8C010354A010bee5E8b563eC457614B9Db8eFf');
-  } else if (environment !== 'PRODUCTION') {
+  if (environment !== 'PRODUCTION' || process.env.REUSE !== 'true') {
     console.log("Deploying delayed owner...");
     delayedOwner = await deployContract(
       DelayedOwner,
