@@ -39,7 +39,7 @@
     "deploy-mainnet-yield-farming-impl-v1": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_farming/DeployYieldFarmingImplV1.js",
     "deploy-mainnet-yield-farming-impl-v2": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_farming/DeployYieldFarmingImplV2.js",
     "deploy-mainnet-yield-farming-lib-v2": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/deploy_farming/DeployYieldFarmingLibV2.js",
-    "deploy-testnet": "npm run compile && ENVIRONMENT=TESTNET DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 node scripts/initial_deployment/index.js",
+    "deploy-testnet": "npm run compile && ENVIRONMENT=TESTNET DEPLOYER=1234567812345678123456781234567812345678123456781234567812345678 GUARDIAN_ADDRESS=0x8D7f03FdE1A626223364E592740a233b72395235 node scripts/initial_deployment/index.js",
     "encode-abi": "node scripts/EncodeAbi.js",
     "format": "solium -d contracts/",
     "increase-gas-price": "node scripts/increase_tx_speed/IncreaseTxSpeed.js",

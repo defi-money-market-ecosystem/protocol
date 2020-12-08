@@ -2,10 +2,10 @@ const {callContract} = require('../ContractUtils');
 
 const deployOwnershipChanges = async (environment, deployer, guardian) => {
   if (await offChainAssetValuator.owner() !== delayedOwner.address) {
-    await transferOwnership('offChainAssetValuator', offChainAssetValuator, delayedOwner.address, deployer);
+    await transferOwnership('OffChainAssetValuator', offChainAssetValuator, delayedOwner.address, deployer);
   }
   if (await offChainCurrencyValuator.owner() !== delayedOwner.address) {
-    await transferOwnership('offChainCurrencyValuator', offChainCurrencyValuator, delayedOwner.address, deployer);
+    await transferOwnership('OffChainCurrencyValuator', offChainCurrencyValuator, delayedOwner.address, deployer);
   }
   if (environment !== 'LOCAL' && (await dmmEtherFactory.owner() !== dmmController.address)) {
     await transferOwnership('DmmEtherFactory', dmmEtherFactory, dmmController.address, deployer);

@@ -97,6 +97,61 @@ const createProposalForDryRun = async (governorAlpha, safeAddress) => {
   );
 }
 
+const createProposalForAddingUsdk = async (governorAlpha, dmmController, usdkAddress) => {
+  const addMarketSignature = 'addMarket(address,string,string,uint8,uint256,uint256,uint256)';
+
+  if (!dmmController.contract.methods[addMarketSignature]) {
+    throw Error('Invalid addMarketSignature, found ' + addMarketSignature)
+  }
+
+  const addMarketCalldata = '0x' + dmmController.contract.methods.addMarket(
+    usdkAddress,
+    'mUSDK',
+    'DMM: USDK',
+    18,
+    '10000000000', // 0.00000001
+    '10000000000', // 0.00000001
+    '3000000000000000000000000', // $3mm
+  ).encodeABI().substring(10);
+
+  const targets = [dmmController];
+  const values = ['0'];
+  const signatures = [addMarketSignature]
+  const calldatas = [addMarketCalldata];
+  const title = 'Add Support for USDK (mUSDK)';
+  const description = `
+  Proposal Details from the OKEx team:
+  
+  1. Add USDK on DMM protocol
+  2. Support mUSDK on DMM protocol
+
+  
+  We propose that the stablecoin [USDK](https://www.okex.com/buy-usdk) should be added to the DMM protocol with a debt 
+  ceiling of $3,000,000. With USDK's market cap of ~$30,000,000, this leaves the potential max market cap of mUSDK at 
+  about $3,000,000, or 10% of the USDK market cap. We thought this was the best way to manage expectations around both 
+  risk and growth. USDK is a stablecoin issued by PrimeTrust and OKLink. Prime Trust is a technology-driven and 
+  regulated United States trust company. OKLink Fintech Limited is a wholly owned subsidiary of OKG Technology Holdings 
+  Limited (HKEX: 1499).
+  
+  With the ability to easily scale USDK up, USDK holders would be able to earn a stable 6.25% APY on their USD. 
+  Currently, users can easily get USDK on exchanges like OKEx. This will also provide further points of diversification 
+  and liquidity, so the DMM DAO can continue to grow.
+  
+  The passing of this proposal will create the mUSDK token. All necessary logic to trustlessly create the token will 
+  automatically execute if this proposal passes.
+  `;
+
+  await createGovernanceProposal(
+    governorAlpha,
+    targets,
+    values,
+    signatures,
+    calldatas,
+    title,
+    description,
+  );
+}
+
 const createProposalForAddingUsdt = async (governorAlpha, dmmController, usdtAddress, underlyingTokenValuatorImplV4Address) => {
   const addMarketSignature = 'addMarket(address,string,string,uint8,uint256,uint256,uint256)';
   const setUnderlyingTokenValuatorSignature = 'setUnderlyingTokenValuator(address)';
@@ -250,6 +305,7 @@ module.exports = {
   createProposalForYieldFarming,
   createProposalForUpgradingController,
   createProposalForAddingUsdt,
+  createProposalForAddingUsdk,
   createProposalForDryRun,
   createGovernanceProposal,
 };

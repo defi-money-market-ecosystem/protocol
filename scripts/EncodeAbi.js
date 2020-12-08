@@ -4,9 +4,10 @@ const Web3 = require('web3');
 const {setupLoader} = require('@openzeppelin/contract-loader');
 const {BN, MAX_INTEGER} = require('ethereumjs-util');
 const {callContract, deployContract} = require('./ContractUtils');
-const {createProposalForUpgradingController} = require('./encode_abi/EncodeGovernanceProposalAbi')
+const {createProposalForAddingUsdk} = require('./encode_abi/EncodeGovernanceProposalAbi')
 const {createProposalForBurningTokens} = require('./encode_abi/EncodeBurning')
 const {approveGloballyTrustedProxy} = require('./encode_abi/EncodeFarming')
+const {withdrawAllLink} = require('./encode_abi/EncodeOracle')
 
 const web3 = new Web3(provider);
 const loader = setupLoader({provider: web3, defaultGasPrice: 8e9});
@@ -31,6 +32,7 @@ const defaultAddress = '0x0000000000000000000000000000000000000000';
 const daiAddress = "0x6b175474e89094c44da98b954eedeac495271d0f";
 const linkAddress = "0x514910771af9ca656af840dff83e8264ecf986ca";
 const usdcAddress = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+const usdkAddress = "0x1c48f86ae57291F7686349F12601910BD8D470bb";
 const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
 const wethAddress = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
@@ -65,7 +67,7 @@ const usdcTokenId = new BN(2);
 const wethTokenId = new BN(3);
 
 const main = async () => {
-  const account = web3.eth.accounts.privateKeyToAccount('0x' + process.env.DEPLOYER);
+  const account = web3.eth.accounts.privateKeyToAccount('0x' + process.env.DEPLOYER || throwError('INVALID DEPLOYER'));
   web3.eth.accounts.wallet.add(account);
   web3.eth.defaultAccount = account.address;
   const deployerAddress = account.address;
@@ -93,6 +95,7 @@ const main = async () => {
   const dai = await ERC20.at(daiAddress);
   const link = await ERC20.at(linkAddress);
   const usdc = await ERC20.at(usdcAddress);
+  const usdk = await ERC20.at(usdkAddress);
   const usdt = await ERC20.at(usdtAddress);
   const weth = await ERC20.at(wethAddress);
 
@@ -107,8 +110,12 @@ const main = async () => {
   // console.log('--------------------------------------------------')
   // await createProposalForYieldFarming(governorAlpha, gnosisSafeAddress, dmg, deployerAddress, governorTimelockAddress, yieldFarming, rewardAmountWei, targetDurationDays, maxDebtCeiling);
 
-  const burnAmountWei = new BN('21134000000');
-  await createProposalForBurningTokens(governorAlpha, usdc, governorTimelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmg);
+  // await withdrawAllLink(loader, delayedOwner, linkAddress, offChainAssetValuatorProxyAddress, '7500000000000000000');
+
+  await createProposalForAddingUsdk(governorAlpha, dmmController, usdkAddress);
+
+  // const burnAmountWei = new BN('21134000000');
+  // await createProposalForBurningTokens(governorAlpha, usdc, governorTimelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmg);
 
   // await createProposalForUpgradingController(
   //   governorAlpha,
