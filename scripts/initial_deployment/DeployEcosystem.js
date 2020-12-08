@@ -136,6 +136,7 @@ const deployEcosystem = async (loader, environment, deployer, guardian) => {
   } else if (environment !== 'PRODUCTION' || dmmEtherFactoryAddress === null) {
     console.log('Deploying DmmEtherFactory...');
     dmmEtherFactory = await deployContract(DmmEtherFactory, [weth.address], deployer, 6e6);
+    dmmEtherFactory = loader.truffle.fromArtifact('DmmEtherFactory', dmmEtherFactory.address);
   } else {
     dmmEtherFactory = loader.truffle.fromArtifact('DmmEtherFactory', dmmEtherFactoryAddress)
   }
@@ -145,6 +146,7 @@ const deployEcosystem = async (loader, environment, deployer, guardian) => {
   } else if (environment !== 'PRODUCTION' || dmmTokenFactoryAddress === null) {
     console.log('Deploying DmmTokenFactory...');
     dmmTokenFactory = await deployContract(DmmTokenFactory, [], deployer, 6e6);
+    dmmTokenFactory = loader.truffle.fromArtifact('DmmEtherFactory', dmmTokenFactory.address);
   } else {
     dmmTokenFactory = loader.truffle.fromArtifact('DmmTokenFactory', dmmTokenFactoryAddress);
   }
