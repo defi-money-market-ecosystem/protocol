@@ -31,6 +31,7 @@ const deployTimeDelay = async (loader, environment, deployer) => {
       deployer,
       5e6,
     );
+    delayedOwner = loader.truffle.fromArtifact('DelayedOwner', delayedOwner.address);
   } else {
     delayedOwner = loader.truffle.fromArtifact('DelayedOwner', '0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD');
   }
