@@ -40,12 +40,28 @@ contract AssetIntroducerStakingV1 is IAssetIntroducerStakingV1Initializable, IAs
     uint constant internal ONE_ETH = 1 ether;
 
     function initialize(
+        address __owner,
+        address __guardian,
         address __assetIntroducerProxy,
         address __dmgIncentivesPool
     ) public initializer {
+        IOwnableOrGuardian.initialize(__owner, __guardian);
         _assetIntroducerProxy = __assetIntroducerProxy;
         _dmgIncentivesPool = __dmgIncentivesPool;
         _guardCounter = 1;
+    }
+
+    function initializeOwnables(
+        address __owner,
+        address __guardian
+    ) external {
+        require(
+            !_isOwnableInitialized,
+            "AssetIntroducerStakingV1::initializeOwnables: ALREADY_INITIALIZED"
+        );
+        _isOwnableInitialized = true;
+        _transferOwnership(__owner);
+        _transferGuardian(__guardian);
     }
 
     function assetIntroducerProxy() external view returns (address) {

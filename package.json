@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compile": "echo truffle compile",
+    "compile": "truffle compile",
     "compile-with-typechain": "npm run compile && typechain --target truffle-v5 --outDir build/types/truffle-contracts './build/**/*.json'",
     "deploy-local": "npm run compile && ENVIRONMENT=LOCAL PROVIDER=http://localhost:8545 node scripts/initial_deployment/index.js",
     "deploy-mainnet": "npm run compile && ENVIRONMENT=PRODUCTION node scripts/initial_deployment/index.js",

@@ -30,6 +30,7 @@ contract AssetIntroducerStakingData is IOwnableOrGuardian {
     address internal _assetIntroducerProxy;
     address internal _dmgIncentivesPool;
     mapping(address => UserStake[]) internal _userToStakesMap;
+    bool internal _isOwnableInitialized;
 
     enum StakingDuration {
         TWELVE_MONTHS, EIGHTEEN_MONTHS

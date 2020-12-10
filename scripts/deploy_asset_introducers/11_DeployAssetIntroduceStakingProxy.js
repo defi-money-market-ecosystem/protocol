@@ -6,15 +6,14 @@ const {BN} = require('ethereumjs-util');
 const {setupLoader} = require('@openzeppelin/contract-loader');
 const {deployContract, callContract} = require('../ContractUtils');
 const {
-  dmgTokenAddress,
   assetIntroducerProxyAddress,
+  assetIntroducerStakingV1Address,
   dmgIncentivePoolAddress,
+  defaultGasPrice,
 } = require('./index');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 45e9;
 
-const implementationAddress = '';
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
 
@@ -45,7 +44,7 @@ const main = async () => {
   const AssetIntroducerStakingProxy = loader.truffle.fromArtifact('AssetIntroducerStakingProxy');
   await deployContract(
     AssetIntroducerStakingProxy,
-    [implementationAddress, guardian, assetIntroducerProxyAddress, dmgIncentivePoolAddress],
+    [assetIntroducerStakingV1Address, guardian, assetIntroducerProxyAddress, dmgIncentivePoolAddress],
     deployer,
     7e5,
     web3,

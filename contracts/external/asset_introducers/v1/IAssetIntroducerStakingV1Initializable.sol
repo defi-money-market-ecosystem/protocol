@@ -21,8 +21,15 @@ pragma experimental ABIEncoderV2;
 interface IAssetIntroducerStakingV1Initializable {
 
     function initialize(
+        address owner,
+        address guardian,
         address assetIntroducerProxy,
         address dmgIncentivesPool
+    ) external;
+
+    function initializeOwnables(
+        address owner,
+        address guardian
     ) external;
 
 }

@@ -6,13 +6,10 @@ const {BN} = require('ethereumjs-util');
 const {setupLoader} = require('@openzeppelin/contract-loader');
 const {deployContract, callContract} = require('../ContractUtils');
 const {
-  dmgTokenAddress,
-  assetIntroducerProxyAddress,
-  dmgIncentivePoolAddress,
+  defaultGasPrice,
 } = require('./index');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 45e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;
@@ -46,7 +43,7 @@ const main = async () => {
     AssetIntroducerStakingV1,
     [],
     deployer,
-    2.8e6,
+    3.0e6,
     web3,
     defaultGasPrice,
   );

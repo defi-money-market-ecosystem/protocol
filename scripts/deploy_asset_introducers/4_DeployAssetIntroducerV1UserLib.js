@@ -8,10 +8,10 @@ const {deployContract, linkContract} = require('../ContractUtils');
 const {
   assetIntroducerVotingLibAddress,
   erc721TokenLibAddress,
+  defaultGasPrice,
 } = require('./index');
 
 const web3 = new Web3(provider);
-const defaultGasPrice = 45e9;
 
 exports.defaultGasPrice = defaultGasPrice;
 exports.web3 = web3;

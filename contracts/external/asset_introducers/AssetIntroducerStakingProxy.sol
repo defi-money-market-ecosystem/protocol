@@ -30,6 +30,8 @@ contract AssetIntroducerStakingProxy is AdminUpgradeabilityProxy {
     constructor(
         address logic,
         address admin,
+        address owner,
+        address guardian,
         address assetIntroducerProxy,
         address dmgIncentivesPool
     )
@@ -38,7 +40,7 @@ contract AssetIntroducerStakingProxy is AdminUpgradeabilityProxy {
         admin,
         abi.encodePacked(
             IAssetIntroducerStakingV1Initializable(address(0)).initialize.selector,
-            abi.encode(assetIntroducerProxy, dmgIncentivesPool)
+            abi.encode(owner, guardian, assetIntroducerProxy, dmgIncentivesPool)
         )
     )
     public {}
