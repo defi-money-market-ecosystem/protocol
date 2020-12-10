@@ -109,7 +109,7 @@ const doAssetIntroducerV1BeforeEach = async (thisInstance, contracts, web3) => {
   console.log('    AssetIntroducerProxy gas used to deploy: ', (await web3.eth.getTransactionReceipt(thisInstance.proxy.transactionHash)).gasUsed.toString());
   console.log('');
 
-  thisInstance.assetIntroducer = await contracts.fromArtifact('AssetIntroducerV1', thisInstance.proxy.address)
+  thisInstance.assetIntroducer = await contracts.fromArtifact('AssetIntroducerV1', thisInstance.proxy.address);
   thisInstance.contract = thisInstance.assetIntroducer;
 
   await thisInstance.assetIntroducer.transferOwnership(thisInstance.owner, {from: thisInstance.guardian});
@@ -117,6 +117,8 @@ const doAssetIntroducerV1BeforeEach = async (thisInstance, contracts, web3) => {
 
 const PRINCIPAL = 0;
 const AFFILIATE = 1;
+
+const ONE_ETH = new BN('1000000000000000000');
 
 const PRICE_USA_AFFILIATE = '150000000000000000000000'; // $150,000
 const PRICE_USA_PRINCIPAL = '250000000000000000000000'; // $250,000
@@ -126,6 +128,9 @@ const PRICE_CHN_PRINCIPAL = '208000000000000000000000'; // $208,000
 
 const PRICE_IND_AFFILIATE = '100000000000000000000000'; // $100,000
 const PRICE_IND_PRINCIPAL = '166000000000000000000000'; // $166,000
+
+const TWELVE_MONTHS_ENUM = '0';
+const EIGHTEEN_MONTHS_ENUM = '1';
 
 const createNFTs = async (
   thisInstance,
@@ -156,6 +161,8 @@ const createNFTs = async (
   await thisInstance.dmgToken.setBalance(thisInstance.user2, thisInstance.defaultBalance);
   await thisInstance.dmgToken.setBalance(thisInstance.wallet.address, thisInstance.defaultBalance);
 
+  await thisInstance.underlyingToken.setBalance(thisInstance.user, thisInstance.defaultBalance);
+
   await thisInstance.dmgToken.approve(thisInstance.assetIntroducer.address, constants.MAX_UINT256, {from: thisInstance.user});
   await thisInstance.dmgToken.approve(thisInstance.assetIntroducer.address, constants.MAX_UINT256, {from: thisInstance.user2});
   await send.ether(thisInstance.user, thisInstance.wallet.address, ether('1'));
@@ -178,7 +185,7 @@ const createNFTs = async (
 
 };
 
-const doDmgIncentivePoolBeforeEach = async (thisInstance, contracts, web3, provider) => {
+const doDmgIncentivePoolBeforeEach = async (thisInstance, contracts, web3) => {
   const DMGIncentivePool = contracts.fromArtifact('DMGIncentivePool');
   const DMGTokenMock = contracts.fromArtifact('DMGTestToken');
 
@@ -205,9 +212,29 @@ const doAssetIntroducerV1BuyerRouterBeforeEach = async (thisInstance, contracts,
   await thisInstance.incentivePool.enableSpender(thisInstance.dmgToken.address, thisInstance.buyerRouter.address, {from: thisInstance.owner});
 }
 
+const doAssetIntroducerStakingV1BeforeEach = async (thisInstance, contracts, web3) => {
+  const AssetIntroducerStakingV1 = contracts.fromArtifact('AssetIntroducerStakingV1');
+  const AssetIntroducerStakingProxy = contracts.fromArtifact('AssetIntroducerStakingProxy');
+
+  const implementation = await AssetIntroducerStakingV1.new();
+
+  console.log('');
+  console.log('    AssetIntroducerStakingV1 gas used to deploy: ', (await web3.eth.getTransactionReceipt(implementation.transactionHash)).gasUsed.toString());
+
+  thisInstance.assetIntroducerStakingProxy = await AssetIntroducerStakingProxy.new(implementation.address, thisInstance.owner, thisInstance.assetIntroducer.address, thisInstance.incentivePool.address);
+  thisInstance.assetIntroducerStaking = contracts.fromArtifact('AssetIntroducerStakingV1', thisInstance.assetIntroducerStakingProxy.address);
+
+  console.log('');
+  console.log('    AssetIntroducerStakingProxy gas used to deploy: ', (await web3.eth.getTransactionReceipt(thisInstance.assetIntroducerStakingProxy.transactionHash)).gasUsed.toString());
+
+  await thisInstance.incentivePool.enableSpender(thisInstance.dmgToken.address, thisInstance.assetIntroducerStaking.address, {from: thisInstance.owner});
+  await thisInstance.assetIntroducer.setStakingPurchaser(thisInstance.assetIntroducerStaking.address, {from: thisInstance.owner});
+}
+
 module.exports = {
   doAssetIntroducerV1BeforeEach,
   doAssetIntroducerV1BuyerRouterBeforeEach,
+  doAssetIntroducerStakingV1BeforeEach,
   doDmgIncentivePoolBeforeEach,
   createNFTs,
   PRICE_USA_PRINCIPAL,
@@ -218,4 +245,7 @@ module.exports = {
   PRICE_IND_AFFILIATE,
   AFFILIATE,
   PRINCIPAL,
+  ONE_ETH,
+  TWELVE_MONTHS_ENUM,
+  EIGHTEEN_MONTHS_ENUM,
 }
