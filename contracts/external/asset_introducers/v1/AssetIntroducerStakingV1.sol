@@ -209,30 +209,28 @@ contract AssetIntroducerStakingV1 is IAssetIntroducerStakingV1Initializable, IAs
     function getTotalDiscountByStakingDuration(
         StakingDuration duration
     ) public view returns (uint) {
+        uint baseDiscount;
+        uint originalDiscount;
+        // The discount expired
+        if (duration == StakingDuration.TWELVE_MONTHS) {
+            // Discount is 95% at t=0 and decays to 25% at t=18_months; delta of 70%
+            originalDiscount = 0.7 ether;
+            baseDiscount = 0.25 ether;
+        } else if (duration == StakingDuration.EIGHTEEN_MONTHS) {
+            // Discount is 99% at t=0 and decays to 50% at t=18_months; delta of 49%
+            originalDiscount = 0.49 ether;
+            baseDiscount = 0.50 ether;
+        } else {
+            revert("AssetIntroducerStakingV1::getTotalDiscountByStakingDuration: INVALID_DURATION");
+        }
+
         uint elapsedTime = block.timestamp.sub(IAssetIntroducerV1(_assetIntroducerProxy).initTimestamp());
         // 18 months or 540 days
         uint discountDurationInSeconds = 86400 * 30 * 18;
         if (elapsedTime > discountDurationInSeconds) {
-            // The discount expired
-            if (duration == StakingDuration.TWELVE_MONTHS) {
-                // Discount is 95% at t=0 and decays to 25% at t=18_months
-                return 0.25 ether;
-            } else if (duration == StakingDuration.EIGHTEEN_MONTHS) {
-                // Discount is 99% at t=0 and decays to 50% at t=18_months
-                return 0.50 ether;
-            } else {
-                revert("AssetIntroducerStakingV1::getTotalDiscountByStakingDuration: INVALID_DURATION");
-            }
-        } else if (duration == StakingDuration.TWELVE_MONTHS) {
-            // Discount is 95% at t=0 and decays to 25% at t=18_months
-            uint originalDiscount = 0.7 ether;
-            return (originalDiscount.mul(discountDurationInSeconds.sub(elapsedTime)).div(discountDurationInSeconds)).add(0.25 ether);
-        } else if (duration == StakingDuration.EIGHTEEN_MONTHS) {
-            // Discount is 99% at t=0 and decays to 50% at t=18_months
-            uint originalDiscount = 0.49 ether;
-            return (originalDiscount.mul(discountDurationInSeconds.sub(elapsedTime)).div(discountDurationInSeconds)).add(0.50 ether);
+            return baseDiscount;
         } else {
-            revert("AssetIntroducerStakingV1::getTotalDiscountByStakingDuration: INVALID_DURATION");
+            return (originalDiscount.mul(discountDurationInSeconds.sub(elapsedTime)).div(discountDurationInSeconds)).add(baseDiscount);
         }
     }
 
