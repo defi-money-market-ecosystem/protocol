@@ -135,3 +135,24 @@ function `setBalance`, passing in your address as the recipient. The `amount` mu
 the correct number of zeroes to account for decimal padding. Meaning, `1000000` is `1.0` for USDC and
 `1000000000000000000` is `1.0` for DAI. See the image below for a screenshot of Ropsten's Etherscan token page:
 ![](./guides/set-balance-image.png)
+
+
+#### Rinkeby Testnet
+
+| **Contract Name**              | **Contract Address**                       | Link                                                                                         |
+| ------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| DAI                            | 0x3D6471999FecDA9d997abc68c4b13E745E4e05C9 | [Etherscan](https://rinkeby.etherscan.io/address/0x3D6471999FecDA9d997abc68c4b13E745E4e05C9) |
+| USDC                           | 0xBD7f11536A14D73A9757c26014B6974aEF96fA4f | [Etherscan](https://rinkeby.etherscan.io/address/0xBD7f11536A14D73A9757c26014B6974aEF96fA4f) |
+| WETH                           | 0x23449A72c0a4FB056C1219dDB6E65c9d453B95AB | [Etherscan](https://rinkeby.etherscan.io/address/0x23449A72c0a4FB056C1219dDB6E65c9d453B95AB) |
+| Delayed Owner                  | 0x8c29a5F50b0f8302da9a0011769B594aF7D71578 | [Etherscan](https://rinkeby.etherscan.io/address/0x8c29a5F50b0f8302da9a0011769B594aF7D71578) |
+| DMM Blacklist                  | 0x226570bF609D97d8744cBcC81434E9a3F4266d62 | [Etherscan](https://rinkeby.etherscan.io/address/0x226570bF609D97d8744cBcC81434E9a3F4266d62) |
+| DMM Controller                 | 0x35FCe402eF3788eC6534352D9976212F4Bf66A21 | [Etherscan](https://rinkeby.etherscan.io/address/0x35FCe402eF3788eC6534352D9976212F4Bf66A21) |
+| DMM Ether Factory              | 0x8eDF073a9FfFB1156fe5923F7D31Ca8C4cb6E866 | [Etherscan](https://rinkeby.etherscan.io/address/0x8eDF073a9FfFB1156fe5923F7D31Ca8C4cb6E866) |
+| DMM Token Factory              | 0xB94F9E21315cce7cFb2aE772De1B056728e26A20 | [Etherscan](https://rinkeby.etherscan.io/address/0xB94F9E21315cce7cFb2aE772De1B056728e26A20) |
+| DMM: DAI                       | 0x2e15d1ac4c6e8b5c8dad543a98abbf058838d233 | [Etherscan](https://rinkeby.etherscan.io/address/0x2e15d1ac4c6e8b5c8dad543a98abbf058838d233) |
+| DMM: ETH                       | 0xf81766c9b2750f31d79fe2a41b4a189f253c7204 | [Etherscan](https://rinkeby.etherscan.io/address/0xf81766c9b2750f31d79fe2a41b4a189f253c7204) |
+| DMM: USDC                      | 0xd7a3d3e09c48dd0c15353728084ceab9ae4463fb | [Etherscan](https://rinkeby.etherscan.io/address/0xd7a3d3e09c48dd0c15353728084ceab9ae4463fb) |
+| Interest Rate Setter V1        | 0x8a962dA32a00e109bfd948Fd014443862467B6B9 | [Etherscan](https://rinkeby.etherscan.io/address/0x8a962dA32a00e109bfd948Fd014443862467B6B9) |
+| Off-Chain Assets Valuator V2   | 0x418391cB2814842a7A7011bB48f46c5B11A2b471 | [Etherscan](https://rinkeby.etherscan.io/address/0x418391cB2814842a7A7011bB48f46c5B11A2b471) |
+| Off-Chain Currency Valuator V2 | 0xBFBf7d0beaE4f9A66aBf8455af29a65E12295153 | [Etherscan](https://rinkeby.etherscan.io/address/0xBFBf7d0beaE4f9A66aBf8455af29a65E12295153) |
+| Underlying Token Valuator V5   | 0x161ae3b0994ef1DE943500bf324E6875d19c7F2D | [Etherscan](https://rinkeby.etherscan.io/address/0x161ae3b0994ef1DE943500bf324E6875d19c7F2D) |
