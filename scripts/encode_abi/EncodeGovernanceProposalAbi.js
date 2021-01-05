@@ -270,7 +270,7 @@ const createGovernanceProposal = async (governorAlpha, targets, values, signatur
     }
   })
 
-  calldatas.map((calldata, index) => {
+  calldatas = calldatas.map((_, index) => {
     const target = targets[index]
     if (target.contract) {
       if (!calldatas[index].startsWith('0x')) {
@@ -280,7 +280,7 @@ const createGovernanceProposal = async (governorAlpha, targets, values, signatur
 
       if (target.contract.methods[calldatas[index].substring(0, 10).toLowerCase()]) {
         console.warn(`Removing method ID from at index ${index} and signature ${signatures[index]}`)
-        return calldatas[index].substring(10);
+        return `0x${calldatas[index].substring(10)}`;
       } else {
         return calldatas[index];
       }
@@ -299,6 +299,10 @@ const createGovernanceProposal = async (governorAlpha, targets, values, signatur
   ).encodeABI();
 
   console.log(`createGovernanceProposal at ${governorAlpha.address} `, actualAbi);
+
+  // const types = ['address[]', 'uint[]', 'string[]', 'bytes[]', 'string', 'string'];
+  // const decoded = new Web3(process.env.PROVIDER).eth.abi.decodeParameters(types, actualAbi);
+  // console.log('decoded ', decoded);
 };
 
 module.exports = {

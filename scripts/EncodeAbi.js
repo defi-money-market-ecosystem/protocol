@@ -112,10 +112,10 @@ const main = async () => {
 
   // await withdrawAllLink(loader, delayedOwner, linkAddress, offChainAssetValuatorProxyAddress, '7500000000000000000');
 
-  await createProposalForAddingUsdk(governorAlpha, dmmController, usdkAddress);
+  // await createProposalForAddingUsdk(governorAlpha, dmmController, usdkAddress);
 
-  // const burnAmountWei = new BN('21134000000');
-  // await createProposalForBurningTokens(governorAlpha, usdc, governorTimelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmg);
+  const burnAmountWei = new BN('33168000000');
+  await createProposalForBurningTokens(governorAlpha, usdc, governorTimelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmg);
 
   // await createProposalForUpgradingController(
   //   governorAlpha,

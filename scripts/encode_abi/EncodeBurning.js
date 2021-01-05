@@ -31,10 +31,10 @@ const createProposalForBurningTokens = async (
     erc20Token.address.toLowerCase() === wethAddress.toLowerCase() ? [wethAddress, dmgToken.address] : [erc20Token.address, wethAddress, dmgToken.address],
   ).encodeABI()
 
-  const title = 'Token Burn #1: March 2020 - August 2020'
+  const title = 'Token Burn #3: November 2020 - December 2020'
   const description = `
   As explained in our [first token burn](https://dao.defimoneymarket.com/governance/proposals/7), the DMM DAO has been 
-  running at a surplus since its inception in March of 2020. We are proposinng our second token burn to the community, 
+  running at a surplus since its inception in March of 2020. We are proposinng our third token burn to the community, 
   which will buy DMG from Uniswap using USDC. Then, the purchased DMG will be burned by invoking DMG's native \`burn\` 
   function. The surplus at which the DAO has been running is 10.99% for each month, meaning there is a 4.74% overage. A 
   token burn would mean that this excess amount of interest would be used to purchase and burn DMG tokens, which 
@@ -43,12 +43,12 @@ const createProposalForBurningTokens = async (
   
   The following table, shown below, showcases the estimated value of mTokens in circulation for the months of September 
   and October. Then, the amount burned is calculated by multiplying it by the monthly amortization of the burn 
-  percentage (which equals 4.74% / 12). The total dollar amount of DMG to be burned is $21,134.
+  percentage (which equals 4.74% / 12). The total dollar amount of DMG to be burned is $33,168.
   
   | Month      | Estimated AUM in all mTokens &nbsp;&nbsp;&nbsp; | Burn Amount   |
   |:---------- |:----------------------------------------------- |------------:  |
-  | September  | $2,316,409                                      | $9,149        |
-  | October    | $3,033,987                                      | $11,985       |
+  | November   | $3,979,994                                      | $15,721       |
+  | December   | $4,416,887                                      | $17,447       |
   
   `;
 
