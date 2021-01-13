@@ -97,6 +97,57 @@ const createProposalForDryRun = async (governorAlpha, safeAddress) => {
   );
 }
 
+const createProposalForAddingWbtc = async (governorAlpha, dmmController, wbtcAddress) => {
+  const addMarketSignature = 'addMarket(address,string,string,uint8,uint256,uint256,uint256)';
+
+  if (!dmmController.contract.methods[addMarketSignature]) {
+    throw Error('Invalid addMarketSignature, found ' + addMarketSignature)
+  }
+
+  const addMarketCalldata = '0x' + dmmController.contract.methods.addMarket(
+    wbtcAddress,
+    'mWBTC',
+    'DMM: WBTC',
+    8,
+    '1', // 0.00000001
+    '1', // 0.00000001
+    '2500000000', // 25 WBTC
+  ).encodeABI().substring(10);
+
+  const targets = [dmmController];
+  const values = ['0'];
+  const signatures = [addMarketSignature]
+  const calldatas = [addMarketCalldata];
+  const title = 'Add Support for WBTC (mWBTC)';
+  const description = `
+  The DMM Foundation would like to propose the addition of [WBTC](https://wbtc.network/) to the DMM Ecosystem with a
+  debt ceiling of 25 WBTC. Using BTC's recent all-time-highs, this would equal roughly $1,000,000. While we think the 
+  usage of WBTC may attempt to exceed the debt ceiling in the short-term, a fundamental goal that the DMM Foundation is 
+  actively pursuing is putting in place an acceptable hedge that would allow asset introducers to draw down WBTC and 
+  fund the acquisition of more real-world assets to accrue yield for the system.
+  
+  WBTC is an ERC20 token that is 1:1 backed by BTC from the Bitcoin Blockchain. Each BTC that backs the system is held 
+  in a reserve by [BitGo](https://www.bitgo.com/) - an industry-leading custodian that has been working with the WBTC
+  project since its launch in early 2019. With the addition of WBTC to the DMM Ecosystem, users are able to maintain 
+  long price exposure to BTC while also accruing a steady 6.25% yield. WBTC is an appealing asset with which to work, 
+  because of its growth and network effects. In about 2 years since its creation, its market cap has grown to exceed 
+  $3,800,000,000 (at the time of writing). 
+  
+  The passing of this proposal will create the mWBTC token. All necessary logic to trustlessly create the token will 
+  automatically execute if this proposal passes.
+  `;
+
+  await createGovernanceProposal(
+    governorAlpha,
+    targets,
+    values,
+    signatures,
+    calldatas,
+    title,
+    description,
+  );
+}
+
 const createProposalForAddingUsdk = async (governorAlpha, dmmController, usdkAddress) => {
   const addMarketSignature = 'addMarket(address,string,string,uint8,uint256,uint256,uint256)';
 
@@ -308,8 +359,9 @@ const createGovernanceProposal = async (governorAlpha, targets, values, signatur
 module.exports = {
   createProposalForYieldFarming,
   createProposalForUpgradingController,
-  createProposalForAddingUsdt,
+  createProposalForAddingWbtc,
   createProposalForAddingUsdk,
+  createProposalForAddingUsdt,
   createProposalForDryRun,
   createGovernanceProposal,
 };

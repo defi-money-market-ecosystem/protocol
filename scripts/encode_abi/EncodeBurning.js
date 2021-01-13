@@ -41,9 +41,9 @@ const createProposalForBurningTokens = async (
   rewards all DMG token holders by making the token deflationary. In turn, this would lower the circulating supply and 
   increase token demand, creating an incentive for people to HODL DMG tokens.
   
-  The following table, shown below, showcases the estimated value of mTokens in circulation for the months of September 
-  and October. Then, the amount burned is calculated by multiplying it by the monthly amortization of the burn 
-  percentage (which equals 4.74% / 12). The total dollar amount of DMG to be burned is $33,168.
+  The following table, shown below, showcases the estimated value of mTokens in circulation for the corresponding 
+  months. Then, the amount burned is calculated by multiplying it by the monthly amortization of the burn percentage 
+  (which equals 4.74% / 12). The total dollar amount of DMG to be burned is $33,168.
   
   | Month      | Estimated AUM in all mTokens &nbsp;&nbsp;&nbsp; | Burn Amount   |
   |:---------- |:----------------------------------------------- |------------:  |

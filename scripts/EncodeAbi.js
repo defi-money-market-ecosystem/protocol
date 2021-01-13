@@ -4,7 +4,7 @@ const Web3 = require('web3');
 const {setupLoader} = require('@openzeppelin/contract-loader');
 const {BN, MAX_INTEGER} = require('ethereumjs-util');
 const {callContract, deployContract} = require('./ContractUtils');
-const {createProposalForAddingUsdk} = require('./encode_abi/EncodeGovernanceProposalAbi')
+const {createProposalForAddingWbtc} = require('./encode_abi/EncodeGovernanceProposalAbi')
 const {createProposalForBurningTokens} = require('./encode_abi/EncodeBurning')
 const {approveGloballyTrustedProxy} = require('./encode_abi/EncodeFarming')
 const {withdrawAllLink} = require('./encode_abi/EncodeOracle')
@@ -34,6 +34,7 @@ const linkAddress = "0x514910771af9ca656af840dff83e8264ecf986ca";
 const usdcAddress = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
 const usdkAddress = "0x1c48f86ae57291F7686349F12601910BD8D470bb";
 const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+const wbtcAddress = "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599";
 const wethAddress = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
 const mDaiAddress = "0x06301057D77D54B6e14c7FafFB11Ffc7Cab4eaa7";
@@ -112,10 +113,10 @@ const main = async () => {
 
   // await withdrawAllLink(loader, delayedOwner, linkAddress, offChainAssetValuatorProxyAddress, '7500000000000000000');
 
-  // await createProposalForAddingUsdk(governorAlpha, dmmController, usdkAddress);
+  // await createProposalForAddingWbtc(governorAlpha, dmmController, wbtcAddress);
 
-  const burnAmountWei = new BN('33168000000');
-  await createProposalForBurningTokens(governorAlpha, usdc, governorTimelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmg);
+  // const burnAmountWei = new BN('33168000000');
+  // await createProposalForBurningTokens(governorAlpha, usdc, governorTimelockAddress, deployerAddress, burnAmountWei, dmgBurner, wethAddress, dmg);
 
   // await createProposalForUpgradingController(
   //   governorAlpha,
