@@ -317,7 +317,7 @@ const createGovernanceProposal = async (governorAlpha, targets, values, signatur
         throw Error(`Cannot find method for contract index=${index} signature=${signatures[index]}`)
       }
     } else {
-      throw `Could not verify ${target} at index ${index}`
+      throw Error(`Could not verify ${target} at index ${index}`)
     }
   })
 

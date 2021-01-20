@@ -1,16 +1,17 @@
-const {throwError} = require('./GeneralUtils');
+const { throwError } = require('./GeneralUtils');
 const provider = process.env.PROVIDER ? process.env.PROVIDER : throwError("NO PROVIDER GIVEN");
 const Web3 = require('web3');
-const {setupLoader} = require('@openzeppelin/contract-loader');
-const {BN, MAX_INTEGER} = require('ethereumjs-util');
-const {callContract, deployContract} = require('./ContractUtils');
-const {createProposalForAddingWbtc} = require('./encode_abi/EncodeGovernanceProposalAbi')
-const {createProposalForBurningTokens} = require('./encode_abi/EncodeBurning')
-const {approveGloballyTrustedProxy} = require('./encode_abi/EncodeFarming')
-const {withdrawAllLink} = require('./encode_abi/EncodeOracle')
+const { setupLoader } = require('@openzeppelin/contract-loader');
+const { BN, MAX_INTEGER } = require('ethereumjs-util');
+const { callContract, deployContract } = require('./ContractUtils');
+const { createProposalForAddingWbtc } = require('./encode_abi/EncodeGovernanceProposalAbi');
+const { createProposalForBurningTokens } = require('./encode_abi/EncodeBurning');
+const { approveGloballyTrustedProxy } = require('./encode_abi/EncodeFarming');
+const { withdrawAllLink } = require('./encode_abi/EncodeOracle');
+const { upgradeGovernorAndControllerContract } = require('./encode_abi/EncodeGovernorUpgradeAbi');
 
 const web3 = new Web3(provider);
-const loader = setupLoader({provider: web3, defaultGasPrice: 8e9});
+const loader = setupLoader({ provider: web3, defaultGasPrice: 8e9 });
 const defaultGasPrice = 6e9;
 
 exports.defaultGasPrice = defaultGasPrice;
@@ -39,22 +40,27 @@ const wethAddress = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
 const mDaiAddress = "0x06301057D77D54B6e14c7FafFB11Ffc7Cab4eaa7";
 const mUsdcAddress = "0x3564ad35b9E95340E5Ace2D6251dbfC76098669B";
+const mUsdkAddress = "0xD1670Cb7c01987a8DdD6976C4894463460Eeb8a2";
 const mUsdtAddress = "0x84d4AfE150dA7Ea1165B9e45Ff8Ee4798d7C38DA";
+const mWbtcAddress = "0xE83083e32fbD8366729DFf5440fDa3A18e10D73E";
 const mWethAddress = "0xdF9307DFf0a1B57660F60f9457D32027a55ca0B2";
 
+const collateralizationCalculatorAddress = "0x7aB8CFF6bFFC83fBd4AC70BA7e00d454421eeA39";
 const delayedOwnerAddress = "0x9E97Ee8631dA9e96bC36a6bF39d332C38d9834DD";
 const dmgTokenAddress = "0xEd91879919B71bB6905f23af0A68d231EcF87b14";
-const yieldFarmingAddress = "0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975";
-const yieldFarmingRouterAddress = "0x8209eD0259F99Abd593E8cd26e6a14f224C6cccA";
+const dmgBurnerAddress = "0x51c9a18c87c89A34e1f3fE020b8f406F1300E909";
 const dmmControllerAddress = "0xB07EB3426d742cda9120931e7028d54F9dF34A3e";
+const dmmControllerV2Address = "0xcC3aB458b20a0115BC7484C0fD53C7962B367955";
 const gnosisSafeAddress = "0xdd7680B6B2EeC193ce3ECe7129708EE12531BCcF";
 const governorAlphaAddress = "0x67Cb2868Ebf965b66d3dC81D0aDd6fd849BCF6D5"
+const governorBetaAddress = "0x4c808e3C011514d5016536aF11218eEc537eB6F5"
 const governorTimelockAddress = "0xE679eBf544A6BE5Cb8747012Ea6B08F04975D264"
 const offChainAssetValuatorImplV1Address = "0xAcE9112EfE78D9E5018fd12164D30366cA629Ab4";
 const offChainAssetValuatorProxyAddress = "0x4F9c3332D352F1ef22F010ba93A9653261e1634b";
 const offChainCurrencyValuatorProxyAddress = "0x826d758AF2FeD387ac15843327e143b2CAfE9047";
 const underlyingTokenValuatorProxy = "0xaC7e5e3b589D55a43D62b90c6b4C4ef28Ea35573";
-const dmgBurnerAddress = "0x51c9a18c87c89A34e1f3fE020b8f406F1300E909";
+const yieldFarmingAddress = "0x502e90e092Cd08e6630e8E1cE426fC6d8ADb3975";
+const yieldFarmingRouterAddress = "0x8209eD0259F99Abd593E8cd26e6a14f224C6cccA";
 
 const jobId = '0x2017ac2b3b5b37d2fbb5fef6193d6eef0cb50a4c6b3796c5b5c44bd1cca83aa0';
 const oracleAddress = '0x59bbE8CFC79c76857fE0eC27e67E4957370d72B5';
@@ -74,21 +80,29 @@ const main = async () => {
   const deployerAddress = account.address;
   const DelayedOwner = loader.truffle.fromArtifact('DelayedOwner');
 
+  const CollateralizationCalculatorImplV1 = loader.truffle.fromArtifact('CollateralizationCalculatorImplV1');
+  const DMGBurnerV1 = loader.truffle.fromArtifact('DMGBurnerV1');
   const DMGToken = loader.truffle.fromArtifact('DMGToken');
   const DMGYieldFarmingV1 = loader.truffle.fromArtifact('DMGYieldFarmingV1');
   const DmmController = loader.truffle.fromArtifact('DmmController');
+  const DmmControllerV2 = loader.truffle.fromArtifact('DmmControllerV2');
   const DmmTokenFactory = loader.truffle.fromArtifact('DmmTokenFactory');
   const DmmEtherFactory = loader.truffle.fromArtifact('DmmEtherFactory');
   const DmmToken = loader.truffle.fromArtifact('DmmToken');
   const ERC20 = loader.truffle.fromArtifact('ERC20');
   const GovernorAlpha = loader.truffle.fromArtifact('GovernorAlpha');
+  const GovernorBeta = loader.truffle.fromArtifact('GovernorAlpha');
   const OffChainAssetValuatorImplV1 = loader.truffle.fromArtifact('OffChainAssetValuatorImplV1');
-  const DMGBurnerV1 = loader.truffle.fromArtifact('DMGBurnerV1');
+  const Timelock = loader.truffle.fromArtifact('Timelock');
 
+  const collateralizationCalculator = await CollateralizationCalculatorImplV1.at(collateralizationCalculatorAddress);
   const dmg = await DMGToken.at(dmgTokenAddress);
   const delayedOwner = await DelayedOwner.at(delayedOwnerAddress);
-  const dmmController = await DmmController.at(dmmControllerAddress);
+  const dmmControllerV1 = await DmmController.at(dmmControllerAddress);
+  const dmmControllerV2 = await DmmControllerV2.at(dmmControllerV2Address);
   const governorAlpha = await GovernorAlpha.at(governorAlphaAddress);
+  const governorBeta = await GovernorBeta.at(governorBetaAddress);
+  const governorTimelock = await Timelock.at(governorTimelockAddress);
   const offChainAssetValuatorImplV1 = await OffChainAssetValuatorImplV1.at(offChainAssetValuatorImplV1Address);
   const yieldFarming = await DMGYieldFarmingV1.at(yieldFarmingAddress);
   const dmgBurner = await DMGBurnerV1.at(dmgBurnerAddress);
@@ -125,6 +139,33 @@ const main = async () => {
   //   offChainCurrencyValuatorProxyAddress,
   //   underlyingTokenValuatorProxy,
   // );
+
+  const dmmTokens = [
+    mUsdtAddress,
+    mDaiAddress,
+    mUsdcAddress,
+    mWethAddress,
+    mUsdkAddress,
+    mWbtcAddress,
+  ];
+  const underlyingTokens = [
+    usdtAddress,
+    daiAddress,
+    usdcAddress,
+    wethAddress,
+    usdkAddress,
+    wbtcAddress,
+  ];
+  await upgradeGovernorAndControllerContract(
+    governorAlpha,
+    governorBeta,
+    dmmControllerV1,
+    dmmControllerV2,
+    collateralizationCalculator,
+    dmmTokens,
+    underlyingTokens,
+    governorTimelock,
+  );
 
   // const _1000_DAI = new BN('1000000000000000000000');
   // const usdcAmount = new BN('5929500000');

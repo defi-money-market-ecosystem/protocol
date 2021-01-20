@@ -27,4 +27,6 @@ interface IOffChainCurrencyValuatorV2 {
         address guardian
     ) external;
 
+    function getOffChainCurrenciesValue() external view returns (uint);
+
 }

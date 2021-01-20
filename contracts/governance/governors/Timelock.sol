@@ -42,7 +42,9 @@ pragma experimental ABIEncoderV2;
 
 import "../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 
-contract Timelock {
+import "./ITimelockInterface.sol";
+
+contract Timelock is ITimelockInterface {
     using SafeMath for uint;
 
     event NewAdmin(address indexed newAdmin);

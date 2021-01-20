@@ -24,7 +24,7 @@ import "./ICollateralizationCalculator.sol";
 import "./IOffChainAssetValuatorV2.sol";
 import "./IOffChainCurrencyValuatorV2.sol";
 
-interface IDmmController {
+interface IDmmControllerV2 {
 
     event TotalSupplyIncreased(uint oldTotalSupply, uint newTotalSupply);
     event TotalSupplyDecreased(uint oldTotalSupply, uint newTotalSupply);
@@ -33,8 +33,10 @@ interface IDmmController {
     event AdminWithdraw(address indexed receiver, uint amount);
 
     function COLLATERALIZATION_BASE_RATE() external pure returns (uint);
-    function MIN_RESERVE_RATIO_BASE_RATE() external pure returns (uint);
+
     function INTEREST_RATE_BASE_RATE() external pure returns (uint);
+
+    function guardian() external view returns (address);
 
     /**
      * @dev Creates a new mToken using the provided data.
@@ -69,6 +71,17 @@ interface IDmmController {
     ) external;
 
     /**
+     * @dev Creates a new mToken using the already-existing tokens.
+     *
+     * @param dmmTokens         The tokens that should be added to this controller.
+     * @param underlyingTokens  The tokens that should be wrapped to create a new DMMA.
+     */
+    function addMarketFromExistingDmmTokens(
+        address[] calldata dmmTokens,
+        address[] calldata underlyingTokens
+    ) external;
+
+    /**
      * @param newController The new controller who should receive ownership of the provided DMM token IDs.
      */
     function transferOwnershipToNewController(
@@ -96,6 +109,8 @@ interface IDmmController {
      * @param newGuardian   The new address that will serve as the guardian for this controller.
      */
     function setGuardian(address newGuardian) external;
+
+    function setCollateralizationCalculator(address newCollateralizationCalculator) external;
 
     /**
      * @dev Sets a new contract that implements the `DmmTokenFactory` interface.
@@ -290,5 +305,7 @@ interface IDmmController {
     function offChainAssetsValuator() external view returns (IOffChainAssetValuatorV2);
 
     function offChainCurrencyValuator() external view returns (IOffChainCurrencyValuatorV2);
+
+    function collateralizationCalculator() external view returns (ICollateralizationCalculator);
 
 }

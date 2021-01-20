@@ -32,28 +32,25 @@ contract GovernorBeta is GovernorAlpha {
 
     modifier onlyTrustedOperator(address voter) {
         require(
+            msg.sender == voter ||
             _globalOperatorToIsSupportedMap[msg.sender] ||
-            _voterToLocalOperatorToIsSupportedMap[voter][msg.sender] ||
-            msg.sender == voter,
+            _voterToLocalOperatorToIsSupportedMap[voter][msg.sender],
             "GovernorBeta: UNAUTHORIZED_OPERATOR"
         );
 
         _;
     }
 
-    /// A wrapped variant of DMG for when the user stakes DMG in an official contract and still needs access to their
-    /// ballots
-    IDMGToken public wDmg;
     IAssetIntroducerV1 public assetIntroducerProxy;
     mapping(address => mapping(address => bool)) internal _voterToLocalOperatorToIsSupportedMap;
     mapping(address => bool) internal _globalOperatorToIsSupportedMap;
 
     constructor(
-        address __wDmg,
+        address __assetIntroducerProxy,
         address __dmg,
         address __guardian
     ) public GovernorAlpha(__dmg, __guardian) {
-        wDmg = IDMGToken(__wDmg);
+        assetIntroducerProxy = IAssetIntroducerV1(__assetIntroducerProxy);
     }
 
     // *************************
@@ -65,12 +62,37 @@ contract GovernorBeta is GovernorAlpha {
         bool __isTrusted
     ) public {
         require(
-            address(timelock) == msg.sender || guardian == msg.sender,
+            address(timelock) == msg.sender,
             "GovernorBeta::setGlobalOperator: UNAUTHORIZED"
         );
 
         _globalOperatorToIsSupportedMap[__operator] = __isTrusted;
         emit GlobalOperatorSet(__operator, __isTrusted);
+    }
+
+    function __acceptAdmin() public {
+        require(
+            msg.sender == address(timelock),
+            "GovernorBeta::__acceptAdmin: sender must be timelock"
+        );
+
+        timelock.acceptAdmin();
+    }
+
+    function __queueSetTimelockPendingAdmin(
+        address,
+        uint
+    ) public {
+        // The equivalent of this function should be called via governance proposal execution
+        revert("GovernorBeta::__queueSetTimelockPendingAdmin: NOT_USED");
+    }
+
+    function __executeSetTimelockPendingAdmin(
+        address,
+        uint
+    ) public {
+        // The equivalent of this function should be called via governance proposal execution
+        revert("GovernorBeta::__executeSetTimelockPendingAdmin: NOT_USED");
     }
 
     // *************************
@@ -110,15 +132,13 @@ contract GovernorBeta is GovernorAlpha {
     function getIsLocalOperator(
         address __voter,
         address __operator
-    )
-    public view returns (bool) {
+    ) public view returns (bool) {
         return _voterToLocalOperatorToIsSupportedMap[__voter][__operator];
     }
 
     function getIsGlobalOperator(
         address __operator
-    )
-    public view returns (bool) {
+    ) public view returns (bool) {
         return _globalOperatorToIsSupportedMap[__operator];
     }
 
@@ -130,13 +150,8 @@ contract GovernorBeta is GovernorAlpha {
         address __user,
         uint __blockNumber
     ) internal view returns (uint128) {
-        uint128 dmgVotes = SafeBitMath.add128(
-            dmg.getPriorVotes(__user, __blockNumber),
-            wDmg.getPriorVotes(__user, __blockNumber)
-        );
-
         return SafeBitMath.add128(
-            dmgVotes,
+            super._getVotes(__user, __blockNumber),
             assetIntroducerProxy.getPriorVotes(__user, __blockNumber)
         );
     }

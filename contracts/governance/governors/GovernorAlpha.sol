@@ -298,7 +298,7 @@ contract GovernorAlpha is GovernorAlphaData {
 
         Proposal storage proposal = proposals[proposalId];
         require(
-            msg.sender == guardian || _getVotes(proposal.proposer, sub256(block.number, 1)) < proposalThreshold,
+            msg.sender == proposal.proposer || _getVotes(proposal.proposer, sub256(block.number, 1)) < proposalThreshold,
             "GovernorAlpha::cancel: proposer above threshold"
         );
 
@@ -412,8 +412,8 @@ contract GovernorAlpha is GovernorAlphaData {
 
     function __acceptAdmin() public {
         require(
-            msg.sender == guardian,
-            "GovernorAlpha::__acceptAdmin: sender must be gov guardian"
+            msg.sender == guardian || msg.sender == address(timelock),
+            "GovernorAlpha::__acceptAdmin: sender must be gov guardian or timelock"
         );
 
         timelock.acceptAdmin();

@@ -21,6 +21,9 @@ import "../../../node_modules/@openzeppelin/contracts/lifecycle/Pausable.sol";
 import "../../../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 
 import "../interfaces/IDmmController.sol";
+import "../interfaces/IOffChainAssetValuatorV2.sol";
+import "../interfaces/IOffChainCurrencyValuatorV2.sol";
+import "../interfaces/ICollateralizationCalculator.sol";
 import "../mocks/ERC20Mock.sol";
 
 import "../../utils/Blacklistable.sol";
@@ -30,6 +33,12 @@ import "../../utils/Blacklistable.sol";
  */
 contract DmmControllerMock is IDmmController, Ownable, Pausable {
 
+    uint constant EXCHANGE_RATE_BASE_RATE = 1e18;
+
+    uint constant COLLATERALIZATION_BASE_RATE = 1e18;
+
+    uint constant INTEREST_RATE_BASE_RATE = 1e18;
+
     bool private _isMarketsEnabled;
     mapping(address => address) private _mTokenToTokenMap;
     mapping(address => address) private _tokenToMTokenMap;
@@ -37,18 +46,27 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
     mapping(address => uint) private _mTokenToTokenIdMap;
     address private _dmmBlacklistable;
     address private _underlyingTokenValuator;
+    address private _offChainAssetsValuator;
+    address private _offChainCurrencyValuator;
+    address private _collateralizationCalculator;
     uint private _interestRate;
     uint[] private _tokenIds;
 
     constructor(
         address dmmBlacklistable,
         address underlyingTokenValuator,
+        address offChainAssetsValuator,
+        address offChainCurrencyValuator,
+        address collateralizationCalculator,
         address[] memory mTokens,
         address[] memory underlyingTokens,
         uint interestRate
     ) public {
         _dmmBlacklistable = dmmBlacklistable;
         _underlyingTokenValuator = underlyingTokenValuator;
+        offChainAssetsValuator = _offChainAssetsValuator;
+        offChainCurrencyValuator = _offChainCurrencyValuator;
+        collateralizationCalculator = _collateralizationCalculator;
         _interestRate = interestRate;
         _isMarketsEnabled = true;
 
@@ -212,6 +230,18 @@ contract DmmControllerMock is IDmmController, Ownable, Pausable {
 
     function underlyingTokenValuator() public view returns (IUnderlyingTokenValuator) {
         return IUnderlyingTokenValuator(_underlyingTokenValuator);
+    }
+
+    function offChainAssetsValuator() external view returns (IOffChainAssetValuatorV2) {
+        return IOffChainAssetValuatorV2(_offChainAssetsValuator);
+    }
+
+    function offChainCurrencyValuator() external view returns (IOffChainCurrencyValuatorV2) {
+        return IOffChainCurrencyValuatorV2(_offChainCurrencyValuator);
+    }
+
+    function collateralizationCalculator() external view returns (ICollateralizationCalculator) {
+        return ICollateralizationCalculator(_collateralizationCalculator);
     }
 
 }

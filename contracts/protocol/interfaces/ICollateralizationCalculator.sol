@@ -16,21 +16,16 @@
 
 pragma solidity ^0.5.0;
 
-interface IDmmEther {
+interface ICollateralizationCalculator {
 
-    /**
-     * @return The address for WETH being used by this contract.
-     */
-    function wethToken() external view returns (address);
+    event DmmControllerChanged(address indexed oldController, address indexed newController);
 
-    /**
-     * Sends ETH from msg.sender to this contract to mint mETH.
-     */
-    function mintViaEther() external payable returns (uint);
+    function dmmController() external view returns (address);
 
-    /**
-     * Redeems the corresponding amount of mETH (from msg.sender) for WETH instead of ETH and sends it to `msg.sender`
-     */
-    function redeemToWETH(uint amount) external returns (uint);
+    function setDmmController(address newController) external;
+
+    function getTotalCollateralization() external view returns (uint);
+
+    function getActiveCollateralization() external view returns (uint);
 
 }
