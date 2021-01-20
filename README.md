@@ -90,6 +90,7 @@ Read more about the protocol, using it, and integrating it in the [Wiki](https:/
 | DMM: ETH  	                                        | 0xdF9307DFf0a1B57660F60f9457D32027a55ca0B2    | [Etherscan](https://etherscan.io/address/0xdF9307DFf0a1B57660F60f9457D32027a55ca0B2)
 | DMM: USDC  	                                        | 0x3564ad35b9E95340E5Ace2D6251dbfC76098669B    | [Etherscan](https://etherscan.io/address/0x3564ad35b9e95340e5ace2d6251dbfc76098669b)
 | DMM: USDT  	                                        | 0x84d4AfE150dA7Ea1165B9e45Ff8Ee4798d7C38DA    | [Etherscan](https://etherscan.io/address/0x84d4AfE150dA7Ea1165B9e45Ff8Ee4798d7C38DA)
+| DMM: WBTC  	                                        | 0xE83083e32fbD8366729DFf5440fDa3A18e10D73E    | [Etherscan](https://etherscan.io/address/0xE83083e32fbD8366729DFf5440fDa3A18e10D73E)
 | Governor Alpha  	                                    | 0x67Cb2868Ebf965b66d3dC81D0aDd6fd849BCF6D5    | [Etherscan](https://etherscan.io/address/0x67Cb2868Ebf965b66d3dC81D0aDd6fd849BCF6D5)
 | Governor Beta  	                                    | 0x4c808e3C011514d5016536aF11218eEc537eB6F5    | [Etherscan](https://etherscan.io/address/0x4c808e3C011514d5016536aF11218eEc537eB6F5)
 | Governance Timelock  	                                | 0xE679eBf544A6BE5Cb8747012Ea6B08F04975D264    | [Etherscan](https://etherscan.io/address/0xE679eBf544A6BE5Cb8747012Ea6B08F04975D264)
