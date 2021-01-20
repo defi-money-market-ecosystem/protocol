@@ -17,7 +17,7 @@ const upgradeGovernorAndControllerContract = async(
     oldDmmController,
     newDmmController,
   ];
-  const values = ['0', '0', '0', '0'];
+  const values = ['0', '0', '0', '0', '0'];
   const signatures = [
     'setPendingAdmin(address)',
     '__acceptAdmin()',
@@ -47,9 +47,13 @@ const upgradeGovernorAndControllerContract = async(
   
   The second set of updates revolve around the DMM Controller. We changed the administrative deposit and 
   withdrawal functions to allow the NFT system to perform these action. The DMM Foundation Safe (the guardian) can 
-  still make deposits (for interest payments, for example), but it cannot process withdrawals. As with previous 
-  upgrades, we think this moves the DAO further in the direction of being increasingly trust-minimzed and autonomous 
-  by nature.
+  still make deposits (and *only* deposits. This is for interest payments or injecting initial liquidity, for example), 
+  but it cannot process withdrawals. As with previous upgrades, we think this moves the DAO further in the direction of 
+  being increasingly trust-minimized and autonomous by nature.
+  
+  The new contracts can be found here:
+  - GovernorBeta: [0x4c808e3C011514d5016536aF11218eEc537eB6F5](https://etherscan.io/address/0x4c808e3C011514d5016536aF11218eEc537eB6F5)
+  - DmmControllerV2: [0xcC3aB458b20a0115BC7484C0fD53C7962B367955](https://etherscan.io/address/0xcC3aB458b20a0115BC7484C0fD53C7962B367955)
   `;
 
   await createGovernanceProposal(governorAlpha, targets, values, signatures, calldatas, title, description);

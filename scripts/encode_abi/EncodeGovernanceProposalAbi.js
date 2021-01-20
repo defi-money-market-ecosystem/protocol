@@ -73,7 +73,7 @@ const createProposalForYieldFarming = async (governorAlpha, safeAddress, dmg, dm
 const createProposalForDryRun = async (governorAlpha, safeAddress) => {
   const dryRunSignature = 'dryRun()';
   const dryRunCallData = '0x0';
-  const targets = [{address: safeAddress}];
+  const targets = [{ address: safeAddress }];
   const values = ['0'];
   const signatures = [dryRunSignature]
   const calldatas = [dryRunCallData];
@@ -311,6 +311,14 @@ const createProposalForUpgradingController = async (
 }
 
 const createGovernanceProposal = async (governorAlpha, targets, values, signatures, calldatas, title, description) => {
+  if (targets.length !== values.length) {
+    throw Error('targets length does not match values length!');
+  } else if (values.length !== signatures.length) {
+    throw Error('values length does not match signatures length!');
+  } else if (signatures.length !== calldatas.length) {
+    throw Error('signatures length does not match calldatas length!');
+  }
+
   targets.forEach((target, index) => {
     if (target.contract) {
       if (!target.contract.methods[signatures[index]]) {
@@ -349,11 +357,7 @@ const createGovernanceProposal = async (governorAlpha, targets, values, signatur
     description
   ).encodeABI();
 
-  console.log(`createGovernanceProposal at ${governorAlpha.address} `, actualAbi);
-
-  // const types = ['address[]', 'uint[]', 'string[]', 'bytes[]', 'string', 'string'];
-  // const decoded = new Web3(process.env.PROVIDER).eth.abi.decodeParameters(types, actualAbi);
-  // console.log('decoded ', decoded);
+  console.log(`createGovernanceProposal at ${governorAlpha.address} `, actualAbi, '\n');
 };
 
 module.exports = {
