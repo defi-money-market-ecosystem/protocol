@@ -105,7 +105,7 @@
   "dependencies": {
     "@openzeppelin/cli": "^2.6.0",
     "@openzeppelin/contract-loader": "^0.6.1",
-    "@openzeppelin/contracts": "^2.4.0",
+    "@openzeppelin/contracts": "^4.4.2",
     "@openzeppelin/contracts-ethereum-package": "^3.0.0",
     "@openzeppelin/upgrades": "^2.8.0",
     "@truffle/contract": "^4.2.28",
